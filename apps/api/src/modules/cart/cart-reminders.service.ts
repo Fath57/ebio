@@ -20,7 +20,7 @@ interface AbandonedCart {
  * Reminding people of what they left in their basket.
  *
  * A basket that has not moved for a few hours is not a decision, it is an
- * interruption — a phone that rang, a battery that died. One message says so;
+ * interruption, a phone that rang, a battery that died. One message says so;
  * a stream of them says something else, so the count is capped and set from
  * the back-office.
  */
@@ -87,8 +87,8 @@ export class CartRemindersService {
           type: NotificationType.CART_REMINDER,
           title: cart.reminders === 0 ? 'Votre panier vous attend' : 'Toujours dans votre panier',
           body: cart.item_count === 1
-            ? `Un article de ${cart.shop_name} vous attend — ${cart.total.toLocaleString('fr-FR')} FCFA.`
-            : `${cart.item_count} articles vous attendent — ${cart.total.toLocaleString('fr-FR')} FCFA.`,
+            ? `Un article de ${cart.shop_name} vous attend, ${cart.total.toLocaleString('fr-FR')} FCFA.`
+            : `${cart.item_count} articles vous attendent, ${cart.total.toLocaleString('fr-FR')} FCFA.`,
           data: { cartId: cart.cart_id },
           channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
           apps: ['client'],
@@ -102,7 +102,7 @@ export class CartRemindersService {
       }
       catch (error) {
         // The counter did not move, so this basket comes back next pass.
-        this.logger.error(`Relance de panier échouée pour ${cart.user_id} — ${error}`)
+        this.logger.error(`Relance de panier échouée pour ${cart.user_id}, ${error}`)
       }
     }
 

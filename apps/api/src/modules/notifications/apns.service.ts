@@ -63,7 +63,7 @@ export class ApnsService implements OnModuleDestroy {
     options?: PushOptions,
   ): Promise<boolean> {
     if (!this.enabled) {
-      this.logger.warn('APNs credentials not configured — skipping iOS push')
+      this.logger.warn('APNs credentials not configured, skipping iOS push')
       return false
     }
 

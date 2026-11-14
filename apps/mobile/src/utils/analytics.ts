@@ -9,7 +9,7 @@ import { APP_VARIANT } from './app-variant'
  * Two reasons: the tool can be replaced without touching a single screen, and
  * there is exactly one place where consent, or its absence, is respected.
  *
- * Without a key the whole thing is inert — no client is created, nothing
+ * Without a key the whole thing is inert, no client is created, nothing
  * leaves the phone. A build that was never given one measures nothing, which
  * is what a developer wants and what a test environment needs.
  */
@@ -34,7 +34,7 @@ const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com'
  * a decision depends on it.
  */
 export type AnalyticsEvent
-  /** Someone searched — and, crucially, whether anything came back. */
+  /** Someone searched, and, crucially, whether anything came back. */
   = | 'recherche'
     | 'produit_vu'
     | 'panier_ajout'
@@ -53,7 +53,7 @@ let allowed = true
  * The native modules the library reads on its way up.
  *
  * They are declared optional by the package, but "optional" means the JS
- * package may be absent — not that its native half may be. Each of these is
+ * package may be absent, not that its native half may be. Each of these is
  * installed in `node_modules` and missing from a binary that was built before
  * they were added, and that is exactly the case that took the app down.
  */
@@ -65,7 +65,7 @@ const NATIVE_MODULES = ['ExpoApplication', 'ExpoDevice', 'ExpoLocalization']
  * `requireOptionalNativeModule` answers `null` instead of throwing, so asking
  * is free. Importing the library without them is not: evaluating its module
  * graph fails, and the failure does not come back as a rejected promise that
- * a `catch` could hold — it comes back as a startup error, and the app shows
+ * a `catch` could hold, it comes back as a startup error, and the app shows
  * a black screen. Measured on a dev client built before PostHog was added.
  */
 function nativeSideIsThere(): boolean {
@@ -150,7 +150,7 @@ export function trackScreen(name: string): void {
  * Ties what follows to a person.
  *
  * Called on sign-in. This is what turns a stream of anonymous taps into
- * "this buyer could not check out twice" — and what makes it personal data,
+ * "this buyer could not check out twice", and what makes it personal data,
  * which is why `forget` below matters as much.
  */
 export function identify(userId: string): void {

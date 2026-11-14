@@ -12,7 +12,7 @@ export enum ReferralStatus {
 /**
  * A referral: who brought whom, and what it earned them.
  *
- * The referee is unique — one can only be referred once, and only before
+ * The referee is unique, one can only be referred once, and only before
  * their first delivered order. Without that rule a long-standing customer
  * could get themselves "referred" the day they learn it pays.
  *

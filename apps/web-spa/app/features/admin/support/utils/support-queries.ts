@@ -21,7 +21,7 @@ export interface SupportMessage {
   id: string
   type: SupportMessageType
   content: string
-  /** Media id, not a URL — private bucket, resolved when displayed. */
+  /** Media id, not a URL, private bucket, resolved when displayed. */
   mediaUrl: string | null
   durationMs: number | null
   senderId: string
@@ -33,7 +33,7 @@ export interface SupportMessage {
  * The support inbox, served by admin routes on the session guard.
  *
  * The apps read the same threads through `/api/chat`, which is guarded by a
- * JWT the back-office does not hold — hence a separate surface over the same
+ * JWT the back-office does not hold, hence a separate surface over the same
  * service rather than a looser guard for everyone.
  */
 export async function fetchSupportThreads(): Promise<SupportThread[]> {
@@ -60,7 +60,7 @@ export interface SupportUnread {
 
 /**
  * The header badge. Polled, so it stays deliberately cheap: one count, no
- * thread list, and a failure returns zero rather than throwing — a support
+ * thread list, and a failure returns zero rather than throwing, a support
  * counter is not worth an error banner on every page of the back-office.
  */
 export async function fetchSupportUnread(): Promise<SupportUnread> {
@@ -96,7 +96,7 @@ export async function resolveMediaUrl(mediaId: string): Promise<string | null> {
   return url
 }
 
-/** Answers a support thread. Text only — the back-office is not a phone. */
+/** Answers a support thread. Text only, the back-office is not a phone. */
 export async function replyToSupport(conversationId: string, content: string): Promise<void> {
   const response = await supportControllerReply({
     path: { id: conversationId },

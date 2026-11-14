@@ -94,7 +94,7 @@ interface ProductFormProps {
     variants: Variant[]
     isActive: boolean
     voiceDescriptionUri: string | null
-    /** Legacy projection of the live PRICE promotion — no longer used by the form */
+    /** Legacy projection of the live PRICE promotion, no longer used by the form */
     promotionalPrice?: number | null
   }
   onSave?: () => void
@@ -146,7 +146,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const [labelsSel, setLabelsSel] = useState<string[]>([])
   const certifications = useCertifications()
   // The back-office list, plus any label the product already wears that has
-  // since been retired — still shown, so it can be seen and removed.
+  // since been retired, still shown, so it can be seen and removed.
   const labelChoices = [
     ...certifications.map(item => ({ code: item.code, name: item.name })),
     ...labelsSel
@@ -366,7 +366,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         ...buildCompositionBody(),
       }
       if (existingId) {
-        // URLs of existing photos to keep, in order — without this list the
+        // URLs of existing photos to keep, in order, without this list the
         // API wipes every photo not re-uploaded in this edit.
         body.photos = existingPhotos.filter(url => url !== '')
       }
@@ -554,7 +554,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           </View>
         </View>
 
-        {/* Promotions — dated, typed promotions live on their own endpoints,
+        {/* Promotions, dated, typed promotions live on their own endpoints,
             so a product must exist before any can be attached */}
         {initialData?.id
           ? (
@@ -805,7 +805,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
                   <Text style={[styles.nutritionFieldLabel, { color: semantic.textTertiary }]}>{field.label}</Text>
                   <TextInput
                     style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-                    placeholder="—"
+                    placeholder="-"
                     placeholderTextColor={semantic.textTertiary}
                     keyboardType="numeric"
                     value={nutrition[field.key]}

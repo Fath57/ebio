@@ -91,8 +91,8 @@ export class OrdersController {
     options: { total?: number, shopCount?: number, distanceKm?: number } = {},
   ) {
     return {
-      // The request names products, not shops — those are worked out server
-      // side — so the count comes from the answer, and is unknown on a refusal
+      // The request names products, not shops, those are worked out server
+      // side, so the count comes from the answer, and is unknown on a refusal
       // that never got that far.
       shopCount: options.shopCount ?? 0,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -102,7 +102,7 @@ export class OrdersController {
   }
 
   /**
-   * The whole cart as it would be charged — every shop together,
+   * The whole cart as it would be charged, every shop together,
    * a single delivery fee. Nothing is created.
    *
    * Lives next to `preview`, which prices a single shop: the two answer
@@ -117,8 +117,8 @@ export class OrdersController {
   ) {
     try {
       const quote = await this.checkoutService.preview(session.user.id, body)
-      // A quote can succeed and still lead nowhere — out of zone, no drop-off
-      // point — and that is exactly what someone calls about.
+      // A quote can succeed and still lead nowhere, out of zone, no drop-off
+      // point, and that is exactly what someone calls about.
       const blocked = quote.deliveryFee === null && quote.deliveryReason !== 'PICKUP'
       await this.attempts.record(
         session.user.id,
@@ -225,14 +225,15 @@ export class OrdersController {
       const supplier = await this.suppliersService.findByUserId(session.user.id)
       const result = await this.ordersService.findBySupplier(supplier.id, filters)
       const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
+      const collectBefore = await this.ordersService.exportCollectBefore(result.orders.map(o => o.id))
       return {
-        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null)),
+        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, {}, { collectBefore: collectBefore.get(order.id) ?? null })),
         total: result.total,
       }
     }
 
     const result = await this.ordersService.findByBuyer(session.user.id, filters)
-    const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
+    const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id), { forBuyer: true })
     return {
       // The payer's own list: the amount in the currency they paid in.
       orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, { display: OrderMapper.displayOf(order) })),
@@ -274,9 +275,10 @@ export class OrdersController {
     const order = await this.ordersService.findViewableById(id, session.user.id, session.user.role)
     const hasReview = await this.ordersService.hasReview(id)
     const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
-    const deliveries = await this.ordersService.deliverySummaries([id])
+    const deliveries = await this.ordersService.deliverySummaries([id], { forBuyer: order.buyer.id === session.user.id })
     const payer = await this.giftView.payerView(order, session.user.id)
-    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer), hasReview, hasUnratedProducts }
+    const collectBefore = await this.ordersService.exportCollectBefore([id])
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer, { collectBefore: collectBefore.get(id) ?? null }), hasReview, hasUnratedProducts }
   }
 
   /** Rendered invoice of a delivered order, for the buyer or the shop. */
@@ -301,7 +303,8 @@ export class OrdersController {
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     const order = await this.ordersService.accept(id, supplier.id)
-    return OrderMapper.toResponse(order)
+    const collectBefore = await this.ordersService.exportCollectBefore([order.id])
+    return OrderMapper.toResponse(order, null, {}, { collectBefore: collectBefore.get(order.id) ?? null })
   }
 
   @Patch(':id/reject')
@@ -329,7 +332,8 @@ export class OrdersController {
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     const order = await this.ordersService.updateStatus(id, supplier.id, body.status as OrderStatus, body.prepMinutes)
-    return OrderMapper.toResponse(order)
+    const collectBefore = await this.ordersService.exportCollectBefore([order.id])
+    return OrderMapper.toResponse(order, null, {}, { collectBefore: collectBefore.get(order.id) ?? null })
   }
 
   @Patch(':id/confirm-delivery')

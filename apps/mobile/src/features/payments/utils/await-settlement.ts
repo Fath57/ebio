@@ -14,7 +14,7 @@ const DEFAULT_TIMEOUT_MS = 30_000
 /**
  * Reads a verify answer: 200 means the money is there, a 400 carries
  * `payment_failed` or `payment_pending`. Anything unreadable is treated as
- * still pending — the server's reconciliation settles it later.
+ * still pending, the server's reconciliation settles it later.
  */
 export async function readVerifyOutcome(res: Response): Promise<SettlementStatus> {
   if (res.ok) {

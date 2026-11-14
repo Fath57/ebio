@@ -14,6 +14,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
+import { ApiQuery } from '@nestjs/swagger'
 import { z } from 'zod'
 import { CanCreate, CanDelete, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
@@ -25,6 +26,9 @@ import { AuthGuard } from '../auth/auth.guard'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
+import { exportCountryCodeSchema } from '../terroir/contracts/terroir.contract'
+import { ExportCriteriaService } from '../terroir/export-criteria.service'
+import { ExportabilityService } from '../terroir/exportability.service'
 import {
   createProductSchema,
   productPaginationSchema,
@@ -49,6 +53,8 @@ export class ProductsController {
     private readonly promotionsService: PromotionsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly audit: AuditService,
+    private readonly exportability: ExportabilityService,
+    private readonly exportCriteria: ExportCriteriaService,
   ) {}
 
   @Get('suppliers/:supplierId/products')
@@ -75,7 +81,7 @@ export class ProductsController {
     const supplier = await this.suppliersService.findById(resolvedId)
 
     // Someone from eBio who may work inside a catalogue sees it as the shop
-    // does — otherwise the studio would show a truncated catalogue and let
+    // does, otherwise the studio would show a truncated catalogue and let
     // them edit a product they cannot see.
     const manages = session?.user?.id
       ? (await this.caslAbilityFactory.createForUser(session.user as never)).can('manage', 'Product')
@@ -100,8 +106,10 @@ export class ProductsController {
     )
 
     const promotions = await this.promotionsService.liveByProduct(result.products.map(p => p.id))
+    // The shop (or eBio in its catalogue) sees where each product stands for export.
+    const exportStatuses = isOwner ? await this.productsService.exportStatusesOf(result.products.map(p => p.id)) : undefined
     return {
-      data: result.products.map(p => ProductMapper.toSummary(p, promotions.get(p.id) ?? [])),
+      data: result.products.map(p => ProductMapper.toSummary(p, promotions.get(p.id) ?? [], exportStatuses)),
       meta: {
         itemCount: result.total,
         pageSize: pagination.pageSize,
@@ -113,9 +121,11 @@ export class ProductsController {
 
   @Get('products/:id')
   @Public()
+  @ApiQuery({ name: 'exportCountry', required: false, type: String })
   async findById(
     @Session() session: BetterAuthSession,
     @Param('id') id: string,
+    @Query('exportCountry') exportCountry?: string,
   ) {
     const product = await this.productsService.findById(id)
 
@@ -137,7 +147,17 @@ export class ProductsController {
       this.productsService.getProductStats(product.id),
       this.promotionsService.listForProduct(product.id),
     ])
-    return { ...ProductMapper.toResponse(product, variants, promotions), stats }
+    // Its export request only for the owning shop (011): buyers never see it.
+    const exportProfile = isOwner ? ProductMapper.toExportProfile(await this.productsService.exportProfileOf(product.id), await this.exportCriteria.settings()) : undefined
+    // « Mode Valise » (011): can it go in the suitcase towards `exportCountry`; null without it.
+    const country = exportCountry ? exportCountryCodeSchema.safeParse(exportCountry) : null
+    const exportability = country?.success ? await this.exportability.forProduct(country.data, product.id) : null
+    return {
+      ...ProductMapper.toResponse(product, variants, promotions),
+      ...(isOwner ? { exportProfile } : {}),
+      exportability: exportability ? ProductMapper.toExportability(exportability) : null,
+      stats,
+    }
   }
 
   /**
@@ -145,7 +165,7 @@ export class ProductsController {
    *
    * `me` is a shop owner working on their own catalogue. Anything else is
    * someone from eBio working on a shop's behalf, which takes the permission
-   * to manage suppliers — and is written down, because "the shop changed its
+   * to manage suppliers, and is written down, because "the shop changed its
    * price" and "eBio changed the shop's price" are not the same fact, and the
    * difference matters the day it has to be explained.
    *
@@ -161,7 +181,7 @@ export class ProductsController {
     }
 
     // `manage Product` is the back-office right to work inside a shop's
-    // catalogue — deliberately not `manage Supplier`, which is about
+    // catalogue, deliberately not `manage Supplier`, which is about
     // validating and suspending shops, a different job.
     const ability = await this.caslAbilityFactory.createForUser(session.user as never)
     if (!ability.can('manage', 'Product')) {

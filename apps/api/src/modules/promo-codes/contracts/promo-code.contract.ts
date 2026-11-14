@@ -34,7 +34,7 @@ export const updatePromoCodeSchema = z.object({
   isActive: z.boolean(),
 }).partial().meta({
   title: 'UpdatePromoCode',
-  description: 'Editable fields — the code itself is immutable once created',
+  description: 'Editable fields, the code itself is immutable once created',
 })
 
 export const promoCodeResponseSchema = z.object({
@@ -70,7 +70,7 @@ export const validatePromoSchema = z.object({
 export const promoValidationResultSchema = z.object({
   valid: z.boolean(),
   discount: z.number(),
-  /** Human reason when invalid — shown as-is to the buyer. */
+  /** Human reason when invalid, shown as-is to the buyer. */
   message: z.string().nullable(),
 }).meta({
   title: 'PromoValidationResult',

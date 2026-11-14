@@ -5,7 +5,7 @@ import { Migration } from '@mikro-orm/migrations'
  *
  * The constraint predates INTRAM and had never complained: wallet top-ups do
  * not write to `payments`, and that is all we had tried. The first order paid
- * through INTRAM would have failed on insert — after the payment, so with a
+ * through INTRAM would have failed on insert, after the payment, so with a
  * buyer debited and an order never marked paid.
  *
  * The code enum also carries `stripe` and `pawerpayer`; they are kept so as

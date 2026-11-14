@@ -5,7 +5,7 @@ import { Order } from '../../orders/entities/order.entity'
 import { PromoCode } from './promo-code.entity'
 
 /**
- * One row per order that used a code — the audited source the use counters
+ * One row per order that used a code, the audited source the use counters
  * are checked against, and what gets released when an order is cancelled.
  */
 @Entity({ tableName: 'promo_redemptions' })

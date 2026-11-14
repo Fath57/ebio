@@ -15,7 +15,7 @@ const targetSchema = z.object({
 /**
  * An announcement says something, one way or another.
  *
- * A poster is often enough on its own — it already carries its text. So the
+ * A poster is often enough on its own, it already carries its text. So the
  * title becomes optional as soon as there is an image, but one of the two is
  * required: an empty announcement would have nothing to show.
  */

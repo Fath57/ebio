@@ -29,7 +29,7 @@ export const mediaContextEnum = z.enum([
   description: 'Contexte d\'utilisation du média',
 })
 
-// Initiate upload — client asks for presigned URL(s)
+// Initiate upload, client asks for presigned URL(s)
 export const initiateUploadSchema = z.object({
   fileName: z.string().min(1),
   mimeType: z.string().regex(/^(image|audio|video|application)\//),

@@ -1,4 +1,4 @@
-# Demo kit — tutorial videos
+# Demo kit, tutorial videos
 
 A separate database, `ebio_demo`, holding the real catalogue of the shops that
 agreed to appear in the videos, and fictitious people only: owners' accounts,
@@ -49,9 +49,9 @@ DATABASE_NAME=ebio_demo npx dotenvx run -q -- npx tsx scripts/demo/scenario.ts s
 DATABASE_NAME=ebio_demo npx dotenvx run -q -- npx tsx scripts/demo/scenario.ts courier-run
 ```
 
-- `supplier-order` — Afi Dossou orders from Mine d'or délice; the order waits
+- `supplier-order`, Afi Dossou orders from Mine d'or délice; the order waits
   for the shop to accept it.
-- `courier-run` — Kossi Agbo orders from Mandagbe and the shop gets it ready;
+- `courier-run`, Kossi Agbo orders from Mandagbe and the shop gets it ready;
   the run is offered to Rodrigue Houngbo, the only courier available.
 
 Every demo account uses the password in `demo-accounts.ts`.

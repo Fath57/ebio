@@ -21,7 +21,7 @@ async function rememberLinkCode(url: string | null): Promise<void> {
 
 /**
  * Mounted once at the root of the client app. It gathers a sponsor's code from
- * wherever it shows up — the install, an opened link, the sign-up form — and
+ * wherever it shows up, the install, an opened link, the sign-up form, and
  * claims it the moment an account is signed in. Only a network failure keeps
  * the code for later: a refusal is final and said once.
  */
@@ -61,7 +61,7 @@ export function usePendingReferralClaim(): void {
 
   useEffect(() => {
     void captureInstallReferrer()
-    // Already signed in when the link opens the app: claim right away —
+    // Already signed in when the link opens the app: claim right away,
     // `claim` does nothing while nobody is signed in.
     void Linking.getInitialURL().then(rememberLinkCode).then(claim)
     const subscription = Linking.addEventListener('url', ({ url }) => {

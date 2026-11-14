@@ -30,7 +30,7 @@ const LOUD_COUNT: Partial<Record<StatusTone, string>> = {
 }
 
 /**
- * The statuses of a list as tabs, each with how many rows it holds — the
+ * The statuses of a list as tabs, each with how many rows it holds, the
  * first thing to read on a back-office list is where the work is waiting.
  * An "All" tab leads, totalled from the others.
  */

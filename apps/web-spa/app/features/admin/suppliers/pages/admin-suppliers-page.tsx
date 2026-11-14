@@ -81,7 +81,7 @@ export default function AdminSuppliersPage() {
         <span className="flex flex-col">
           <span className="font-medium">{row.original.shopName}</span>
           <span className="text-muted-foreground text-xs">
-            {[row.original.owner.name, row.original.neighborhood ?? row.original.address].filter(Boolean).join(' · ') || '—'}
+            {[row.original.owner.name, row.original.neighborhood ?? row.original.address].filter(Boolean).join(' · ') || '-'}
           </span>
         </span>
       ),
@@ -128,7 +128,7 @@ export default function AdminSuppliersPage() {
       id: 'rating',
       header: t('admin.suppliers.columns.rating'),
       meta: { numeric: true, hideBelow: 'xl' },
-      cell: ({ row }) => (row.original.rating !== null ? row.original.rating.toFixed(1) : '—'),
+      cell: ({ row }) => (row.original.rating !== null ? row.original.rating.toFixed(1) : '-'),
     },
     {
       id: 'located',

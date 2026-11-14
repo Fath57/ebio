@@ -13,6 +13,7 @@ import {
   Clock,
   CreditCard,
   Gift,
+  Globe,
   Hourglass,
   Images,
   Landmark,
@@ -36,6 +37,7 @@ import { HomeSectionsManager } from '../../home-sections/components/home-section
 import { FamilyWalletSetting, FamilyWalletSummary } from '../components/family-wallet-setting-card'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { SettingFeedback } from '../components/setting-feedback'
+import { TerroirExportSetting, TerroirExportSummary } from '../components/terroir-export-setting-card'
 import { AssistantIdentity } from '../forms/assistant-identity'
 import { AssistantToggle } from '../forms/assistant-toggle'
 import { BannerOffersForm } from '../forms/banner-offers-form'
@@ -88,7 +90,7 @@ export interface SettingDefinition {
   section: SettingsSectionId
   titleKey: string
   descriptionKey: string
-  /** Extra French search terms — what an admin types, not what the title says. */
+  /** Extra French search terms, what an admin types, not what the title says. */
   keywords: readonly string[]
   icon: LucideIcon
   /** Wrapped in `<Can action="manage" subject="all">`, as the card was before the split. */
@@ -487,6 +489,18 @@ export const SETTINGS_REGISTRY: readonly SettingDefinition[] = [
         <SettingFeedback feedback={state.pickupPolicy.feedback} i18nPrefix="admin.settings.pickupPolicy" />
       </div>
     )),
+  },
+
+  {
+    id: 'terroir-etranger',
+    section: 'livraison',
+    titleKey: 'admin.settings.terroirExport.title',
+    descriptionKey: 'admin.settings.terroirExport.description',
+    keywords: ['valise', 'pays', 'terroir', 'étranger', 'export', 'diaspora', 'france', 'belgique', 'colis', 'agence', 'assurance', 'emballage', 'poids', 'catégorie interdite', 'conservation', 'critères'],
+    icon: Globe,
+    adminOnly: true,
+    summary: () => <TerroirExportSummary />,
+    render: () => <TerroirExportSetting />,
   },
 
   // ── Catalogue et avis ──

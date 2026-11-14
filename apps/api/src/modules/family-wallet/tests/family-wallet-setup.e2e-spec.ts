@@ -57,9 +57,9 @@ function fresh(app: INestApplication): void {
 
 /**
  * US1: a payer opens their family wallet, adds relatives from the address
- * book or new ones, and funds it — by card, or from their personal wallet.
+ * book or new ones, and funds it, by card, or from their personal wallet.
  */
-describe('portefeuille famille — ouverture, membres, recharge (e2e)', () => {
+describe('portefeuille famille, ouverture, membres, recharge (e2e)', () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, FamilyWalletModule],

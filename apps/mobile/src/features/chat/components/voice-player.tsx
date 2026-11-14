@@ -103,7 +103,7 @@ export function VoiceNotePlayer({ uri, durationMs, tint = 'peer', seed }: VoiceN
     player.loop = false
   }, [player])
 
-  // End of playback. Order matters: pause() FIRST, then seekTo(0) — seeking a
+  // End of playback. Order matters: pause() FIRST, then seekTo(0), seeking a
   // player that is still in the playing state makes it restart from 0. The
   // `finishedHandledRef` guard makes sure a `didJustFinish` that stays true
   // across several status updates is handled once and never re-triggers play.

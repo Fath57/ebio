@@ -4,7 +4,7 @@ import type { ExchangeRate, ExchangeRates, ExchangeRateSource, ForeignCurrency }
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
 import type { AssistantIdentity, BannerOffersInput, EscrowReleaseInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
 import { appVersionsSchema } from '../app-version/app-version.contract'
 import { exchangeRatesSchema, fxMarginBpsSchema } from '../currency/contracts/currency.contract'
@@ -38,12 +38,29 @@ export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
 export const EXCHANGE_RATES_KEY = 'exchange_rates'
 export const FX_MARGIN_BPS_KEY = 'fx_margin_bps'
 export const FAMILY_WALLET_ENABLED_KEY = 'family_wallet_enabled'
+export const TERROIR_EXPORT_ENABLED_KEY = 'terroir_export_enabled'
+export const EXPORT_PACKAGING_WEIGHT_G_KEY = 'export_packaging_weight_g'
+export const EXPORT_COLLECTION_DAYS_KEY = 'export_collection_days'
+export const EXPORT_WEIGHT_TOLERANCE_PCT_KEY = 'export_weight_tolerance_pct'
+export const EXPORT_INSURANCE_RATE_BPS_KEY = 'export_insurance_rate_bps'
+export const EXPORT_INSURANCE_MIN_KEY = 'export_insurance_min'
+export const EXPORT_BANNED_CATEGORY_IDS_KEY = 'export_banned_category_ids'
+export const EXPORT_PICKUP_REMINDER_DAYS_KEY = 'export_pickup_reminder_days'
+export const EXPORT_MIN_SHELF_LIFE_DAYS_KEY = 'export_min_shelf_life_days'
+export const EXPORT_MAX_UNIT_WEIGHT_G_KEY = 'export_max_unit_weight_g'
+export const EXPORT_COLLECTION_MODE_KEY = 'export_collection_mode'
+export const EXPORT_HUB_NAME_KEY = 'export_hub_name'
+export const EXPORT_HUB_ADDRESS_KEY = 'export_hub_address'
+export const EXPORT_HUB_LAT_KEY = 'export_hub_lat'
+export const EXPORT_HUB_LNG_KEY = 'export_hub_lng'
+export const EXPORT_HUB_PHONE_KEY = 'export_hub_phone'
+export const EXPORT_HUB_HOURS_KEY = 'export_hub_hours'
 
 /** Exchange rates as read: EUR always present, USD and CAD once downloaded or entered. */
 export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
 
 /**
- * The euro until someone sets it: the fixed CFA parity. Manual by nature —
+ * The euro until someone sets it: the fixed CFA parity. Manual by nature,
  * no download ever overwrites it.
  */
 export const DEFAULT_EUR_RATE: ExchangeRate = {
@@ -59,7 +76,7 @@ export const DEFAULT_EUR_RATE: ExchangeRate = {
 export const DEFAULT_PRODUCT_APPROVAL_REQUIRED = false
 
 /**
- * A day after delivery at most — time for a complaint about the parcel — and
+ * A day after delivery at most, time for a complaint about the parcel, and
  * at once when buyer and shop both confirmed it: nothing is left to wait for.
  */
 export const DEFAULT_ESCROW_RELEASE: EscrowReleaseInput = {
@@ -137,7 +154,7 @@ export const DEFAULT_ASSISTANT_ENABLED = false
  * Who she is, until someone says otherwise.
  *
  * The name is the one her prompt has carried since the first day, and a null
- * portrait means the one bundled with the app — changing the setting must be a
+ * portrait means the one bundled with the app, changing the setting must be a
  * decision, never a side effect of shipping this.
  */
 export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
@@ -207,12 +224,113 @@ export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
  */
 export const DEFAULT_FAMILY_WALLET_ENABLED = false
 
+/**
+ * Terroir export (011) settings. The switch stays off until the agency
+ * agreements are signed; the rest has workable defaults (data-model §5).
+ */
+export interface TerroirExportSettings {
+  enabled: boolean
+  /** Flat packaging weight added to every parcel estimate, in grams. */
+  packagingWeightG: number
+  /** Days eBio needs to collect from the shops before the deposit deadline. */
+  collectionDays: number
+  /** Weight gap above the estimate eBio absorbs, in percent. */
+  weightTolerancePct: number
+  /** Insurance price, in basis points of the declared value (300 = 3 %). */
+  insuranceRateBps: number
+  /** Insurance floor, FCFA. */
+  insuranceMin: number
+  /** Categories never exportable (fresh food, meat, milk, live plants…). */
+  bannedCategoryIds: string[]
+  /** Days a parcel waits at the pickup point before the buyer is reminded. */
+  pickupReminderDays: number
+  /** Export criterion: a product keeps at least this many days. */
+  minShelfLifeDays: number
+  /** Export criterion: one packed unit weighs at most this, in grams. */
+  maxUnitWeightG: number
+  /**
+   * Who brings the shops' terroir orders to eBio: a platform courier
+   * (COURIER) or eBio's own staff (EBIO). COURIER without the hub's
+   * coordinates runs as EBIO, see `effectiveCollectionMode`.
+   */
+  collectionMode: ExportCollectionMode
+  /** What actually applies today: COURIER needs the hub's coordinates. */
+  effectiveCollectionMode: ExportCollectionMode
+  /** eBio consolidation point in Cotonou (« point de regroupement eBio »). */
+  hubName: string | null
+  hubAddress: string | null
+  hubLatitude: number | null
+  hubLongitude: number | null
+  hubPhone: string | null
+  hubHours: string | null
+}
+
+export type ExportCollectionMode = 'COURIER' | 'EBIO'
+
+/** The eBio consolidation point couriers bring the terroir orders to. */
+export interface ExportHub {
+  name: string
+  address: string
+  latitude: number
+  longitude: number
+  phone: string | null
+  hours: string | null
+}
+
+/** How terroir orders reach eBio today: the hub is set only in COURIER mode. */
+export type ExportCollectionSetup
+  = | { mode: 'COURIER', hub: ExportHub }
+    | { mode: 'EBIO', hub: null }
+
+export const DEFAULT_TERROIR_EXPORT_SETTINGS: TerroirExportSettings = {
+  enabled: false,
+  packagingWeightG: 300,
+  collectionDays: 3,
+  weightTolerancePct: 10,
+  insuranceRateBps: 300,
+  insuranceMin: 1000,
+  bannedCategoryIds: [],
+  pickupReminderDays: 14,
+  minShelfLifeDays: 90,
+  maxUnitWeightG: 5_000,
+  collectionMode: 'COURIER',
+  effectiveCollectionMode: 'EBIO',
+  hubName: null,
+  hubAddress: null,
+  hubLatitude: null,
+  hubLongitude: null,
+  hubPhone: null,
+  hubHours: null,
+}
+
+/** Lengths of the hub's text settings, also enforced by the contract. */
+export const EXPORT_HUB_TEXT_MAX = { hubName: 120, hubAddress: 255, hubPhone: 30, hubHours: 200 } as const
+
+/** Bounds of each numeric terroir setting: [min, max]. */
+export const TERROIR_EXPORT_BOUNDS = {
+  packagingWeightG: [0, 5_000],
+  collectionDays: [0, 30],
+  weightTolerancePct: [0, 100],
+  insuranceRateBps: [0, 5_000],
+  insuranceMin: [0, 1_000_000],
+  pickupReminderDays: [1, 90],
+  minShelfLifeDays: [1, 3_650],
+  maxUnitWeightG: [100, 50_000],
+} as const
+
+/** Called once terroir settings were written, e.g. to recompute the export statuses. */
+export type TerroirExportSettingsListener = (settings: TerroirExportSettings) => Promise<void>
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
 
 @Injectable()
 export class PlatformSettingsService {
+  private readonly logger = new Logger(PlatformSettingsService.name)
   private cache = new Map<string, { value: string | null, expiresAt: number }>()
+  private readonly terroirListeners: TerroirExportSettingsListener[] = []
 
   constructor(private readonly em: EntityManager) {}
 
@@ -529,6 +647,218 @@ export class PlatformSettingsService {
 
   async setFamilyWalletEnabled(enabled: boolean): Promise<void> {
     await this.set(FAMILY_WALLET_ENABLED_KEY, enabled ? 'true' : 'false')
+  }
+
+  /** Is the terroir space open to buyers abroad? */
+  async getTerroirExportEnabled(): Promise<boolean> {
+    const raw = await this.get(TERROIR_EXPORT_ENABLED_KEY)
+    if (raw === null) {
+      return DEFAULT_TERROIR_EXPORT_SETTINGS.enabled
+    }
+    return raw === 'true'
+  }
+
+  /** Every terroir setting, each falling back to its default when missing or unreadable. */
+  async getTerroirExportSettings(): Promise<TerroirExportSettings> {
+    const defaults = DEFAULT_TERROIR_EXPORT_SETTINGS
+    const bounds = TERROIR_EXPORT_BOUNDS
+    return {
+      enabled: await this.getTerroirExportEnabled(),
+      packagingWeightG: await this.readInteger(EXPORT_PACKAGING_WEIGHT_G_KEY, defaults.packagingWeightG, ...bounds.packagingWeightG),
+      collectionDays: await this.readInteger(EXPORT_COLLECTION_DAYS_KEY, defaults.collectionDays, ...bounds.collectionDays),
+      weightTolerancePct: await this.readInteger(EXPORT_WEIGHT_TOLERANCE_PCT_KEY, defaults.weightTolerancePct, ...bounds.weightTolerancePct),
+      insuranceRateBps: await this.readInteger(EXPORT_INSURANCE_RATE_BPS_KEY, defaults.insuranceRateBps, ...bounds.insuranceRateBps),
+      insuranceMin: await this.readInteger(EXPORT_INSURANCE_MIN_KEY, defaults.insuranceMin, ...bounds.insuranceMin),
+      bannedCategoryIds: await this.readBannedCategoryIds(),
+      pickupReminderDays: await this.readInteger(EXPORT_PICKUP_REMINDER_DAYS_KEY, defaults.pickupReminderDays, ...bounds.pickupReminderDays),
+      minShelfLifeDays: await this.readInteger(EXPORT_MIN_SHELF_LIFE_DAYS_KEY, defaults.minShelfLifeDays, ...bounds.minShelfLifeDays),
+      maxUnitWeightG: await this.readInteger(EXPORT_MAX_UNIT_WEIGHT_G_KEY, defaults.maxUnitWeightG, ...bounds.maxUnitWeightG),
+      ...await this.readExportHubSettings(),
+    }
+  }
+
+  /** The collection mode and the hub, as stored; the effective mode follows the coordinates. */
+  private async readExportHubSettings(): Promise<Pick<TerroirExportSettings, 'collectionMode' | 'effectiveCollectionMode' | 'hubName' | 'hubAddress' | 'hubLatitude' | 'hubLongitude' | 'hubPhone' | 'hubHours'>> {
+    const rawMode = await this.get(EXPORT_COLLECTION_MODE_KEY)
+    const collectionMode: ExportCollectionMode = rawMode === 'EBIO' || rawMode === 'COURIER' ? rawMode : DEFAULT_TERROIR_EXPORT_SETTINGS.collectionMode
+    const hubLatitude = await this.readCoordinate(EXPORT_HUB_LAT_KEY, 90)
+    const hubLongitude = await this.readCoordinate(EXPORT_HUB_LNG_KEY, 180)
+    const hasPosition = hubLatitude !== null && hubLongitude !== null
+    return {
+      collectionMode,
+      effectiveCollectionMode: collectionMode === 'COURIER' && hasPosition ? 'COURIER' : 'EBIO',
+      hubName: await this.readText(EXPORT_HUB_NAME_KEY),
+      hubAddress: await this.readText(EXPORT_HUB_ADDRESS_KEY),
+      hubLatitude: hasPosition ? hubLatitude : null,
+      hubLongitude: hasPosition ? hubLongitude : null,
+      hubPhone: await this.readText(EXPORT_HUB_PHONE_KEY),
+      hubHours: await this.readText(EXPORT_HUB_HOURS_KEY),
+    }
+  }
+
+  /**
+   * How a shop's terroir order reaches eBio right now. COURIER without the
+   * hub's coordinates falls back to EBIO, with a warning: a courier cannot
+   * be sent nowhere, and the shop's READY must not fail for it.
+   */
+  async getExportCollectionSetup(): Promise<ExportCollectionSetup> {
+    const settings = await this.readExportHubSettings()
+    if (settings.collectionMode !== 'COURIER') {
+      return { mode: 'EBIO', hub: null }
+    }
+    if (settings.hubLatitude === null || settings.hubLongitude === null) {
+      this.logger.warn('Export collection mode is COURIER but the eBio hub has no coordinates: falling back to EBIO collection')
+      return { mode: 'EBIO', hub: null }
+    }
+    return {
+      mode: 'COURIER',
+      hub: {
+        name: settings.hubName ?? 'Point de regroupement eBio',
+        address: settings.hubAddress ?? settings.hubName ?? 'Point de regroupement eBio',
+        latitude: settings.hubLatitude,
+        longitude: settings.hubLongitude,
+        phone: settings.hubPhone,
+        hours: settings.hubHours,
+      },
+    }
+  }
+
+  /** A stored text setting; an empty value reads as none. */
+  private async readText(key: string): Promise<string | null> {
+    const raw = await this.get(key)
+    const value = raw?.trim() ?? ''
+    return value === '' ? null : value
+  }
+
+  /** A stored coordinate within ±bound, or null. */
+  private async readCoordinate(key: string, bound: number): Promise<number | null> {
+    const raw = await this.readText(key)
+    const value = raw === null ? Number.NaN : Number(raw)
+    return Number.isFinite(value) && Math.abs(value) <= bound ? value : null
+  }
+
+  /**
+   * The terroir module registers here the export statuses' recomputation: the
+   * settings module cannot depend on it (terroir depends on settings).
+   */
+  onTerroirExportSettingsChanged(listener: TerroirExportSettingsListener): void {
+    this.terroirListeners.push(listener)
+  }
+
+  /** Writes only the settings sent; each one is checked before anything is written. */
+  async setTerroirExportSettings(input: Partial<TerroirExportSettings>): Promise<TerroirExportSettings> {
+    const bounds = TERROIR_EXPORT_BOUNDS
+    const integers: Array<[keyof typeof bounds, string, string]> = [
+      ['packagingWeightG', EXPORT_PACKAGING_WEIGHT_G_KEY, 'Le poids d\'emballage doit être compris entre 0 et 5 000 g'],
+      ['collectionDays', EXPORT_COLLECTION_DAYS_KEY, 'Le délai de collecte doit être compris entre 0 et 30 jours'],
+      ['weightTolerancePct', EXPORT_WEIGHT_TOLERANCE_PCT_KEY, 'Le seuil d\'écart de poids doit être compris entre 0 et 100 %'],
+      ['insuranceRateBps', EXPORT_INSURANCE_RATE_BPS_KEY, 'Le taux d\'assurance doit être compris entre 0 et 50 %'],
+      ['insuranceMin', EXPORT_INSURANCE_MIN_KEY, 'Le minimum d\'assurance doit être compris entre 0 et 1 000 000 FCFA'],
+      ['pickupReminderDays', EXPORT_PICKUP_REMINDER_DAYS_KEY, 'Le rappel de retrait doit tomber entre 1 et 90 jours'],
+      ['minShelfLifeDays', EXPORT_MIN_SHELF_LIFE_DAYS_KEY, 'La conservation minimale doit être comprise entre 1 et 3 650 jours'],
+      ['maxUnitWeightG', EXPORT_MAX_UNIT_WEIGHT_G_KEY, 'Le poids maximal d\'une unité doit être compris entre 100 et 50 000 g'],
+    ]
+    for (const [field, message] of integers) {
+      const value = input[field]
+      if (value !== undefined) {
+        this.assertInteger(value, bounds[field][0], bounds[field][1], message)
+      }
+    }
+    const banned = input.bannedCategoryIds
+    if (banned !== undefined && (banned.length > 200 || banned.some(id => !UUID_PATTERN.test(id)))) {
+      throw new BadRequestException('Liste de catégories interdites invalide')
+    }
+    const hubWrites = this.exportHubWrites(input)
+
+    if (input.enabled !== undefined) {
+      await this.set(TERROIR_EXPORT_ENABLED_KEY, input.enabled ? 'true' : 'false')
+    }
+    for (const [field, key] of integers) {
+      const value = input[field]
+      if (value !== undefined) {
+        await this.set(key, String(value))
+      }
+    }
+    if (banned !== undefined) {
+      await this.set(EXPORT_BANNED_CATEGORY_IDS_KEY, JSON.stringify([...new Set(banned)]))
+    }
+    for (const [key, value] of hubWrites) {
+      await this.set(key, value)
+    }
+    const settings = await this.getTerroirExportSettings()
+    const criteriaChanged = banned !== undefined || input.minShelfLifeDays !== undefined || input.maxUnitWeightG !== undefined
+    if (criteriaChanged) {
+      for (const listener of this.terroirListeners) {
+        await listener(settings)
+      }
+    }
+    return settings
+  }
+
+  /**
+   * The collection mode and hub settings to write, every one checked first.
+   * A null clears the value. The coordinates go in pairs: a hub with a
+   * latitude and no longitude would send couriers nowhere.
+   */
+  private exportHubWrites(input: Partial<TerroirExportSettings>): Array<[string, string]> {
+    const writes: Array<[string, string]> = []
+    if (input.collectionMode !== undefined) {
+      if (input.collectionMode !== 'COURIER' && input.collectionMode !== 'EBIO') {
+        throw new BadRequestException('Le mode de collecte doit être COURIER ou EBIO')
+      }
+      writes.push([EXPORT_COLLECTION_MODE_KEY, input.collectionMode])
+    }
+    const texts: Array<[keyof typeof EXPORT_HUB_TEXT_MAX, string, string]> = [
+      ['hubName', EXPORT_HUB_NAME_KEY, 'Le nom du point de regroupement'],
+      ['hubAddress', EXPORT_HUB_ADDRESS_KEY, 'L’adresse du point de regroupement'],
+      ['hubPhone', EXPORT_HUB_PHONE_KEY, 'Le téléphone du point de regroupement'],
+      ['hubHours', EXPORT_HUB_HOURS_KEY, 'Les horaires du point de regroupement'],
+    ]
+    for (const [field, key, label] of texts) {
+      const value = input[field]
+      if (value === undefined) {
+        continue
+      }
+      const trimmed = value?.trim() ?? ''
+      if (trimmed.length > EXPORT_HUB_TEXT_MAX[field]) {
+        throw new BadRequestException(`${label} dépasse ${EXPORT_HUB_TEXT_MAX[field]} caractères`)
+      }
+      writes.push([key, trimmed])
+    }
+    if (input.hubPhone && !/^\+?[\d .-]{6,30}$/.test(input.hubPhone.trim())) {
+      throw new BadRequestException('Le téléphone du point de regroupement est invalide')
+    }
+    const { hubLatitude, hubLongitude } = input
+    if (hubLatitude !== undefined || hubLongitude !== undefined) {
+      const hasLatitude = hubLatitude != null
+      const hasLongitude = hubLongitude != null
+      if (hasLatitude !== hasLongitude) {
+        throw new BadRequestException('La latitude et la longitude du point de regroupement vont ensemble')
+      }
+      if (hubLatitude != null && (!Number.isFinite(hubLatitude) || Math.abs(hubLatitude) > 90)) {
+        throw new BadRequestException('La latitude du point de regroupement doit être comprise entre -90 et 90')
+      }
+      if (hubLongitude != null && (!Number.isFinite(hubLongitude) || Math.abs(hubLongitude) > 180)) {
+        throw new BadRequestException('La longitude du point de regroupement doit être comprise entre -180 et 180')
+      }
+      writes.push([EXPORT_HUB_LAT_KEY, hubLatitude == null ? '' : String(hubLatitude)])
+      writes.push([EXPORT_HUB_LNG_KEY, hubLongitude == null ? '' : String(hubLongitude)])
+    }
+    return writes
+  }
+
+  private async readBannedCategoryIds(): Promise<string[]> {
+    const raw = await this.get(EXPORT_BANNED_CATEGORY_IDS_KEY)
+    if (raw === null) {
+      return [...DEFAULT_TERROIR_EXPORT_SETTINGS.bannedCategoryIds]
+    }
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+    }
+    catch {
+      return []
+    }
   }
 
   /**

@@ -15,7 +15,7 @@ import { BannerRequest, BannerRequestStatus } from './banner-request.entity'
 import { Banner, BannerTargetType } from './banner.entity'
 
 /**
- * Paid banner slots. The shop pays when filing (wallet debit — a short
+ * Paid banner slots. The shop pays when filing (wallet debit, a short
  * balance is refused with the usual "Solde insuffisant" so the app offers a
  * top-up); eBio then approves, which publishes the banner for the paid
  * duration, or rejects, which refunds in full. Cancelling a pending request
@@ -80,7 +80,7 @@ export class BannerRequestsService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.BANNER_PAYMENT,
           amount: offer.price,
-          description: `Bannière sponsorisée ${offer.days} jours — « ${data.title} »`,
+          description: `Bannière sponsorisée ${offer.days} jours, « ${data.title} »`,
         })
       }
       catch (error) {
@@ -93,7 +93,7 @@ export class BannerRequestsService {
     await this.walletService.post(PlatformAccount.BANNERS, 'credit', {
       type: WalletTransactionType.PLATFORM_BANNER,
       amount: offer.price,
-      description: `Bannière ${offer.days} jours — ${supplier.shopName}`,
+      description: `Bannière ${offer.days} jours, ${supplier.shopName}`,
     })
     // The team is told at once: the slot is paid and expected within a day.
     void this.staffInbox.notifyNewBannerRequest({ shopName: supplier.shopName, title: data.title, durationDays: offer.days, price: offer.price })
@@ -151,7 +151,7 @@ export class BannerRequestsService {
     request.rejectionReason = data.reason
     request.reviewedBy = adminId
     request.reviewedAt = new Date()
-    await this.refund(request, `Bannière refusée — ${data.reason}`)
+    await this.refund(request, `Bannière refusée, ${data.reason}`)
     await this.em.flush()
     await this.notify(request, NotificationType.BANNER_REJECTED, 'Bannière refusée', `Votre demande « ${request.title} » a été refusée : ${data.reason}. Le montant a été remboursé sur votre portefeuille.`)
     return this.findOne(request.id)
@@ -166,7 +166,7 @@ export class BannerRequestsService {
     await this.walletService.post(PlatformAccount.BANNERS, 'debit', {
       type: WalletTransactionType.PLATFORM_BANNER,
       amount: request.price,
-      description: `Remboursement bannière — ${request.supplier.shopName}`,
+      description: `Remboursement bannière, ${request.supplier.shopName}`,
     })
     request.refundedAt = new Date()
   }

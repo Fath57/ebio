@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common'
 import { config } from '../../../config/env.config'
 
 /**
- * The path that goes into the signature — and, as it turns out, the real
+ * The path that goes into the signature, and, as it turns out, the real
  * route too.
  *
  * Their documentation gives `https://api.intram.org/v1` as the base URL and
@@ -60,7 +60,7 @@ export function sortedQueryString(query: Record<string, string | number | undefi
 
 /**
  * Verifies an incoming webhook: HMAC of `${timestamp}.${raw body}` with the
- * webhook secret — a different secret from the one signing our own calls.
+ * webhook secret, a different secret from the one signing our own calls.
  *
  * The body must be the bytes as received. Re-serialising the parsed JSON
  * changes key order and spacing, and the signature no longer matches.
@@ -101,7 +101,7 @@ const REQUEST_TIMEOUT_MS = 30_000
 /**
  * An INTRAM call that did not succeed, and whether its outcome is known.
  *
- * `uncertain` is true when INTRAM never gave a verdict — no answer in time, a
+ * `uncertain` is true when INTRAM never gave a verdict, no answer in time, a
  * dropped connection, a 5xx or a gateway page. The operation may then exist on
  * their side all the same: a payout must not be refunded on that basis, or the
  * money would leave twice. A 4xx with a code is a refusal: nothing was done.
@@ -123,7 +123,7 @@ export function isUncertainProviderError(error: unknown): boolean {
  *
  * Every call carries its own HMAC, so there is no session and nothing to keep
  * warm; what it does need is a clock within five minutes of theirs and, in
- * live mode, a server IP declared in their allowlist — an undeclared IP is
+ * live mode, a server IP declared in their allowlist, an undeclared IP is
  * refused with `ip_not_allowed` before the body is even read.
  */
 export class IntramClient {
@@ -135,7 +135,7 @@ export class IntramClient {
     private readonly baseUrl = config.payments.intram.apiUrl,
   ) {}
 
-  /** True once both keys are configured — the factory refuses to build without. */
+  /** True once both keys are configured, the factory refuses to build without. */
   isConfigured(): boolean {
     return this.apiKey !== '' && this.secretKey !== ''
   }

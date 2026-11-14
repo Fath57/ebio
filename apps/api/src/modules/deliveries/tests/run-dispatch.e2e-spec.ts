@@ -7,7 +7,7 @@ import { createUserData } from '../../../factories/user.factory'
  *
  * What is tested here is tested nowhere else: the raw queries. The
  * typecheck says nothing about a malformed `array_position` or a `LATERAL` the
- * server refuses to compile — they have to be executed.
+ * server refuses to compile, they have to be executed.
  *
  * Three questions, in the order they arise:
  *   1. does the run find couriers from its pickup point?
@@ -222,7 +222,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
     const isolees = await deliveries.getOffers(fixture.courierUserId)
     expect(isolees.map(row => row.id)).not.toContain(fixture.deliveryIds[0])
 
-    // The run itself, however, must show up — with its two pickups.
+    // The run itself, however, must show up, with its two pickups.
     const tournees = await deliveries.getRunOffers(fixture.courierUserId)
     const proposee = tournees.find(row => row.id === fixture.runId)
     expect(proposee).toBeDefined()
@@ -425,7 +425,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
       await remettre()
 
-      // The earning is the run's (720), not the sum of per-order fees —
+      // The earning is the run's (720), not the sum of per-order fees,
       // the orders of a unified cart carry none.
       const gains = await (em as EntityManager).getConnection().execute(
         `SELECT amount FROM wallet_transactions

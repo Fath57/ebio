@@ -24,7 +24,7 @@ export async function fetchFavorites(position?: { latitude: number, longitude: n
   return data.items ?? []
 }
 
-/** Which of these are kept — asked once for a whole page of cards. */
+/** Which of these are kept, asked once for a whole page of cards. */
 export async function fetchKeptIds(productIds: string[]): Promise<string[]> {
   if (productIds.length === 0) {
     return []

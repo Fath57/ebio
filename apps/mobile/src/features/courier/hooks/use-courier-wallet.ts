@@ -29,6 +29,10 @@ export interface CourierWalletTransaction {
   description: string
   orderId: string | null
   deliveryId: string | null
+  /** The course behind the movement: a buyer delivery or an eBio collection. */
+  deliveryPurpose?: 'STANDARD' | 'EXPORT_COLLECTION' | null
+  /** The shop the course started from. */
+  shopName?: string | null
   createdAt: string
 }
 
@@ -218,7 +222,7 @@ export function useCourierWallet() {
 
   /**
    * One server-side check of a top-up with the provider: credited, failed,
-   * or still in flight. No reload here — the caller may ask several times
+   * or still in flight. No reload here, the caller may ask several times
    * in a row before the operator answers, and reloads once it is over.
    */
   const checkTopup = useCallback(async (topupId: string, fedapayTransactionId: string): Promise<SettlementStatus> => {

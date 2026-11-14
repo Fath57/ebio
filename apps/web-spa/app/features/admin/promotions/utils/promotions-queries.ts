@@ -29,7 +29,7 @@ export interface CreateProductPromotionInput {
 
 /**
  * The generated SDK does not expose the admin promotion routes yet, so the
- * calls go through the shared client — same session cookies, same base URL.
+ * calls go through the shared client, same session cookies, same base URL.
  */
 export function productPromotionsQueryKey(productId: string) {
   return ['admin', 'products', productId, 'promotions'] as const

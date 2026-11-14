@@ -4,14 +4,14 @@ import type { DispatchBlock } from './deliveries.service'
 import type { CourierProfile } from './entities/courier-profile.entity'
 import type { CourierRating } from './entities/courier-rating.entity'
 import type { DeliveryEvent } from './entities/delivery-event.entity'
-import type { Delivery } from './entities/delivery.entity'
+import type { Delivery, ExportHubSnapshot } from './entities/delivery.entity'
 import { wrap } from '@mikro-orm/core'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { firstName } from '../gift/gift-texts'
-import { DeliveryStatus } from './entities/delivery.entity'
+import { DeliveryPurpose, DeliveryStatus } from './entities/delivery.entity'
 
-/** Who is looking at the delivery — shapes contacts and the confirmation code. */
-/** `recipient`: the relative a cart was sent to (009) — sees the delivery, never its amounts. */
+/** Who is looking at the delivery, shapes contacts and the confirmation code. */
+/** `recipient`: the relative a cart was sent to (009), sees the delivery, never its amounts. */
 export type DeliveryAudience = 'courier' | 'supplier' | 'buyer' | 'recipient' | 'admin'
 
 /** One order line of an offer, as aggregated by the offers query. */
@@ -25,6 +25,8 @@ export interface OfferItemRow {
 
 export interface OfferRow {
   id: string
+  purpose: string
+  export_hub: ExportHubSnapshot | null
   order_number: string
   pickup_address: string
   dropoff_address: string
@@ -57,7 +59,7 @@ export interface RunStopRow {
 
 /**
  * An offered run. Unlike `OfferRow`, nothing in it is per order: one earning,
- * one drop-off address, a sequence of pickups — exactly what the courier
+ * one drop-off address, a sequence of pickups, exactly what the courier
  * decides to accept or not.
  */
 export interface RunOfferRow {
@@ -120,6 +122,16 @@ function cashAmounts(paymentMethod: string, totalAmount: number, deliveryFee: nu
   }
   const total = Math.round(totalAmount)
   return { cashToCollect: total, cashToShop: Math.max(0, total - Math.round(deliveryFee)) }
+}
+
+/** The hub snapshot of a collection, never missing a name. */
+function hubOf(hub: ExportHubSnapshot | null): DeliveryResponse['exportHub'] {
+  return {
+    name: hub?.name ?? 'Point de regroupement eBio',
+    address: hub?.address ?? '',
+    phone: hub?.phone ?? null,
+    hours: hub?.hours ?? null,
+  }
 }
 
 /** The order's checkout when the cart goes to a relative; needs `order.checkout` populated. */
@@ -206,7 +218,7 @@ export class DeliveriesMapper {
   }
 
   /**
-   * A run offered to the courier. The earning is the whole run's — that is
+   * A run offered to the courier. The earning is the whole run's, that is
    * FR-019: we pay for a ride, not for a number of orders.
    */
   static toRunOffer(row: RunOfferRow) {
@@ -233,8 +245,11 @@ export class DeliveriesMapper {
   }
 
   static toOffer(row: OfferRow): DeliveryOffer {
+    const isCollection = row.purpose === DeliveryPurpose.EXPORT_COLLECTION
     return {
       id: row.id,
+      purpose: isCollection ? DeliveryPurpose.EXPORT_COLLECTION : DeliveryPurpose.STANDARD,
+      exportHub: isCollection ? hubOf(row.export_hub) : null,
       orderNumber: row.order_number,
       pickupAddress: row.pickup_address,
       dropoffAddress: row.dropoff_address,
@@ -277,19 +292,29 @@ export class DeliveriesMapper {
     run: DeliveryResponse['run'] = null,
   ): DeliveryResponse {
     const order = delivery.order
-    const showBuyerContact = audience === 'courier' || audience === 'admin'
-    const showCode = audience === 'buyer' || audience === 'admin'
+    const isCollection = delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+    const showBuyerContact = (audience === 'courier' || audience === 'admin') && !isCollection
+    // A collection's code is the hub's: it proves the hand-over, so only the
+    // back office reads it.
+    const showCode = audience === 'admin' || (audience === 'buyer' && !isCollection)
+    // The buyer abroad follows the parcel, not the courier crossing Cotonou.
+    const hideCourier = isCollection && (audience === 'buyer' || audience === 'recipient')
     // Live position: only while the courier is actually on the road, and never
     // echoed back to the courier themself.
     const inProgress = delivery.status === DeliveryStatus.ACCEPTED
       || delivery.status === DeliveryStatus.PICKED_UP
       || delivery.status === DeliveryStatus.IN_TRANSIT
-    const courier = delivery.courier
+    const courier = hideCourier ? null : delivery.courier
     const showPosition = inProgress && audience !== 'courier'
       && courier?.lastLatitude != null && courier?.lastLongitude != null
 
+    const dropoffLatitude = delivery.dropoffLatitude ?? order.deliveryLatitude
+    const dropoffLongitude = delivery.dropoffLongitude ?? order.deliveryLongitude
     const response: DeliveryResponse = {
       id: delivery.id,
+      purpose: isCollection ? DeliveryPurpose.EXPORT_COLLECTION : DeliveryPurpose.STANDARD,
+      exportHub: isCollection ? hubOf(delivery.exportHub ?? null) : null,
+      exportShipmentId: isCollection ? delivery.exportShipmentId ?? null : null,
       orderId: order.id,
       orderNumber: order.orderNumber,
       status: delivery.status,
@@ -314,7 +339,7 @@ export class DeliveriesMapper {
             ratingCount: courier.ratingCount ?? 0,
           }
         : null,
-      courierVehicleType: delivery.courier?.vehicleType ?? null,
+      courierVehicleType: courier?.vehicleType ?? null,
       courierPosition: showPosition && courier
         ? {
             latitude: courier.lastLatitude as number,
@@ -325,8 +350,8 @@ export class DeliveriesMapper {
       pickupPosition: delivery.pickupLatitude != null && delivery.pickupLongitude != null
         ? { latitude: delivery.pickupLatitude, longitude: delivery.pickupLongitude }
         : null,
-      dropoffPosition: delivery.order.deliveryLatitude != null && delivery.order.deliveryLongitude != null
-        ? { latitude: delivery.order.deliveryLatitude, longitude: delivery.order.deliveryLongitude }
+      dropoffPosition: dropoffLatitude != null && dropoffLongitude != null
+        ? { latitude: dropoffLatitude, longitude: dropoffLongitude }
         : null,
       confirmationCode: showCode ? delivery.confirmationCode ?? null : null,
       proofType: delivery.proofType ?? null,
@@ -365,7 +390,7 @@ export class DeliveriesMapper {
 
 /**
  * The relative's view of a delivery: enough to follow and rate the courier,
- * nothing of what the payer paid (FR-031) — amounts zeroed, events without
+ * nothing of what the payer paid (FR-031), amounts zeroed, events without
  * their payloads.
  */
 function withoutAmounts(response: DeliveryResponse): DeliveryResponse {

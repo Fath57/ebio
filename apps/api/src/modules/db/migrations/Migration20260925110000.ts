@@ -5,7 +5,7 @@ import { Migration } from '@mikro-orm/migrations'
  *
  * The constraint enumerates its values by hand and nobody thinks of it when
  * adding a type: the product-review invitation was refused on insert. Same
- * family as `payments_provider_check` the day before — an enum duplicated
+ * family as `payments_provider_check` the day before, an enum duplicated
  * between the code and the database always ends up diverging. The list here is
  * regenerated from the TypeScript enum.
  */

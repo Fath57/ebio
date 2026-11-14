@@ -63,7 +63,7 @@ function eventLabel(t: TFunction, event: DeliveryEvent, candidates: CourierCandi
       : null
     const name = fromPayload ?? fromCandidates
     if (name)
-      return `${label} — ${name}`
+      return `${label}, ${name}`
   }
   return label
 }
@@ -89,7 +89,7 @@ export function DeliveryTimeline({ events, candidates }: DeliveryTimelineProps) 
       </CardHeader>
       <CardContent>
         {visible.length === 0
-          ? <p className="text-sm text-muted-foreground">—</p>
+          ? <p className="text-sm text-muted-foreground">-</p>
           : (
               <div className="space-y-0">
                 {visible.map((event, index) => {

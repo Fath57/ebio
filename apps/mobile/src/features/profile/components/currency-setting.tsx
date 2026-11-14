@@ -14,7 +14,7 @@ const CURRENCY_OPTIONS: Array<{ value: DisplayCurrency, label: string }> = [
 
 /**
  * « Devise d'affichage » : the currency prices are shown in, FCFA beside
- * them. A currency without a rate from the server is not offered — it could
+ * them. A currency without a rate from the server is not offered, it could
  * not be shown anyway.
  */
 export function CurrencySetting() {

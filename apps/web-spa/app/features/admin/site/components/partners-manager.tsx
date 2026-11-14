@@ -17,7 +17,7 @@ import { Field } from './section-card'
  *
  * A partner is a name and a logo, nothing more: the banner says who eBio works
  * with, and a paragraph under each logo would turn a proof of trust into a
- * directory. The name is not decoration either — it is the alternative text a
+ * directory. The name is not decoration either, it is the alternative text a
  * screen reader announces, and what shows when the image fails to load.
  */
 export function PartnersManager({ partners }: { partners: LandingPartner[] }) {

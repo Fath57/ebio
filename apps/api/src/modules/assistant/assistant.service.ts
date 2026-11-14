@@ -125,7 +125,7 @@ export class AssistantService {
   /**
    * What a turn needs: the conversation, its tools, its history.
    *
-   * Shared by the one-shot turn and the streamed one — it is the same
+   * Shared by the one-shot turn and the streamed one, it is the same
    * exchange, only the way it is delivered differs.
    */
   private async prepareTurn(buyerId: string, sessionId: string | null, message: string) {
@@ -222,7 +222,7 @@ export class AssistantService {
       text = await this.repairIfUngrounded(session, messages, tools, text, recorded)
     }
     catch (error) {
-      this.logger.error(`Tour d'assistant échoué (session ${session.id}) — ${error}`)
+      this.logger.error(`Tour d'assistant échoué (session ${session.id}), ${error}`)
       throw new ServiceUnavailableException('L\'assistant est momentanément indisponible.')
     }
 
@@ -242,7 +242,7 @@ export class AssistantService {
    * The model sometimes announces a total it added up itself, or claims
    * delivery is included when nothing computed it. The prompt already forbids
    * both; a prompt guarantees nothing. So we put the breach in front of it and
-   * hand the floor back, once — with its tools, so it can go and fetch the
+   * hand the floor back, once, with its tools, so it can go and fetch the
    * figure rather than drop it.
    *
    * The offending turn does not stay in the history: the buyer never heard it,
@@ -261,7 +261,7 @@ export class AssistantService {
       return text
     }
 
-    this.logger.warn(`Réponse reprise (session ${session.id}) — ${breaches.map(b => b.what).join(' ; ')}`)
+    this.logger.warn(`Réponse reprise (session ${session.id}), ${breaches.map(b => b.what).join(' ; ')}`)
 
     const repaired = await this.ai.chat({
       messages: [
@@ -326,7 +326,7 @@ export class AssistantService {
    *
    * Streaming and verification pull against each other: reading an invented
    * amount aloud before it can be taken back is exactly what the guardrails
-   * exist to prevent. Hence the sentence as the unit — only a sentence that is
+   * exist to prevent. Hence the sentence as the unit, only a sentence that is
    * both finished *and* checked goes out. The wait drops from a whole turn to
    * one sentence, conceding nothing on grounding.
    *
@@ -375,8 +375,8 @@ export class AssistantService {
             }
 
             // Only amounts can be judged sentence by sentence: a figure
-            // spoken must come from a tool already called. The rest — "c'est
-            // noté", "livraison comprise" — depends on tools that may follow
+            // spoken must come from a tool already called. The rest, "c'est
+            // noté", "livraison comprise", depends on tools that may follow
             // the text in the stream, and is judged at the end.
             if (ungroundedAmounts(clean, recorded).some(amount => !known.includes(amount))) {
               breached = true
@@ -404,7 +404,7 @@ export class AssistantService {
         // turn finished on "D'accord. J".
         if (event.type === 'error') {
           const detail = (event as { error?: unknown }).error ?? event
-          this.logger.error(`Flux interrompu (session ${session.id}) — ${JSON.stringify(detail)}`)
+          this.logger.error(`Flux interrompu (session ${session.id}), ${JSON.stringify(detail)}`)
           refused = isProviderRefusal(detail)
           failed = true
           break
@@ -418,14 +418,14 @@ export class AssistantService {
           // unfinished sentence must not become the answer.
           const reason = (event as { finishReason?: string }).finishReason
           if (reason !== undefined && reason !== 'stop') {
-            this.logger.error(`Tour inachevé (session ${session.id}) — fin « ${reason} »`)
+            this.logger.error(`Tour inachevé (session ${session.id}), fin « ${reason} »`)
             failed = true
           }
         }
       }
     }
     catch (error) {
-      this.logger.error(`Tour diffusé échoué (session ${session.id}) — ${error}`)
+      this.logger.error(`Tour diffusé échoué (session ${session.id}), ${error}`)
       yield {
         type: 'error',
         message: isProviderRefusal(error) ? PROVIDER_REFUSED_MESSAGE : 'L\'assistant est momentanément indisponible.',
@@ -435,7 +435,7 @@ export class AssistantService {
 
     if (failed) {
       // Nothing is stored: half an answer is worth less than none, and the
-      // turn can simply be taken again — unless the provider shut the door
+      // turn can simply be taken again, unless the provider shut the door
       // on us, in which case asking again will never give anything.
       yield {
         type: 'error',
@@ -456,7 +456,7 @@ export class AssistantService {
     }
 
     // The turn is over: every tool has been called, so everything can be
-    // judged. The repair works on the whole text — including the offending
+    // judged. The repair works on the whole text, including the offending
     // sentence, which must not be thrown away or there would be nothing left
     // to correct.
     let reply = collected

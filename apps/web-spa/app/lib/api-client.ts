@@ -1,5 +1,5 @@
 /**
- * Legacy API client — prefer using the generated OpenAPI SDK from @boilerstone/openapi-generator
+ * Legacy API client, prefer using the generated OpenAPI SDK from @boilerstone/openapi-generator
  *
  * The generated client is configured in app/root.tsx via:
  *   import { client } from '@boilerstone/openapi-generator'

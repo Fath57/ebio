@@ -118,7 +118,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
   }, [options, cropAsset])
 
   /**
-   * Pick a real file — PDF or image — through the system file picker, for
+   * Pick a real file, PDF or image, through the system file picker, for
    * supporting documents that are rarely photos (scanned ID cards, RCCM…).
    */
   const pickDocumentAndUpload = useCallback(async (): Promise<UploadedMedia | null> => {
@@ -203,7 +203,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     try {
       // Step 0: read the file first. React Native replaces the Content-Type
       // header with the blob's own MIME type, so the blob is the only source
-      // of truth for what will actually be sent — and it gives the exact size.
+      // of truth for what will actually be sent, and it gives the exact size.
       const fileResponse = await fetch(fileUri)
       const blob = await fileResponse.blob()
       const uploadMimeType = blob.type || mimeType

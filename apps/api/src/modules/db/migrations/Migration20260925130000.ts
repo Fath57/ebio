@@ -3,8 +3,8 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * The announcements shown when the app opens.
  *
- * Three tables: the announcement, a shop's paid request — same circuit as the
- * banners — and what each buyer has already seen, which is what stops an
+ * Three tables: the announcement, a shop's paid request, same circuit as the
+ * banners, and what each buyer has already seen, which is what stops an
  * announcement coming back on every opening.
  */
 export class Migration20260925130000 extends Migration {

@@ -99,7 +99,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: 'ebio-mobile',
     // Pinned, not inferred. Expo defaults this list from what it finds
     // installed, and the result differed between this machine and the EAS
-    // worker ('web' on one side only) — which moved the fingerprint and made
+    // worker ('web' on one side only), which moved the fingerprint and made
     // the build refuse its own runtime version. There is no web target.
     platforms: ['android', 'ios'],
     version: '1.6.0',
@@ -111,14 +111,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Over-the-air updates. The channel is set per build profile in eas.json,
     // one per variant: an update is addressed by channel + runtimeVersion +
     // platform, never by Android package, and the three apps share this one
-    // project — a common channel would drop the client bundle onto the
+    // project, a common channel would drop the client bundle onto the
     // courier app.
     updates: {
       url: 'https://u.expo.dev/34d0f388-ffd9-48e9-aeb3-12460fa50a44',
       fallbackToCacheTimeout: 0,
     },
     // The fingerprint is computed from the native dependencies, so it moves on
-    // its own the day a native module is added — and an update built against
+    // its own the day a native module is added, and an update built against
     // that module is then never served to a binary that lacks it. `appVersion`
     // would have happily shipped JS calling expo-image-manipulator to a build
     // that does not contain it.
@@ -131,7 +131,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       backgroundColor: '#ffffff',
     },
     ios: {
-      // iPhone only: an iPad build must be reviewed — and screenshotted — on
+      // iPhone only: an iPad build must be reviewed, and screenshotted, on
       // iPad too, for layouts never designed for it.
       supportsTablet: false,
       bundleIdentifier: v.androidPackage,
@@ -175,8 +175,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // controls, so the media playback service is never started.
       blockedPermissions: [
         'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
-        // expo-contacts merges READ and WRITE. Only reading is used — to fill a
-        // relative's name and number from the picker — so writing never ships,
+        // expo-contacts merges READ and WRITE. Only reading is used, to fill a
+        // relative's name and number from the picker, so writing never ships,
         // and the supplier and courier apps, which never pick a relative,
         // ship neither.
         'android.permission.WRITE_CONTACTS',
@@ -190,7 +190,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               action: 'VIEW',
               autoVerify: true,
               // One entry per shared path. App Links are verified per host,
-              // but Android only hands over a URL whose path is declared —
+              // but Android only hands over a URL whose path is declared,
               // an undeclared /produit link silently opened the browser.
               data: [
                 {
@@ -255,7 +255,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           photosPermission: 'eBio accède à vos photos pour ajouter une image à votre profil, à vos produits ou à vos messages.',
           cameraPermission: 'eBio utilise l\'appareil photo pour photographier vos produits, votre profil ou un document à joindre.',
           // Same text as expo-audio's: whichever plugin runs last writes it.
-          // Never `false` — that strips RECORD_AUDIO on Android and kills
+          // Never `false`, that strips RECORD_AUDIO on Android and kills
           // voice notes.
           microphonePermission: MICROPHONE_PERMISSION,
         },

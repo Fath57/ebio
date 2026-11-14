@@ -4,7 +4,7 @@ import { Migration } from '@mikro-orm/migrations'
  * Trusted devices, for signing in with a fingerprint.
  *
  * The `users` table has carried `biometricEnabled` and `biometricKey` since
- * March without a single endpoint reading them — one secret per account, in
+ * March without a single endpoint reading them, one secret per account, in
  * clear. They are dropped here: a per-device table can be revoked one phone at
  * a time, and it stores a hash.
  */

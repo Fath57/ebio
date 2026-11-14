@@ -101,7 +101,7 @@ export class SuppliersService {
       supplier.mobileMoneyNumber = data.mobileMoneyNumber
     if (data.deliveryFee !== undefined)
       supplier.deliveryFee = data.deliveryFee
-    // Null is meaningful here — it clears the free-delivery threshold.
+    // Null is meaningful here, it clears the free-delivery threshold.
     if (data.freeDeliveryFrom !== undefined)
       supplier.freeDeliveryFrom = data.freeDeliveryFrom ?? undefined
     if (data.openingHours !== undefined)
@@ -135,7 +135,7 @@ export class SuppliersService {
     const radiusMeters = (radiusKm !== undefined && radiusKm > 0 ? radiusKm : DEFAULT_RADIUS_KM) * 1000
 
     // Map filter: keep only suppliers with at least one active product matching
-    // the product criteria (categories, max price, stock) — same semantics as
+    // the product criteria (categories, max price, stock), same semantics as
     // the product list. No criterion = no restriction.
     const slugs = (categorySlugs ?? []).filter(Boolean)
     const productConditions: string[] = []
@@ -246,7 +246,7 @@ export class SuppliersService {
    * Reads a shop's coordinates back.
    *
    * The `location` column is a PostGIS geography, which Postgres hands back as
-   * EWKB — an opaque hex string on the entity. `ST_Y`/`ST_X` turn it into usable
+   * EWKB, an opaque hex string on the entity. `ST_Y`/`ST_X` turn it into usable
    * numbers, the way the search queries already do.
    */
   async findCoordinates(supplierId: string): Promise<{ latitude: number, longitude: number } | null> {
@@ -389,7 +389,7 @@ export class SuppliersService {
     const supplier = await this.findById(supplierId)
     const zones = await this.em.find(DeliveryZone, { supplier: { id: supplierId } })
     // Without this, the editors can only overwrite the position with wherever
-    // the shopkeeper happens to stand — never review or correct what is stored.
+    // the shopkeeper happens to stand, never review or correct what is stored.
     const coordinates = await this.findCoordinates(supplierId)
     return {
       latitude: coordinates?.latitude ?? null,
@@ -421,8 +421,8 @@ export class SuppliersService {
   }
 
   /**
-   * Distance (km) from the buyer to this shop's nearest active place — its
-   * own address or one of its sales points — matching what the map pin says.
+   * Distance (km) from the buyer to this shop's nearest active place, its
+   * own address or one of its sales points, matching what the map pin says.
    */
   async distanceForBuyer(supplierId: string, latitude: number, longitude: number): Promise<number | null> {
     const rows = await this.em.getConnection().execute(

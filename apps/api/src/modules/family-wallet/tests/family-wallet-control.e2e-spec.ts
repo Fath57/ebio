@@ -72,7 +72,7 @@ async function statusNotifications(em: EntityManager, userId: string): Promise<s
  * closes the wallet and gets the balance back; eBio's suspensions stay
  * eBio's; an open wallet blocks the payer's account deletion.
  */
-describe('portefeuille famille — contrôle (e2e)', () => {
+describe('portefeuille famille, contrôle (e2e)', () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, UsersModule, FamilyWalletModule],

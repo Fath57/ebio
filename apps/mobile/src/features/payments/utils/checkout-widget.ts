@@ -4,7 +4,7 @@
  * Both FedaPay and INTRAM work the same way: a page loads their script, the
  * widget takes over, and the result comes back through
  * `window.ReactNativeWebView.postMessage`. What the widget says is never
- * trusted on its own — the server re-reads the transaction from the provider
+ * trusted on its own, the server re-reads the transaction from the provider
  * before a franc moves.
  *
  * Which one is live is a build-time choice, so a variant can be shipped on
@@ -16,7 +16,7 @@ export type PaymentProvider = 'fedapay' | 'intram'
 export const ACTIVE_PAYMENT_PROVIDER: PaymentProvider
   = (process.env.EXPO_PUBLIC_PAYMENT_PROVIDER as PaymentProvider | undefined) ?? 'intram'
 
-/** Public key of the live provider — the only key an app may ever hold. */
+/** Public key of the live provider, the only key an app may ever hold. */
 export function paymentPublicKey(): string | null {
   const key = ACTIVE_PAYMENT_PROVIDER === 'intram'
     ? process.env.EXPO_PUBLIC_INTRAM_PUBLIC_KEY
@@ -137,7 +137,7 @@ function fedapayPage(params: CheckoutWidgetParams): string {
  * INTRAM's widget, whose result shape their documentation does not describe.
  *
  * Their Flutter SDK answers `{success: true, transaction: "PJ2flG2YVc"}`, a
- * ten-character reference — the very format the Merchant API reads back. The
+ * ten-character reference, the very format the Merchant API reads back. The
  * page therefore accepts any of the plausible spellings rather than betting
  * on one, and forwards the raw answer as a `debug` message so the real shape
  * is visible on the first live run instead of being guessed at.

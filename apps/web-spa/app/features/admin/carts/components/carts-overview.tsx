@@ -34,7 +34,7 @@ function Figure({ label, value, hint }: { label: string, value: string, hint?: s
  * What the baskets say as a whole.
  *
  * Counts and totals, never a name. The question here is how many people stop
- * before paying and on what — who they are is a different question, asked
+ * before paying and on what, who they are is a different question, asked
  * elsewhere and under a different permission.
  */
 export function CartsOverview() {
@@ -53,7 +53,7 @@ export function CartsOverview() {
   }
 
   // A basket that draws a reminder and an order within the day. Not proof the
-  // reminder caused it — nothing here could prove that — but it is the figure
+  // reminder caused it, nothing here could prove that, but it is the figure
   // that says whether to keep sending them.
   const conversion = data.relancesEnvoyees === 0
     ? null

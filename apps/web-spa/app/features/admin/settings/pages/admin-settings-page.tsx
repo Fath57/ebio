@@ -22,7 +22,7 @@ import { useAdminSettings } from '../utils/use-admin-settings'
 /**
  * Section to show, from the most specific hint to the least: the section of
  * the anchored setting (`#tarification-livraison`), `?section=`, a former
- * `?tab=` link, then the default — as long as the viewer can see it.
+ * `?tab=` link, then the default, as long as the viewer can see it.
  */
 function resolveSection(
   hashSetting: SettingDefinition | undefined,
@@ -42,7 +42,7 @@ function resolveSection(
 /**
  * Platform settings, grouped by what they act on. The registry
  * (`utils/settings-registry.tsx`) holds every card; this page only picks
- * which ones to show — a section, or the matches of a search.
+ * which ones to show, a section, or the matches of a search.
  */
 export default function AdminSettingsPage() {
   const { t } = useTranslation()

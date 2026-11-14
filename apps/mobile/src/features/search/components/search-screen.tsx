@@ -82,7 +82,7 @@ interface SearchScreenProps {
    * A home section's criteria, when arriving through "Tout voir".
    *
    * Without them the listing showed something other than the rail it came
-   * from — a "moins de 1 000 F" section opened onto the whole catalogue.
+   * from, a "moins de 1 000 F" section opened onto the whole catalogue.
    */
   initialSupplierId?: string
   /**
@@ -100,7 +100,7 @@ interface SearchScreenProps {
   initialViewMode?: ViewMode
   /** Titre de l'en-tête (ex. « Près de vous »). Défaut : « Recherche ». */
   headerTitle?: string
-  /** Focus auto du champ — uniquement quand on vient de la barre de recherche. */
+  /** Focus auto du champ, uniquement quand on vient de la barre de recherche. */
   initialAutoFocus?: boolean
 }
 
@@ -146,7 +146,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   }, [loadCategories])
 
   /**
-   * One request for every path — typing, a chip, the filter panel — so that a
+   * One request for every path, typing, a chip, the filter panel, so that a
    * home section's criteria (shop, hand-picked products, sort…) survive the
    * buyer touching a filter. They used to be dropped by the filter panel.
    */
@@ -219,7 +219,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   /**
    * Each kind of suggestion goes where it names: a product opens its page, a
    * shop its profile, a category filters the list. A category used to be
-   * searched as text, which every word had to match in a product's name —
+   * searched as text, which every word had to match in a product's name,
    * « Fruits et légumes » found almost nothing.
    */
   function handleSelectSuggestion(suggestion: Suggestion) {
@@ -536,7 +536,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      {/* Back header — shown when used as a pushed results screen.
+      {/* Back header, shown when used as a pushed results screen.
           Les filtres vivent dans son rightSlot : action de niveau écran, comme
           « Tout marquer lu » sur les notifications. Les mêmes critères produit
           (distance, catégories, prix, stock) valent en liste comme sur la carte. */}
@@ -696,7 +696,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
 /**
  * Accès aux filtres, posé dans le `rightSlot` de l'en-tête d'écran. La pastille
- * signale qu'au moins un filtre est appliqué — sans quoi rien ne distingue une
+ * signale qu'au moins un filtre est appliqué, sans quoi rien ne distingue une
  * liste filtrée d'une liste complète.
  */
 function FilterButton({ onPress, isActive, color, isCompact = false }: {
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // clearText removed — now using Lucide X icon directly
+  // clearText removed, now using Lucide X icon directly
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[0],
     backgroundColor: colors.green[400],
   },
-  // filterIcon removed — now using Lucide SlidersHorizontal icon directly
+  // filterIcon removed, now using Lucide SlidersHorizontal icon directly
   filterText: {
     fontFamily: fonts.sansMd,
     fontSize: 13,
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[50],
   },
   catCircle: {
-    // Icon wrapper — no visible circle in chip mode
+    // Icon wrapper, no visible circle in chip mode
   },
   catCircleActive: {
     // Handled by catItemActive
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     minHeight: 44,
   },
-  // historyIcon and suggestionTypeIcon removed — now using Lucide icons directly
+  // historyIcon and suggestionTypeIcon removed, now using Lucide icons directly
   suggestionText: {
     flex: 1,
     ...typography.bodyS,

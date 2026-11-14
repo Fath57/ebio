@@ -167,7 +167,7 @@ function fetchAdminSettingsQueryOptions() {
   return {
     queryKey: ['admin', 'settings'],
     queryFn: async () => {
-      // No dedicated SDK function for GET /api/admin/settings — fallback to client
+      // No dedicated SDK function for GET /api/admin/settings, fallback to client
       const result = await client.get({ url: '/api/admin/settings' })
       return result.data as AdminSettingsData
     },

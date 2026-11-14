@@ -112,7 +112,7 @@ export class CampaignsService {
     const opens = new Map(rows.map(row => [row.campaign_id, Number(row.count)]))
 
     // Plain objects, not the entities: a property grafted onto an entity is
-    // dropped on serialisation and arrives undefined at the other end — the
+    // dropped on serialisation and arrives undefined at the other end, the
     // same trap the cart statistics fell into this morning.
     return campaigns.map(campaign => ({
       id: campaign.id,
@@ -138,7 +138,7 @@ export class CampaignsService {
    *
    * Idempotent: the same person tapping twice, or an app replaying the tap
    * that launched it, must not count twice. The conflict is swallowed rather
-   * than checked first — two taps at once would slip between the check and
+   * than checked first, two taps at once would slip between the check and
    * the write.
    */
   async recordOpen(campaignId: string, userId: string): Promise<void> {
@@ -254,7 +254,7 @@ export class CampaignsService {
         await this.send(campaign.id)
       }
       catch (error) {
-        this.logger.error(`Campagne « ${campaign.title} » non partie — ${error}`)
+        this.logger.error(`Campagne « ${campaign.title} » non partie, ${error}`)
       }
     }
   }
@@ -298,7 +298,7 @@ export class CampaignsService {
       {
         imageUrl: campaign.imageUrl,
         // A campaign replaces its own pending message rather than stacking in
-        // the tray — nobody wants the same offer three times.
+        // the tray, nobody wants the same offer three times.
         collapseKey: `campaign-${campaign.id}`,
       },
     )

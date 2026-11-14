@@ -40,7 +40,7 @@ export interface CompensationOptions {
  * at the provider. The eBio wallet is the only immediate answer, and the buyer
  * can withdraw from it through the existing mechanisms.
  *
- * Everything goes through here, whatever the path — shop refusal, admin
+ * Everything goes through here, whatever the path, shop refusal, admin
  * cancellation, expiry: a replay never credits twice.
  */
 @Injectable()
@@ -110,7 +110,7 @@ export class CompensationService {
     const withheld = options.withholdDeliveryFee ? Math.round(Math.max(0, order.deliveryFee ?? 0)) : 0
     const amount = Math.max(0, Math.round(order.totalAmount) - withheld)
     // A cart paid from a family wallet goes back there (the member's month
-    // with it), or to its payer once it is closed — never to the member.
+    // with it), or to its payer once it is closed, never to the member.
     const target = await refundTargetWallet(this.em, this.walletService, checkout, order.buyer.id)
 
     if (amount > 0) {
@@ -118,8 +118,8 @@ export class CompensationService {
         type: WalletTransactionType.REFUND,
         amount,
         description: withheld > 0
-          ? `Remboursement — commande ${order.orderNumber} : ${reason} (frais de livraison de ${withheld.toLocaleString('fr-FR')} FCFA retenus)`
-          : `Remboursement — commande ${order.orderNumber} : ${reason}`,
+          ? `Remboursement, commande ${order.orderNumber} : ${reason} (frais de livraison de ${withheld.toLocaleString('fr-FR')} FCFA retenus)`
+          : `Remboursement, commande ${order.orderNumber} : ${reason}`,
         orderId: order.id,
         paymentId: payment.id,
         familyMemberId: target.familyMemberId,
@@ -150,7 +150,7 @@ export class CompensationService {
       type: NotificationType.ORDER_REJECTED,
       title: 'Montant recrédité',
       body: amount + deliveryRefund > 0
-        ? `${(amount + deliveryRefund).toLocaleString('fr-FR')} FCFA ont été recrédités ${refundDestination(target)} — commande ${order.orderNumber} : ${reason}`
+        ? `${(amount + deliveryRefund).toLocaleString('fr-FR')} FCFA ont été recrédités ${refundDestination(target)}, commande ${order.orderNumber} : ${reason}`
         : `Votre commande ${order.orderNumber} n'a pas pu être honorée : ${reason}`,
       data: { orderId: order.id, amount: amount + deliveryRefund, reason },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
@@ -178,7 +178,7 @@ export class CompensationService {
       await this.walletService.credit(walletId, {
         type: WalletTransactionType.REFUND,
         amount: outcome.refund,
-        description: `Ajustement des frais de livraison — commande ${order.orderNumber}`,
+        description: `Ajustement des frais de livraison, commande ${order.orderNumber}`,
         orderId: order.id,
         // The run tells this adjustment apart from the order's refund. Without
         // it, an adjustment written first would look like the money had already

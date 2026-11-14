@@ -21,7 +21,7 @@ function formatAmount(value: number): string {
 }
 
 /**
- * Where each visibility issue is fixed — the shop's page for most of them.
+ * Where each visibility issue is fixed, the shop's page for most of them.
  * Null for eBio's own decisions, taken in the moderation panel just above.
  */
 const ISSUE_TARGET: Record<VisibilityIssue, 'shop' | 'studio' | null> = {
@@ -38,7 +38,7 @@ const ISSUE_TARGET: Record<VisibilityIssue, 'shop' | 'studio' | null> = {
 
 /**
  * A product as staff need it: what buyers see, how it sells, who bought it
- * lately, what they thought — and, first of all, whether a buyer can find
+ * lately, what they thought, and, first of all, whether a buyer can find
  * and order it at all, with every reason why not.
  */
 export default function AdminProductDetailPage() {
@@ -46,7 +46,7 @@ export default function AdminProductDetailPage() {
   const { productId } = useParams()
   const { data, isLoading, isError, refetch } = useQuery(fetchAdminProductDetailQueryOptions(productId!))
   const [photoIndex, setPhotoIndex] = useState(0)
-  const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString(i18n.language) : '—')
+  const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString(i18n.language) : '-')
 
   if (isLoading) {
     return (
@@ -254,7 +254,7 @@ export default function AdminProductDetailPage() {
                       <li key={review.id} className={cn('rounded-lg border p-3 text-sm', review.isHidden && 'opacity-60')}>
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-medium">{`${review.rating}/5`}</span>
-                          <span className="text-muted-foreground">{review.buyerName ?? '—'}</span>
+                          <span className="text-muted-foreground">{review.buyerName ?? '-'}</span>
                           <span className="text-muted-foreground ml-auto text-xs">{formatDate(review.createdAt)}</span>
                         </div>
                         {review.comment && <p className="mt-1">{review.comment}</p>}
@@ -279,7 +279,7 @@ export default function AdminProductDetailPage() {
                       <Link to={`/admin/commandes/${order.id}`} className="hover:bg-muted/50 flex flex-wrap items-center gap-3 p-3 text-sm">
                         <span className="font-mono font-medium">{order.orderNumber}</span>
                         <span className="text-muted-foreground">{formatDate(order.createdAt)}</span>
-                        <span className="flex-1 truncate">{order.buyerName ?? '—'}</span>
+                        <span className="flex-1 truncate">{order.buyerName ?? '-'}</span>
                         <span className="text-muted-foreground">{`${order.quantity} × ${order.variantLabel ?? t('admin.products.detail.unit')}`}</span>
                         <StatusBadge tone={ORDER_STATUS_TONES[order.status] ?? 'idle'}>
                           {t(`admin.orders.status.${order.status}`, { defaultValue: order.status })}
@@ -300,7 +300,7 @@ function Info({ label, value }: { label: string, value: ReactNode | null }) {
   return (
     <div className="flex justify-between gap-4 border-b py-2 text-sm last:border-0">
       <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className="text-right">{value ?? '—'}</span>
+      <span className="text-right">{value ?? '-'}</span>
     </div>
   )
 }

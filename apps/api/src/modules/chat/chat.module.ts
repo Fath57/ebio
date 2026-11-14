@@ -19,6 +19,6 @@ export class ChatModule {
   private readonly logger = new Logger(ChatModule.name)
 
   onModuleInit(): void {
-    this.logger.log('ChatModule initialized (Redis adapter disabled — single instance mode)')
+    this.logger.log('ChatModule initialized (Redis adapter disabled, single instance mode)')
   }
 }

@@ -18,7 +18,7 @@ interface AssistantSpeakingProps {
  *
  * The spec refused "the animated sphere and the decorative sound wave", and it
  * was right in principle: anything that moves without saying something pulls
- * attention away from the cart and the total. This one says something — it
+ * attention away from the cart and the total. This one says something, it
  * exists only while sound is coming out, and vanishes the second it stops. It
  * is the visual equivalent of seeing someone's lips move: you know to listen,
  * and you know when it is over.

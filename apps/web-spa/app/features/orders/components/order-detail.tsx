@@ -174,7 +174,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
       {/* ===== Two column grid: left = items, right = sidebar ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
 
-        {/* Left column — items (2/3 width) */}
+        {/* Left column, items (2/3 width) */}
         <div className="space-y-6 lg:col-span-2">
 
           {/* Items list */}
@@ -276,7 +276,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
           </Can>
         </div>
 
-        {/* Right column — sidebar (1/3 width) */}
+        {/* Right column, sidebar (1/3 width) */}
         <div className="space-y-6">
 
           {/* Buyer info */}

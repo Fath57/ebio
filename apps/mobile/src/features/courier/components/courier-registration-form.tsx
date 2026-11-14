@@ -23,7 +23,7 @@ interface CourierRegistrationFormProps {
 
 const VEHICLES = Object.keys(VEHICLE_LABELS) as VehicleType[]
 
-/** Courier application form — creation and resubmission share it. */
+/** Courier application form, creation and resubmission share it. */
 export function CourierRegistrationForm({ existing, onSubmitted, onBack: _onBack }: CourierRegistrationFormProps) {
   const { semantic } = useTheme()
   const [fullName, setFullName] = useState(existing?.fullName ?? '')
@@ -157,7 +157,7 @@ export function CourierRegistrationForm({ existing, onSubmitted, onBack: _onBack
           <MapPin size={18} color={zone ? colors.green[600] : semantic.textTertiary} strokeWidth={2} />
           <Text style={[styles.zoneText, { color: zone ? semantic.textPrimary : semantic.textTertiary }]} numberOfLines={1}>
             {zone
-              ? `${zone.label} — rayon ${zone.radiusKm} km`
+              ? `${zone.label}, rayon ${zone.radiusKm} km`
               : zoneLegacyLabel || 'Choisir sur la carte'}
           </Text>
           <Text style={[styles.zoneAction, { color: semantic.textPrimaryColor }]}>

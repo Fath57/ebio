@@ -50,7 +50,7 @@ export class ExchangeRatesService {
   }
 
   /**
-   * The conversion a checkout keeps. Null for XOF — and for a currency whose
+   * The conversion a checkout keeps. Null for XOF, and for a currency whose
    * rate was never obtained: the checkout then simply stays in FCFA.
    */
   async freeze(totalXof: number, currency: DisplayCurrency): Promise<FrozenConversion | null> {

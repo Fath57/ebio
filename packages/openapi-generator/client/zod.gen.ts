@@ -512,7 +512,7 @@ export const zDeliveryTransition = z.object({
 export const zCompleteDelivery = z.union([
   z.object({
     proofType: z.literal("CODE"),
-    code: z.string().regex(/^\d{4}$/),
+    code: z.string().regex(/^\d{4}(?:\d{2})?$/),
     occurredAt: z.optional(
       z.iso
         .datetime()
@@ -753,7 +753,7 @@ export const zCreateCertification = z.object({
 /**
  * UpdateCertification
  *
- * Update a label or certification — every field optional, the code is immutable
+ * Update a label or certification, every field optional, the code is immutable
  */
 export const zUpdateCertification = z.object({
   name: z.optional(z.string().min(1).max(100)),
@@ -830,7 +830,7 @@ export const zCreateProductUnit = z.object({
 /**
  * UpdateProductUnit
  *
- * Update a unit of sale — every field optional, the code is immutable
+ * Update a unit of sale, every field optional, the code is immutable
  */
 export const zUpdateProductUnit = z.object({
   label: z.optional(z.string().min(1).max(64)),
@@ -1732,6 +1732,155 @@ export const zSendSalesStatement = z.object({
 });
 
 /**
+ * ExportAgencyInput
+ *
+ * Agence partenaire : nom, contact, notes
+ */
+export const zExportAgencyInput = z.object({
+  name: z.string().min(2).max(120),
+  contactName: z.optional(z.union([z.string().max(120), z.null()])),
+  contactPhone: z.optional(z.union([z.string().max(30), z.null()])),
+  contactEmail: z.optional(
+    z.union([
+      z
+        .email()
+        .max(200)
+        .regex(
+          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  notes: z.optional(z.union([z.string().max(2000), z.null()])),
+  active: z.optional(z.boolean()),
+});
+
+/**
+ * UpdateExportAgency
+ *
+ * Champs d'une agence partenaire à modifier
+ */
+export const zUpdateExportAgency = z.object({
+  name: z.optional(z.string().min(2).max(120)),
+  contactName: z.optional(z.union([z.string().max(120), z.null()])),
+  contactPhone: z.optional(z.union([z.string().max(30), z.null()])),
+  contactEmail: z.optional(
+    z.union([
+      z
+        .email()
+        .max(200)
+        .regex(
+          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  notes: z.optional(z.union([z.string().max(2000), z.null()])),
+  active: z.optional(z.boolean()),
+});
+
+/**
+ * CancelExportDeparture
+ *
+ * Annulation d'un départ, avec réaffectation facultative des colis
+ */
+export const zCancelExportDeparture = z.object({
+  reassignTo: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+});
+
+/**
+ * CollectExportShipment
+ *
+ * Collecte des produits d'une boutique pour un colis
+ */
+export const zCollectExportShipment = z.object({
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * MissingExportItem
+ *
+ * Produit manquant à la collecte : retiré du colis et remboursé
+ */
+export const zMissingExportItem = z.object({
+  orderItemId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * WeighExportShipment
+ *
+ * Poids réel du colis, en grammes
+ */
+export const zWeighExportShipment = z.object({
+  actualWeightG: z.int().gt(0).lte(200000),
+});
+
+/**
+ * ExportShipmentEventInput
+ *
+ * Étape et / ou message libre sur un colis
+ */
+export const zExportShipmentEventInput = z.object({
+  step: z.optional(
+    z.union([
+      z.enum([
+        "PENDING_PAYMENT",
+        "PAID",
+        "COLLECTING",
+        "PACKED",
+        "DROPPED_AT_AGENCY",
+        "DEPARTED",
+        "ARRIVED",
+        "READY_FOR_PICKUP",
+        "OUT_FOR_DELIVERY",
+        "HANDED_OVER",
+        "LOST",
+        "DAMAGED",
+        "CANCELLED",
+      ]),
+      z.null(),
+    ]),
+  ),
+  message: z.optional(z.union([z.string().min(1).max(1000), z.null()])),
+  pickupPoint: z.optional(z.union([z.string().min(1).max(500), z.null()])),
+});
+
+/**
+ * LostExportShipment
+ *
+ * Colis perdu (false) ou abîmé (true) : remboursé sans retour
+ */
+export const zLostExportShipment = z.object({
+  damaged: z.boolean(),
+});
+
+/**
+ * ExportWithdraw
+ *
+ * Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique
+ */
+export const zExportWithdraw = z.object({
+  reason: z.string().min(3).max(500),
+});
+
+/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
@@ -2506,6 +2655,50 @@ export const zDeliveryPricingConfig = z.object({
 });
 
 /**
+ * ExportCollectionMode
+ *
+ * COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte
+ */
+export const zExportCollectionMode = z.enum(["COURIER", "EBIO"]);
+
+/**
+ * UpdateTerroirExportSetting
+ *
+ * Réglages de la Valise du pays à modifier
+ */
+export const zUpdateTerroirExportSetting = z.object({
+  enabled: z.optional(z.boolean()),
+  packagingWeightG: z.optional(z.int().gte(0).lte(5000)),
+  collectionDays: z.optional(z.int().gte(0).lte(30)),
+  weightTolerancePct: z.optional(z.int().gte(0).lte(100)),
+  insuranceRateBps: z.optional(z.int().gte(0).lte(5000)),
+  insuranceMin: z.optional(z.int().gte(0).lte(1000000)),
+  bannedCategoryIds: z.optional(
+    z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .max(200),
+  ),
+  pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
+  minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
+  maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
+  collectionMode: z.optional(zExportCollectionMode),
+  hubName: z.optional(z.union([z.string().max(120), z.null()])),
+  hubAddress: z.optional(z.union([z.string().max(255), z.null()])),
+  hubLatitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  hubLongitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+  hubPhone: z.optional(
+    z.union([z.string().regex(/^\+?[\d .-]{6,30}$/), z.null()]),
+  ),
+  hubHours: z.optional(z.union([z.string().max(200), z.null()])),
+});
+
+/**
  * DisplayCurrency
  *
  * Devise d'affichage des prix ; le paiement reste en FCFA
@@ -2557,7 +2750,7 @@ export const zCreateSalesPoint = z.object({
 /**
  * UpdateSalesPoint
  *
- * Update a sales point — every field optional
+ * Update a sales point, every field optional
  */
 export const zUpdateSalesPoint = z.object({
   name: z.optional(z.string().min(2).max(100)),
@@ -2634,7 +2827,7 @@ export const zRegisterSupplier = z.object({
 /**
  * UpdateSupplier
  *
- * Update supplier profile — all fields optional
+ * Update supplier profile, all fields optional
  */
 export const zUpdateSupplier = z.object({
   shopName: z.optional(z.string().min(2).max(100)),
@@ -2911,7 +3104,7 @@ export const zCreateProduct = z.object({
 /**
  * UpdateProduct
  *
- * Update product — all fields optional
+ * Update product, all fields optional
  */
 export const zUpdateProduct = z.object({
   name: z.optional(z.string().min(2).max(200)),
@@ -3053,7 +3246,7 @@ export const zCreatePromoCode = z.object({
 /**
  * UpdatePromoCode
  *
- * Editable fields — the code itself is immutable once created
+ * Editable fields, the code itself is immutable once created
  */
 export const zUpdatePromoCode = z.object({
   type: z.optional(zPromoType),
@@ -3111,7 +3304,7 @@ export const zOrderItemInput = z.object({
  *
  * How the buyer will receive the order
  */
-export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
+export const zPickupMode = z.enum(["ON_SITE", "DELIVERY", "EXPORT"]);
 
 /**
  * PreviewOrder
@@ -3450,7 +3643,7 @@ export const zCreateBanner = z.object({
 /**
  * UpdateBanner
  *
- * Update a banner — every field optional
+ * Update a banner, every field optional
  */
 export const zUpdateBanner = z.object({
   title: z.optional(z.string().min(1).max(255)),
@@ -3879,6 +4072,497 @@ export const zContactMessage = z.object({
   message: z.string().min(10).max(3000),
   company: z.optional(z.string().max(0)),
   startedAt: z.int().gt(0).lte(9007199254740991),
+});
+
+/**
+ * ExportCountryCode
+ *
+ * Code ISO à deux lettres du pays de destination d'une valise
+ */
+export const zExportCountryCode = z.string().regex(/^[A-Z]{2}$/);
+
+/**
+ * ExportPickupPointInput
+ *
+ * Point de retrait d'une agence : pays, ville, adresse, horaires
+ */
+export const zExportPickupPointInput = z.object({
+  country: zExportCountryCode,
+  city: z.string().min(2).max(80),
+  address: z.string().min(5).max(500),
+  openingHours: z.optional(z.union([z.string().max(300), z.null()])),
+  active: z.optional(z.boolean()),
+});
+
+/**
+ * UpdateExportPickupPoint
+ *
+ * Champs d'un point de retrait à modifier
+ */
+export const zUpdateExportPickupPoint = z.object({
+  country: z.optional(zExportCountryCode),
+  city: z.optional(z.string().min(2).max(80)),
+  address: z.optional(z.string().min(5).max(500)),
+  openingHours: z.optional(z.union([z.string().max(300), z.null()])),
+  active: z.optional(z.boolean()),
+});
+
+/**
+ * TerroirDepartureAlertInput
+ *
+ * « Me prévenir du prochain départ » vers un pays
+ */
+export const zTerroirDepartureAlertInput = z.object({
+  country: zExportCountryCode,
+});
+
+/**
+ * ForeignCurrency
+ *
+ * Devise étrangère disposant d'un taux de change vers le FCFA
+ */
+export const zForeignCurrency = z.enum(["EUR", "USD", "CAD"]);
+
+/**
+ * ExportCountryInput
+ *
+ * Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage
+ */
+export const zExportCountryInput = z.object({
+  code: zExportCountryCode,
+  name: z.string().min(2).max(80),
+  toPhrase: z.string().min(3).max(120),
+  inPhrase: z.string().min(3).max(120),
+  displayCurrency: zForeignCurrency,
+  flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+  sortOrder: z.optional(z.int().gte(0).lte(10000)),
+  isActive: z.optional(z.boolean()),
+});
+
+/**
+ * UpdateExportCountry
+ *
+ * Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises
+ */
+export const zUpdateExportCountry = z.object({
+  name: z.optional(z.string().min(2).max(80)),
+  toPhrase: z.optional(z.string().min(3).max(120)),
+  inPhrase: z.optional(z.string().min(3).max(120)),
+  displayCurrency: z.optional(zForeignCurrency),
+  flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+  sortOrder: z.optional(z.int().gte(0).lte(10000)),
+  isActive: z.optional(z.boolean()),
+});
+
+/**
+ * ExportDeparturesQuery
+ *
+ * Filtre de la liste des départs
+ */
+export const zExportDeparturesQuery = z.object({
+  status: z.optional(z.enum(["OPEN", "FULL", "CANCELLED", "DEPARTED"])),
+});
+
+/**
+ * ExportDepartureRateInput
+ *
+ * Tarif d'un départ pour un pays
+ */
+export const zExportDepartureRateInput = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  pricePerKg: z.number().gt(0).lte(10000000),
+  minBilledKg: z.number().gte(0).lte(1000),
+  maxWeightKg: z.optional(z.union([z.number().gt(0).lte(1000), z.null()])),
+  homeDeliveryFee: z.optional(
+    z.union([z.number().gte(0).lte(10000000), z.null()]),
+  ),
+});
+
+/**
+ * CreateExportDeparture
+ *
+ * Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays
+ */
+export const zCreateExportDeparture = z.object({
+  agencyId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  departsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  depositDeadline: z.iso
+    .datetime()
+    .regex(
+      /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+    ),
+  transitMinDays: z.int().gte(0).lte(120),
+  transitMaxDays: z.int().gte(0).lte(120),
+  capacityKg: z.optional(z.union([z.number().gt(0).lte(100000), z.null()])),
+  rates: z.array(zExportDepartureRateInput).min(1).max(2),
+});
+
+/**
+ * UpdateExportDeparture
+ *
+ * Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents
+ */
+export const zUpdateExportDeparture = z.object({
+  agencyId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  departsOn: z.optional(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  depositDeadline: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+  ),
+  transitMinDays: z.optional(z.int().gte(0).lte(120)),
+  transitMaxDays: z.optional(z.int().gte(0).lte(120)),
+  capacityKg: z.optional(z.union([z.number().gt(0).lte(100000), z.null()])),
+  rates: z.optional(z.array(zExportDepartureRateInput).min(1).max(2)),
+  status: z.optional(z.enum(["OPEN", "FULL", "DEPARTED"])),
+});
+
+/**
+ * ExportShipmentStatus
+ *
+ * Étape d'une valise
+ */
+export const zExportShipmentStatus = z.enum([
+  "PENDING_PAYMENT",
+  "PAID",
+  "COLLECTING",
+  "PACKED",
+  "DROPPED_AT_AGENCY",
+  "DEPARTED",
+  "ARRIVED",
+  "READY_FOR_PICKUP",
+  "OUT_FOR_DELIVERY",
+  "HANDED_OVER",
+  "LOST",
+  "DAMAGED",
+  "CANCELLED",
+]);
+
+/**
+ * ExportDepartureEventInput
+ *
+ * Étape appliquée à tous les colis d'un départ
+ */
+export const zExportDepartureEventInput = z.object({
+  step: zExportShipmentStatus,
+  message: z.optional(z.union([z.string().min(1).max(1000), z.null()])),
+});
+
+/**
+ * AdminExportProductsQuery
+ *
+ * Filtre des produits proposés à l'export : statut, recherche, page
+ */
+export const zAdminExportProductsQuery = z.object({
+  status: z.optional(z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN"])),
+  search: z.optional(z.string().max(120)),
+  page: z.int().gte(1).lte(9007199254740991).default(1),
+});
+
+/**
+ * AdminExportPacksQuery
+ *
+ * Filtre des packs du pays : ceux d'eBio ou tous, par statut
+ */
+export const zAdminExportPacksQuery = z.object({
+  scope: z.enum(["ebio", "all"]),
+  status: z.optional(
+    z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN", "RETIRED"]),
+  ),
+});
+
+/**
+ * ExportPackItemInput
+ *
+ * Produit d'un pack et sa quantité
+ */
+export const zExportPackItemInput = z.object({
+  productId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  variantId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  quantity: z.int().gt(0).lte(100),
+});
+
+/**
+ * ExportPackInput
+ *
+ * Pack du pays : nom, description, photos, prix, produits
+ */
+export const zExportPackInput = z.object({
+  name: z.string().min(2).max(120),
+  description: z.optional(z.union([z.string().max(2000), z.null()])),
+  photos: z.array(z.url()).max(6).default([]),
+  price: z.number().gt(0).lte(10000000),
+  items: z.array(zExportPackItemInput).min(1).max(20),
+});
+
+/**
+ * UpdateExportPack
+ *
+ * Champs d'un pack à modifier ; les produits envoyés remplacent les précédents
+ */
+export const zUpdateExportPack = z.object({
+  name: z.optional(z.string().min(2).max(120)),
+  description: z.optional(z.union([z.string().max(2000), z.null()])),
+  photos: z.optional(z.array(z.url()).max(6)).default([]),
+  price: z.optional(z.number().gt(0).lte(10000000)),
+  items: z.optional(z.array(zExportPackItemInput).min(1).max(20)),
+});
+
+/**
+ * ExportOrigin
+ *
+ * Origine du produit : producteur, lieu, année, mode de fabrication, photos
+ */
+export const zExportOrigin = z
+  .object({
+    producer: z.optional(z.union([z.string().max(120), z.null()])),
+    place: z.optional(z.union([z.string().max(120), z.null()])),
+    year: z.optional(z.union([z.int().gte(1900).lte(2100), z.null()])),
+    method: z.optional(z.union([z.string().max(300), z.null()])),
+    photos: z.array(z.url()).max(3).default([]),
+  })
+  .default({ photos: [] });
+
+/**
+ * ExportProfileInput
+ *
+ * Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique
+ */
+export const zExportProfileInput = z.object({
+  packedWeightG: z.optional(z.union([z.int().gt(0).lte(50000), z.null()])),
+  lengthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+  widthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+  heightCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+  shelfLifeDays: z.optional(z.union([z.int().gt(0).lte(3650), z.null()])),
+  storage: z.optional(
+    z.union([z.enum(["AMBIENT", "COOL", "FROZEN"]), z.null()]),
+  ),
+  allergens: z.optional(z.union([z.string().max(500), z.null()])),
+  noAllergens: z.boolean().default(false),
+  origin: zExportOrigin,
+  labelPhoto: z.optional(z.union([z.url(), z.null()])),
+  declaresFrenchLabel: z.boolean().default(false),
+  declaresDatesPrinted: z.boolean().default(false),
+  declaresSealedPackaging: z.boolean().default(false),
+});
+
+/**
+ * TerroirCountriesQuery
+ *
+ * Pays proposés : ceux qui ont un départ ouvert, ou tous les pays actifs
+ */
+export const zTerroirCountriesQuery = z.object({
+  all: z.enum(["true", "false"]),
+});
+
+/**
+ * TerroirCatalogQuery
+ *
+ * Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d'affichage
+ */
+export const zTerroirCatalogQuery = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  category: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  search: z.optional(z.string().max(100)),
+  page: z.int().gte(1).lte(500).default(1),
+  currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+});
+
+/**
+ * TerroirExportabilityQuery
+ *
+ * Pays de destination et produits dont on veut savoir s'ils peuvent partir
+ */
+export const zTerroirExportabilityQuery = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  productIds: z
+    .string()
+    .regex(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$/,
+    ),
+});
+
+/**
+ * TerroirDisplayQuery
+ *
+ * Devise d'affichage des prix
+ */
+export const zTerroirDisplayQuery = z.object({
+  currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+});
+
+/**
+ * TerroirDeparturesQuery
+ *
+ * Départs proposables vers un pays, pour un poids de colis
+ */
+export const zTerroirDeparturesQuery = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  weightG: z.int().gte(0).lte(1000000).default(0),
+  currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+});
+
+/**
+ * TerroirCartLine
+ *
+ * Ligne du valise : un produit (et sa variante) ou un pack
+ */
+export const zTerroirCartLine = z.object({
+  productId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  variantId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  packId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  quantity: z.int().gt(0).lte(50),
+});
+
+/**
+ * ExportReception
+ *
+ * Réception du colis : retrait en agence ou livraison à domicile
+ */
+export const zExportReception = z.enum(["PICKUP", "HOME"]);
+
+/**
+ * TerroirPaymentMethod
+ *
+ * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
+ */
+export const zTerroirPaymentMethod = z.enum(["FEDAPAY", "WALLET"]);
+
+/**
+ * TerroirCheckoutInput
+ *
+ * Valise : pays, lignes, départ, réception, assurance, cadeau, paiement
+ */
+export const zTerroirCheckoutInput = z.object({
+  country: zExportCountryCode,
+  lines: z.array(zTerroirCartLine).min(1).max(40),
+  departureId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  reception: zExportReception,
+  pickupPointId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  homeAddress: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  insured: z.boolean().default(false),
+  gift: z.optional(
+    z.union([
+      z.object({
+        name: z.string().min(2).max(120),
+        email: z.optional(
+          z.union([
+            z
+              .email()
+              .max(200)
+              .regex(
+                /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+              ),
+            z.null(),
+          ]),
+        ),
+        phone: z.optional(
+          z.union([z.string().regex(/^\+\d{8,15}$/), z.null()]),
+        ),
+        message: z.optional(z.union([z.string().max(300), z.null()])),
+      }),
+      z.null(),
+    ]),
+  ),
+  paymentMethod: zTerroirPaymentMethod,
+  displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+});
+
+/**
+ * TerroirSupplementChoice
+ *
+ * Réponse au complément de poids : payer, ou retirer un produit (remboursé)
+ */
+export const zTerroirSupplementChoice = z.enum(["PAY", "REMOVE_ITEM"]);
+
+/**
+ * TerroirSupplementInput
+ *
+ * Choix du client face au complément de poids
+ */
+export const zTerroirSupplementInput = z.object({
+  choice: zTerroirSupplementChoice,
+  lineId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  paymentMethod: zTerroirPaymentMethod,
 });
 
 export const zCommentsControllerGetCommentsFilterItem = z.object({
@@ -5292,6 +5976,50 @@ export const zAdminFamilyWalletSettingControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminTerroirExportSettingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminTerroirExportSettingControllerUpdateData = z.object({
+  body: z.object({
+    enabled: z.optional(z.boolean()),
+    packagingWeightG: z.optional(z.int().gte(0).lte(5000)),
+    collectionDays: z.optional(z.int().gte(0).lte(30)),
+    weightTolerancePct: z.optional(z.int().gte(0).lte(100)),
+    insuranceRateBps: z.optional(z.int().gte(0).lte(5000)),
+    insuranceMin: z.optional(z.int().gte(0).lte(1000000)),
+    bannedCategoryIds: z.optional(
+      z
+        .array(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        )
+        .max(200),
+    ),
+    pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
+    minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
+    maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
+    collectionMode: z.optional(z.enum(["COURIER", "EBIO"])),
+    hubName: z.optional(z.union([z.string().max(120), z.null()])),
+    hubAddress: z.optional(z.union([z.string().max(255), z.null()])),
+    hubLatitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+    hubLongitude: z.optional(
+      z.union([z.number().gte(-180).lte(180), z.null()]),
+    ),
+    hubPhone: z.optional(
+      z.union([z.string().regex(/^\+?[\d .-]{6,30}$/), z.null()]),
+    ),
+    hubHours: z.optional(z.union([z.string().max(200), z.null()])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -6407,7 +7135,7 @@ export const zOrdersControllerPreviewCheckoutData = z.object({
         }),
       )
       .min(1),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY", "EXPORT"]),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     promoCode: z.optional(z.string().max(50)),
@@ -6452,7 +7180,7 @@ export const zOrdersControllerCreateCheckoutData = z.object({
         }),
       )
       .min(1),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY", "EXPORT"]),
     deliveryAddress: z.optional(z.string().min(10).max(500)),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
@@ -6523,7 +7251,7 @@ export const zOrdersControllerCreateData = z.object({
       .regex(
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY", "EXPORT"]),
     paymentMethod: z.enum([
       "FEDAPAY",
       "CASH_ON_DELIVERY",
@@ -6580,7 +7308,7 @@ export const zOrdersControllerPreviewData = z.object({
       .regex(
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY", "EXPORT"]),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     promoCode: z.optional(z.string().min(1).max(30)),
@@ -7500,7 +8228,7 @@ export const zDeliveriesControllerCompleteData = z.object({
   body: z.union([
     z.object({
       proofType: z.literal("CODE"),
-      code: z.string().regex(/^\d{4}$/),
+      code: z.string().regex(/^\d{4}(?:\d{2})?$/),
       occurredAt: z.optional(
         z.iso
           .datetime()
@@ -7621,7 +8349,7 @@ export const zRunsControllerDeliverData = z.object({
   body: z.union([
     z.object({
       proofType: z.literal("CODE"),
-      code: z.string().regex(/^\d{4}$/),
+      code: z.string().regex(/^\d{4}(?:\d{2})?$/),
       occurredAt: z.optional(
         z.iso
           .datetime()
@@ -8112,7 +8840,11 @@ export const zProductsControllerFindByIdData = z.object({
   path: z.object({
     id: z.string(),
   }),
-  query: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      exportCountry: z.optional(z.string()),
+    }),
+  ),
 });
 
 export const zProductsControllerSoftDeleteData = z.object({
@@ -9590,6 +10322,988 @@ export const zCommunityControllerGetShareUrlData = z.object({
   body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListCountriesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCreateCountryData = z.object({
+  body: z.object({
+    code: z.string().regex(/^[A-Z]{2}$/),
+    name: z.string().min(2).max(80),
+    toPhrase: z.string().min(3).max(120),
+    inPhrase: z.string().min(3).max(120),
+    displayCurrency: z.enum(["EUR", "USD", "CAD"]),
+    flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+    sortOrder: z.optional(z.int().gte(0).lte(10000)),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdateCountryData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(80)),
+    toPhrase: z.optional(z.string().min(3).max(120)),
+    inPhrase: z.optional(z.string().min(3).max(120)),
+    displayCurrency: z.optional(z.enum(["EUR", "USD", "CAD"])),
+    flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+    sortOrder: z.optional(z.int().gte(0).lte(10000)),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    code: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListAgenciesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCreateAgencyData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(120),
+    contactName: z.optional(z.union([z.string().max(120), z.null()])),
+    contactPhone: z.optional(z.union([z.string().max(30), z.null()])),
+    contactEmail: z.optional(
+      z.union([
+        z
+          .email()
+          .max(200)
+          .regex(
+            /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    notes: z.optional(z.union([z.string().max(2000), z.null()])),
+    active: z.optional(z.boolean()),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdateAgencyData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(120)),
+    contactName: z.optional(z.union([z.string().max(120), z.null()])),
+    contactPhone: z.optional(z.union([z.string().max(30), z.null()])),
+    contactEmail: z.optional(
+      z.union([
+        z
+          .email()
+          .max(200)
+          .regex(
+            /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    notes: z.optional(z.union([z.string().max(2000), z.null()])),
+    active: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListPickupPointsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCreatePickupPointData = z.object({
+  body: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    city: z.string().min(2).max(80),
+    address: z.string().min(5).max(500),
+    openingHours: z.optional(z.union([z.string().max(300), z.null()])),
+    active: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdatePickupPointData = z.object({
+  body: z.object({
+    country: z.optional(z.string().regex(/^[A-Z]{2}$/)),
+    city: z.optional(z.string().min(2).max(80)),
+    address: z.optional(z.string().min(5).max(500)),
+    openingHours: z.optional(z.union([z.string().max(300), z.null()])),
+    active: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    id: z.string(),
+    pointId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListDeparturesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      status: z.optional(z.enum(["OPEN", "FULL", "CANCELLED", "DEPARTED"])),
+    }),
+  ),
+});
+
+export const zAdminExportControllerCreateDepartureData = z.object({
+  body: z.object({
+    agencyId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    departsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    depositDeadline: z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+    transitMinDays: z.int().gte(0).lte(120),
+    transitMaxDays: z.int().gte(0).lte(120),
+    capacityKg: z.optional(z.union([z.number().gt(0).lte(100000), z.null()])),
+    rates: z
+      .array(
+        z.object({
+          country: z.string().regex(/^[A-Z]{2}$/),
+          pricePerKg: z.number().gt(0).lte(10000000),
+          minBilledKg: z.number().gte(0).lte(1000),
+          maxWeightKg: z.optional(
+            z.union([z.number().gt(0).lte(1000), z.null()]),
+          ),
+          homeDeliveryFee: z.optional(
+            z.union([z.number().gte(0).lte(10000000), z.null()]),
+          ),
+        }),
+      )
+      .min(1)
+      .max(2),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerDepartureDetailData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdateDepartureData = z.object({
+  body: z.object({
+    agencyId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    departsOn: z.optional(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+    depositDeadline: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+    ),
+    transitMinDays: z.optional(z.int().gte(0).lte(120)),
+    transitMaxDays: z.optional(z.int().gte(0).lte(120)),
+    capacityKg: z.optional(z.union([z.number().gt(0).lte(100000), z.null()])),
+    rates: z.optional(
+      z
+        .array(
+          z.object({
+            country: z.string().regex(/^[A-Z]{2}$/),
+            pricePerKg: z.number().gt(0).lte(10000000),
+            minBilledKg: z.number().gte(0).lte(1000),
+            maxWeightKg: z.optional(
+              z.union([z.number().gt(0).lte(1000), z.null()]),
+            ),
+            homeDeliveryFee: z.optional(
+              z.union([z.number().gte(0).lte(10000000), z.null()]),
+            ),
+          }),
+        )
+        .min(1)
+        .max(2),
+    ),
+    status: z.optional(z.enum(["OPEN", "FULL", "DEPARTED"])),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCancelDepartureData = z.object({
+  body: z.object({
+    reassignTo: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerManifestData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerDepartureEventData = z.object({
+  body: z.object({
+    step: z.enum([
+      "PENDING_PAYMENT",
+      "PAID",
+      "COLLECTING",
+      "PACKED",
+      "DROPPED_AT_AGENCY",
+      "DEPARTED",
+      "ARRIVED",
+      "READY_FOR_PICKUP",
+      "OUT_FOR_DELIVERY",
+      "HANDED_OVER",
+      "LOST",
+      "DAMAGED",
+      "CANCELLED",
+    ]),
+    message: z.optional(z.union([z.string().min(1).max(1000), z.null()])),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerShipmentData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCollectData = z.object({
+  body: z.object({
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCollectionReceivedData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    deliveryId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerMissingData = z.object({
+  body: z.object({
+    orderItemId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerWeighData = z.object({
+  body: z.object({
+    actualWeightG: z.int().gt(0).lte(200000),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerShipmentEventData = z.object({
+  body: z.object({
+    step: z.optional(
+      z.union([
+        z.enum([
+          "PENDING_PAYMENT",
+          "PAID",
+          "COLLECTING",
+          "PACKED",
+          "DROPPED_AT_AGENCY",
+          "DEPARTED",
+          "ARRIVED",
+          "READY_FOR_PICKUP",
+          "OUT_FOR_DELIVERY",
+          "HANDED_OVER",
+          "LOST",
+          "DAMAGED",
+          "CANCELLED",
+        ]),
+        z.null(),
+      ]),
+    ),
+    message: z.optional(z.union([z.string().min(1).max(1000), z.null()])),
+    pickupPoint: z.optional(z.union([z.string().min(1).max(500), z.null()])),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerHandedOverData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerLostData = z.object({
+  body: z.object({
+    damaged: z.boolean(),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListProductsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.optional(z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN"])),
+    search: z.optional(z.string().max(120)),
+    page: z.int().gte(1).lte(9007199254740991).default(1),
+  }),
+});
+
+export const zAdminExportControllerWithdrawProductData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(500),
+  }),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerReinstateProductData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerWithdrawPackData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerReinstatePackData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerListPacksData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    scope: z.enum(["ebio", "all"]),
+    status: z.optional(
+      z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN", "RETIRED"]),
+    ),
+  }),
+});
+
+export const zAdminExportControllerCreatePackData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(120),
+    description: z.optional(z.union([z.string().max(2000), z.null()])),
+    photos: z.array(z.url()).max(6).default([]),
+    price: z.number().gt(0).lte(10000000),
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z.union([
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          quantity: z.int().gt(0).lte(100),
+        }),
+      )
+      .min(1)
+      .max(20),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerRetirePackData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerGetPackData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdatePackData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(120)),
+    description: z.optional(z.union([z.string().max(2000), z.null()])),
+    photos: z.optional(z.array(z.url()).max(6)).default([]),
+    price: z.optional(z.number().gt(0).lte(10000000)),
+    items: z.optional(
+      z
+        .array(
+          z.object({
+            productId: z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+            variantId: z.optional(
+              z.union([
+                z
+                  .uuid()
+                  .regex(
+                    /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                  ),
+                z.null(),
+              ]),
+            ),
+            quantity: z.int().gt(0).lte(100),
+          }),
+        )
+        .min(1)
+        .max(20),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerExportCriteriaData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerRemoveProfileData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerGetProfileData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerUpsertProfileData = z.object({
+  body: z.object({
+    packedWeightG: z.optional(z.union([z.int().gt(0).lte(50000), z.null()])),
+    lengthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+    widthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+    heightCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
+    shelfLifeDays: z.optional(z.union([z.int().gt(0).lte(3650), z.null()])),
+    storage: z.optional(
+      z.union([z.enum(["AMBIENT", "COOL", "FROZEN"]), z.null()]),
+    ),
+    allergens: z.optional(z.union([z.string().max(500), z.null()])),
+    noAllergens: z.boolean().default(false),
+    origin: z
+      .object({
+        producer: z.optional(z.union([z.string().max(120), z.null()])),
+        place: z.optional(z.union([z.string().max(120), z.null()])),
+        year: z.optional(z.union([z.int().gte(1900).lte(2100), z.null()])),
+        method: z.optional(z.union([z.string().max(300), z.null()])),
+        photos: z.array(z.url()).max(3).default([]),
+      })
+      .default({ photos: [] }),
+    labelPhoto: z.optional(z.union([z.url(), z.null()])),
+    declaresFrenchLabel: z.boolean().default(false),
+    declaresDatesPrinted: z.boolean().default(false),
+    declaresSealedPackaging: z.boolean().default(false),
+  }),
+  path: z.object({
+    supplierId: z.string(),
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerListPacksData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerCreatePackData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(120),
+    description: z.optional(z.union([z.string().max(2000), z.null()])),
+    photos: z.array(z.url()).max(6).default([]),
+    price: z.number().gt(0).lte(10000000),
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z.union([
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          quantity: z.int().gt(0).lte(100),
+        }),
+      )
+      .min(1)
+      .max(20),
+  }),
+  path: z.object({
+    supplierId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerRetirePackData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierExportControllerUpdatePackData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(120)),
+    description: z.optional(z.union([z.string().max(2000), z.null()])),
+    photos: z.optional(z.array(z.url()).max(6)).default([]),
+    price: z.optional(z.number().gt(0).lte(10000000)),
+    items: z.optional(
+      z
+        .array(
+          z.object({
+            productId: z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+            variantId: z.optional(
+              z.union([
+                z
+                  .uuid()
+                  .regex(
+                    /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                  ),
+                z.null(),
+              ]),
+            ),
+            quantity: z.int().gt(0).lte(100),
+          }),
+        )
+        .min(1)
+        .max(20),
+    ),
+  }),
+  path: z.object({
+    supplierId: z.string(),
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerGetCountriesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    all: z.enum(["true", "false"]),
+  }),
+});
+
+export const zTerroirClientControllerGetCatalogData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    category: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    search: z.optional(z.string().max(100)),
+    page: z.int().gte(1).lte(500).default(1),
+    currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+  }),
+});
+
+export const zTerroirClientControllerGetExportabilityData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    productIds: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$/,
+      ),
+  }),
+});
+
+export const zTerroirClientControllerGetProductData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.object({
+    currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+  }),
+});
+
+export const zTerroirClientControllerGetPackData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.object({
+    currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+  }),
+});
+
+export const zTerroirClientControllerGetDeparturesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    weightG: z.int().gte(0).lte(1000000).default(0),
+    currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+  }),
+});
+
+export const zTerroirClientControllerSubscribeAlertData = z.object({
+  body: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerUnsubscribeAlertData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    country: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerPreviewData = z.object({
+  body: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    lines: z
+      .array(
+        z.object({
+          productId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          variantId: z.optional(
+            z.union([
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          packId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gt(0).lte(50),
+        }),
+      )
+      .min(1)
+      .max(40),
+    departureId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    reception: z.enum(["PICKUP", "HOME"]),
+    pickupPointId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    homeAddress: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+    insured: z.boolean().default(false),
+    gift: z.optional(
+      z.union([
+        z.object({
+          name: z.string().min(2).max(120),
+          email: z.optional(
+            z.union([
+              z
+                .email()
+                .max(200)
+                .regex(
+                  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          phone: z.optional(
+            z.union([z.string().regex(/^\+\d{8,15}$/), z.null()]),
+          ),
+          message: z.optional(z.union([z.string().max(300), z.null()])),
+        }),
+        z.null(),
+      ]),
+    ),
+    paymentMethod: z.enum(["FEDAPAY", "WALLET"]),
+    displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerCreateData = z.object({
+  body: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    lines: z
+      .array(
+        z.object({
+          productId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          variantId: z.optional(
+            z.union([
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          packId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gt(0).lte(50),
+        }),
+      )
+      .min(1)
+      .max(40),
+    departureId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    reception: z.enum(["PICKUP", "HOME"]),
+    pickupPointId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    homeAddress: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+    insured: z.boolean().default(false),
+    gift: z.optional(
+      z.union([
+        z.object({
+          name: z.string().min(2).max(120),
+          email: z.optional(
+            z.union([
+              z
+                .email()
+                .max(200)
+                .regex(
+                  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+                ),
+              z.null(),
+            ]),
+          ),
+          phone: z.optional(
+            z.union([z.string().regex(/^\+\d{8,15}$/), z.null()]),
+          ),
+          message: z.optional(z.union([z.string().max(300), z.null()])),
+        }),
+        z.null(),
+      ]),
+    ),
+    paymentMethod: z.enum(["FEDAPAY", "WALLET"]),
+    displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerListShipmentsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerGetShipmentData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerSupplementData = z.object({
+  body: z.object({
+    choice: z.enum(["PAY", "REMOVE_ITEM"]),
+    lineId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    paymentMethod: z.enum(["FEDAPAY", "WALLET"]),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zTerroirClientControllerTrackingData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    token: z.string(),
   }),
   query: z.optional(z.never()),
 });

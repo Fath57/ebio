@@ -10,7 +10,7 @@ const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 /**
  * Refuses every write from a suspended supplier.
  *
- * Without this guard, suspension only hid the shop from searches — the
+ * Without this guard, suspension only hid the shop from searches, the
  * supplier could still edit their catalogue and process orders. Reads stay
  * open so they can see their situation and consult their history.
  */

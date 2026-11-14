@@ -8,7 +8,7 @@ export interface NearbySupplier {
   salesPointId: string | null
   salesPointName: string | null
   shopName: string
-  /** Photo de couverture de la boutique — `null` si le fournisseur n'en a pas. */
+  /** Photo de couverture de la boutique, `null` si le fournisseur n'en a pas. */
   coverPhoto: string | null
   latitude: number
   longitude: number
@@ -29,7 +29,7 @@ interface UseNearbyResult {
 
 /**
  * Fournisseurs autour de la position de l'application. La position vient du
- * contexte partagé — GPS ou choix manuel de l'utilisateur — et non d'une
+ * contexte partagé, GPS ou choix manuel de l'utilisateur, et non d'une
  * seconde géolocalisation : sinon la carte se centre à un endroit et affiche
  * les marqueurs d'un autre.
  */

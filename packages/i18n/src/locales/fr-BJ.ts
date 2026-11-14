@@ -1,4 +1,4 @@
-// fr-BJ.ts — Locale Français (Bénin) pour eBio marketplace
+// fr-BJ.ts, Locale Français (Bénin) pour eBio marketplace
 
 // ---------- Brand vocabulary ----------
 export const brand = {

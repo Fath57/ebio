@@ -25,7 +25,7 @@ import { WalletTransactionType } from '../wallet/entities/wallet-transaction.ent
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
-import { Checkout, CheckoutStatus } from './entities/checkout.entity'
+import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from './entities/checkout.entity'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
 import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
@@ -35,6 +35,13 @@ import { supplierShare } from './supplier-share'
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name)
+
+  /**
+   * Told of every checkout confirmed by the provider. A registry rather than
+   * a dependency: the terroir module settles its parcels here without the
+   * payments module importing it (it imports payments).
+   */
+  private readonly checkoutPaidHooks: Array<(checkoutId: string) => Promise<void>> = []
 
   constructor(
     private readonly em: EntityManager,
@@ -47,6 +54,11 @@ export class PaymentsService {
     @Inject(forwardRef(() => GiftNotifierService))
     private readonly giftNotifier: GiftNotifierService,
   ) {}
+
+  /** Registers what must happen once a checkout is confirmed paid. */
+  onCheckoutPaid(hook: (checkoutId: string) => Promise<void>): void {
+    this.checkoutPaidHooks.push(hook)
+  }
 
   /**
    * Returns payment info needed by the frontend to display the payment screen.
@@ -159,7 +171,7 @@ export class PaymentsService {
    *
    * The apps embed one provider's script and hand back its transaction
    * reference; reading it from configuration rather than hard-coding FedaPay
-   * is what lets a build switch without a migration — the payments already
+   * is what lets a build switch without a migration, the payments already
    * recorded keep their own provider, since each row carries it.
    */
   private checkoutProvider(): PaymentProvider {
@@ -294,7 +306,7 @@ export class PaymentsService {
    * Nothing is created on the `Payment` side at this point: it owns a
    * `@OneToOne(Order)` and therefore only exists per order. The checkout
    * carries the provider's transaction, and per-order payments are born at
-   * confirmation — one per order, each with its own escrow, so that a shop is
+   * confirmation, one per order, each with its own escrow, so that a shop is
    * paid at its own pace rather than the slowest one's.
    */
   async initiateCartPayment(userId: string, data: InitiateCartPayment) {
@@ -449,21 +461,30 @@ export class PaymentsService {
     checkResult: CheckStatusResult,
   ): Promise<Payment[]> {
     if (checkResult.amount !== undefined && checkResult.amount !== Math.round(checkout.totalAmount)) {
-      this.logger.error(`Panier ${checkout.id} : ${checkResult.amount} payés, ${checkout.totalAmount} attendus — à régler à la main`)
+      this.logger.error(`Panier ${checkout.id} : ${checkResult.amount} payés, ${checkout.totalAmount} attendus, à régler à la main`)
       throw new BadRequestException('Le montant payé ne correspond pas au panier')
     }
 
     checkout.providerTransactionId = reference
     checkout.status = CheckoutStatus.PAID
 
-    const payments = splitCheckoutAmount(checkout.totalAmount, orders).map(({ order, amount }) =>
+    // A terroir checkout also carries the shipping, home delivery and
+    // insurance: they go to eBio's EXPORT account, never to a shop. Each order
+    // is escrowed exactly its own total.
+    const ordersShare = checkout.deliveryMode === CheckoutDeliveryMode.EXPORT
+      ? orders.reduce((total, order) => total + Number(order.totalAmount), 0)
+      : checkout.totalAmount
+    // (provider, provider_transaction_id) is unique: with several orders (a
+    // terroir parcel), only the first payment carries the transaction; the
+    // checkout keeps it for all of them.
+    const payments = splitCheckoutAmount(ordersShare, orders).map(({ order, amount }, index) =>
       this.em.create(Payment, {
         checkout,
         order,
         amount,
         provider,
         paymentMethod: `${provider}_checkout`,
-        providerTransactionId: reference,
+        providerTransactionId: index === 0 ? reference : undefined,
         providerReference: checkResult.reference,
         providerPaymentMethodId: checkResult.providerPaymentMethodId,
         status: PaymentStatus.CAPTURED,
@@ -478,6 +499,15 @@ export class PaymentsService {
     }
 
     await this.em.flush()
+
+    for (const hook of this.checkoutPaidHooks) {
+      try {
+        await hook(checkout.id)
+      }
+      catch (error) {
+        this.logger.error(`Suite du paiement du panier ${checkout.id} en échec`, error instanceof Error ? error.stack : String(error))
+      }
+    }
 
     await this.notificationsService.send({
       user: checkout.buyer,
@@ -508,7 +538,7 @@ export class PaymentsService {
    * Same reason as the topups: the buyer is sent back before the operator has
    * answered, and the app stops asking when its screen closes. A cart paid
    * late is confirmed here; one that failed or was abandoned is only written
-   * down — its orders are cancelled after 24 h by the orders module.
+   * down, its orders are cancelled after 24 h by the orders module.
    */
   @Cron('1-59/2 * * * *')
   @SingleInstance()
@@ -532,7 +562,7 @@ export class PaymentsService {
         if (checkout.status !== CheckoutStatus.PENDING) {
           // Paid through another attempt already: this one took money twice.
           if (checkout.providerTransactionId !== operation.reference) {
-            this.logger.error(`Panier ${checkout.id} payé deux fois (${operation.reference} en plus de ${checkout.providerTransactionId}) — remboursement à faire`)
+            this.logger.error(`Panier ${checkout.id} payé deux fois (${operation.reference} en plus de ${checkout.providerTransactionId}), remboursement à faire`)
           }
           continue
         }
@@ -730,7 +760,7 @@ export class PaymentsService {
       await this.walletService.credit(wallet.id, {
         type: WalletTransactionType.PROMO_COMPENSATION,
         amount: payment.order.discountAmount,
-        description: `Compensation code promo — ${payment.order.orderNumber}`,
+        description: `Compensation code promo, ${payment.order.orderNumber}`,
         orderId: payment.order.id,
       })
     }
@@ -738,7 +768,7 @@ export class PaymentsService {
       await this.walletService.credit(wallet.id, {
         type: WalletTransactionType.PROMO_COMPENSATION,
         amount: payment.order.platformPromoCompensation,
-        description: `Compensation promotion eBio — ${payment.order.orderNumber}`,
+        description: `Compensation promotion eBio, ${payment.order.orderNumber}`,
         orderId: payment.order.id,
       })
     }
@@ -748,7 +778,7 @@ export class PaymentsService {
     await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
       type: WalletTransactionType.PLATFORM_COMMISSION,
       amount: payment.order.commissionAmount,
-      description: `Commission — commande ${payment.order.orderNumber}`,
+      description: `Commission, commande ${payment.order.orderNumber}`,
       orderId: payment.order.id,
       paymentId: payment.id,
     })
@@ -757,7 +787,7 @@ export class PaymentsService {
     await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
       type: WalletTransactionType.PLATFORM_MARKETING,
       amount: platformMarketingCost,
-      description: `Promotions eBio — commande ${payment.order.orderNumber}`,
+      description: `Promotions eBio, commande ${payment.order.orderNumber}`,
       orderId: payment.order.id,
     })
 

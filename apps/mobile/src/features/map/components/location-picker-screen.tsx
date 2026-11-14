@@ -77,7 +77,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   const { query, setQuery, suggestions, searching, resolve, accept, reset } = usePlaceSearch(door ? 'address' : 'city')
 
   // No point chosen yet: start where the buyer actually stands, not from the
-  // town they browse — that one is often kilometres from the door.
+  // town they browse, that one is often kilometres from the door.
   useEffect(() => {
     if (locateOnOpen)
       void handleUseMyLocation()
@@ -117,7 +117,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
       }
     }
     catch {
-      // Ignorer — l'utilisateur peut placer le pin manuellement
+      // Ignorer, l'utilisateur peut placer le pin manuellement
     }
     finally {
       setLocating(false)
@@ -128,7 +128,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
     <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Choisir ma position" onBack={onGoBack} />
 
-      {/* Recherche de ville — évite de faire glisser la carte sur des centaines
+      {/* Recherche de ville, évite de faire glisser la carte sur des centaines
           de kilomètres pour changer de région. */}
       <View style={[styles.searchBar, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
         <View style={[styles.searchField, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
@@ -167,13 +167,13 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           showsMyLocationButton={false}
         />
 
-        {/* Pin fixe au centre — la carte glisse dessous */}
+        {/* Pin fixe au centre, la carte glisse dessous */}
         <View style={styles.pinOverlay} pointerEvents="none">
           <MapPin size={44} color={colors.green[600]} fill={colors.green[200]} strokeWidth={2.2} />
           <View style={styles.pinShadow} />
         </View>
 
-        {/* Suggestions — superposées à la carte, elles disparaissent au choix */}
+        {/* Suggestions, superposées à la carte, elles disparaissent au choix */}
         {suggestions.length > 0 && (
           <View style={[styles.suggestions, { backgroundColor: semantic.bgCard }]}>
             <ScrollView keyboardShouldPersistTaps="handled">
@@ -204,7 +204,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           </View>
         )}
 
-        {/* Fine-tuning hint — irrelevant, and in the way, while the city list
+        {/* Fine-tuning hint, irrelevant, and in the way, while the city list
             is open. */}
         {suggestions.length === 0 && (
           <View style={[styles.hint, { backgroundColor: semantic.bgCard }]}>
@@ -372,7 +372,7 @@ function pickerHint(door: boolean, accuracy: number | null): string {
   if (door && accuracy !== null && accuracy > ROUGH_FIX_M)
     return `Position approximative (± ${Math.round(accuracy)} m) : glissez la carte pour placer le repère sur votre porte`
   if (door && accuracy !== null)
-    return `Position GPS à ± ${Math.round(accuracy)} m — ajustez si besoin sur votre porte`
+    return `Position GPS à ± ${Math.round(accuracy)} m, ajustez si besoin sur votre porte`
   if (door)
     return 'Placez le repère exactement sur votre porte'
   return 'Déplacez la carte pour ajuster le point'

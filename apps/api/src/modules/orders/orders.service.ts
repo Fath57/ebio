@@ -20,7 +20,7 @@ import { User, UserRole } from '../auth/auth.entity'
 import { SingleInstance } from '../db/cron-lock'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { VehicleType } from '../deliveries/entities/courier-profile.entity'
-import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
+import { Delivery, DeliveryPurpose, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { EmailService } from '../email/email.service'
 import { RouteMapService } from '../email/route-map.service'
 import { GiftNotifierService } from '../gift/gift-notifier.service'
@@ -65,6 +65,15 @@ const VALID_TRANSITIONS: Record<string, OrderStatus[]> = {
   [OrderStatus.PREPARING]: [OrderStatus.READY],
   [OrderStatus.READY]: [OrderStatus.IN_DELIVERY],
   [OrderStatus.IN_DELIVERY]: [OrderStatus.DELIVERED],
+}
+
+/** Refusal for a shop or buyer action that does not apply to a terroir order. */
+function exportOrderRefusal(): BadRequestException {
+  return new BadRequestException({
+    statusCode: 400,
+    code: 'EXPORT_ORDER',
+    message: 'Cette commande part à l\'étranger : eBio la collecte et le client suit son colis.',
+  })
 }
 
 const TWO_MINUTES_MS = 2 * 60 * 1000
@@ -139,7 +148,7 @@ export interface CheckoutOrderContext {
    * The delivery fee this order carries, when it carries one.
    *
    * A cart holds one shop now, so the checkout wraps a single order and the
-   * fee belongs on that order, exactly as it did before carts were grouped —
+   * fee belongs on that order, exactly as it did before carts were grouped,
    * which is what lets the courier be paid per order rather than per round,
    * and the cash to collect be read off the order. It stays at zero for a
    * checkout that still groups several shops, where one fee covers a road no
@@ -185,6 +194,7 @@ export interface AdminDeliveryWindowInput {
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
+  private readonly exportCancelledListeners: Array<(orderId: string) => Promise<void>> = []
 
   constructor(
     private readonly em: EntityManager,
@@ -235,7 +245,7 @@ export class OrdersService {
    * What a unified checkout imposes on order creation.
    *
    * Without this context, `create` prices its own delivery and checks its own
-   * cash cap — both right for a lone order, both wrong as soon as several
+   * cash cap, both right for a lone order, both wrong as soon as several
    * shops share a run and a payment: the fee would be charged N times, and the
    * cap, which bounds the courier's advance, would apply per order instead of
    * per run.
@@ -282,7 +292,7 @@ export class OrdersService {
     }
 
     // Cash: eBio's commission becomes a debt on the shop wallet. Past the
-    // platform limit the shop is paid online only — on every route, lone
+    // platform limit the shop is paid online only, on every route, lone
     // order or checkout alike.
     if (data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       await this.supplierCashBlock.assertCashAllowed(supplier.id, supplier.shopName)
@@ -378,7 +388,7 @@ export class OrdersService {
       }
       catch (error) {
         // Insufficient balance: the order must not survive its failed
-        // payment. Items first — they hold the FK.
+        // payment. Items first, they hold the FK.
         await this.em.nativeDelete(OrderItem, { order: order.id })
         await this.em.nativeDelete(Order, { id: order.id })
         throw error
@@ -398,15 +408,31 @@ export class OrdersService {
 
     // For online payments (FedaPay), notifications are sent after payment confirmation.
     // Cash and wallet orders have no pending payment step: notify at once.
-    if (order.paymentMethod !== PaymentMethod.FEDAPAY) {
+    // Inside a checkout the order is not committed yet, the payment may still
+    // fail and roll it back, and a pack may still adjust its total, so the
+    // checkout announces it after its transaction (notifyOrderPlaced).
+    if (order.paymentMethod !== PaymentMethod.FEDAPAY && !checkoutContext) {
       await this.sendOrderPlacedNotifications(order)
-      // Inside a checkout the order is not committed yet: the e-mail reads it
-      // from a fresh context, so the checkout sends it after its transaction.
-      if (!checkoutContext)
-        void this.orderEmails.sendOrderPlaced(order.id)
+      void this.orderEmails.sendOrderPlaced(order.id)
     }
 
     return order
+  }
+
+  /**
+   * Push + in-app « order placed » to the shop and the buyer, then the e-mail,
+   * for an order created inside a checkout that has now committed. Never
+   * throws: a missed notification must not fail a paid order.
+   */
+  async notifyOrderPlaced(orderId: string): Promise<void> {
+    try {
+      const order = await this.em.fork().findOneOrFail(Order, { id: orderId })
+      await this.sendOrderPlacedNotifications(order)
+    }
+    catch (error) {
+      this.logger.warn(`Order placed notification failed for ${orderId}: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    void this.orderEmails.sendOrderPlaced(orderId)
   }
 
   private async sendOrderPlacedNotifications(order: Order): Promise<void> {
@@ -434,15 +460,22 @@ export class OrdersService {
   }
 
   /**
-   * Live courier runs for a set of orders, keyed by order id — one query,
+   * Live courier runs for a set of orders, keyed by order id, one query,
    * entity-only access to the deliveries module (no service dependency).
    */
-  async deliverySummaries(orderIds: string[]): Promise<Map<string, OrderDeliverySummary>> {
+  /**
+   * `forBuyer`: a terroir order's run to the eBio hub is left out, the buyer
+   * abroad follows the parcel, not the courier crossing Cotonou (011).
+   */
+  async deliverySummaries(orderIds: string[], options: { forBuyer?: boolean } = {}): Promise<Map<string, OrderDeliverySummary>> {
     const summaries = new Map<string, OrderDeliverySummary>()
     if (orderIds.length === 0) {
       return summaries
     }
-    const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier', 'deliveryRun'] })
+    const deliveries = await this.em.find(Delivery, {
+      order: { $in: orderIds },
+      ...(options.forBuyer ? { purpose: DeliveryPurpose.STANDARD } : {}),
+    }, { populate: ['courier', 'deliveryRun'] })
 
     // Progress of the runs involved: how many of their shops are already
     // collected. The buyer follows one progression, not two.
@@ -495,7 +528,7 @@ export class OrdersService {
    * The order as its buyer, its shop or the back-office may read it.
    *
    * `read Order` is granted to every buyer by CASL without a condition on the
-   * row, so the ownership check lives here — same rule as the invoice. Anyone
+   * row, so the ownership check lives here, same rule as the invoice. Anyone
    * else gets the not-found answer: a refusal would confirm the id exists.
    */
   async findViewableById(id: string, userId: string, role: string): Promise<Order> {
@@ -529,7 +562,7 @@ export class OrdersService {
   }
 
   /**
-   * A shop's orders — the ones it is meant to act on.
+   * A shop's orders, the ones it is meant to act on.
    *
    * An order awaiting an online payment is not one of them. It may never be
    * paid, and the shop was seeing it anyway: a line appeared in the list, was
@@ -632,6 +665,12 @@ export class OrdersService {
       )
     }
 
+    // A terroir order stops at READY (« Prête pour la collecte ») on the
+    // shop's side: only eBio's collection moves it on (011).
+    if (order.pickupMode === PickupMode.EXPORT && newStatus !== OrderStatus.PREPARING && newStatus !== OrderStatus.READY) {
+      throw exportOrderRefusal()
+    }
+
     // Manual READY → IN_DELIVERY while a courier delivery exists means the
     // supplier self-delivers: an unclaimed delivery is withdrawn, a claimed
     // one blocks the move (a courier is already on it).
@@ -671,16 +710,43 @@ export class OrdersService {
    * reachable, without the supplier-side transition rules. The buyer gets the
    * same notifications as when the supplier moves the order.
    */
-  async adminUpdateStatus(orderId: string, newStatus: OrderStatus): Promise<Order> {
+  async adminUpdateStatus(orderId: string, newStatus: OrderStatus, options: { silent?: boolean } = {}): Promise<Order> {
     const order = await this.findById(orderId)
-    await this.applyStatus(order, newStatus)
+    await this.applyStatus(order, newStatus, options)
     return order
+  }
+
+  /**
+   * When each terroir order must be handed to eBio (011, T036): the
+   * departure's deposit deadline minus eBio's collection days. Only EXPORT
+   * orders whose parcel is known appear in the map.
+   */
+  async exportCollectBefore(orderIds: string[]): Promise<Map<string, Date>> {
+    if (orderIds.length === 0) {
+      return new Map()
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT o.id AS order_id, d.deposit_deadline
+       FROM orders o
+       JOIN export_shipments s ON s.checkout_id = o.checkout_id
+       JOIN export_departures d ON d.id = s.departure_id
+       WHERE o.pickup_mode = ? AND o.id IN (${orderIds.map(() => '?').join(', ')})`,
+      [PickupMode.EXPORT, ...orderIds],
+    ) as Array<{ order_id: string, deposit_deadline: Date | string }>
+    if (rows.length === 0) {
+      return new Map()
+    }
+    // The buyer's deadline is the deposit minus the collection days; the shop
+    // has until one day before the deposit, which leaves eBio a day to pack
+    // and weigh, an order placed at the buyer's last minute still gets the
+    // collection days to be prepared.
+    return new Map(rows.map(row => [row.order_id, new Date(new Date(row.deposit_deadline).getTime() - TWENTY_FOUR_HOURS_MS)]))
   }
 
   /**
    * Warns the shop the moment its eBio debt crosses the limit: from now on it
    * is paid online only, until sales or a top-up bring the wallet back. Never
-   * throws — a missed push must not fail a delivered order.
+   * throws, a missed push must not fail a delivered order.
    */
   private async notifyIfCashBlocked(supplierId: string): Promise<void> {
     try {
@@ -705,7 +771,7 @@ export class OrdersService {
 
   /**
    * Back office (admin or support) sets the delivery window an order should
-   * follow — a buyer on the phone, a slot the app could not read. A unified
+   * follow, a buyer on the phone, a slot the app could not read. A unified
    * cart shares one courier run, so every open order of the checkout moves
    * together. A null window means « as soon as ready ».
    */
@@ -779,6 +845,11 @@ export class OrdersService {
     if (newStatus === OrderStatus.DELIVERED && order.pickupMode === PickupMode.DELIVERY) {
       await this.deliveriesService.closeForOrder(order)
     }
+    // A terroir order collected by eBio (« Collecté ») while a courier was
+    // bringing it: the run closes, paid if the parcel was on board (011).
+    if (newStatus === OrderStatus.DELIVERED && order.pickupMode === PickupMode.EXPORT) {
+      await this.deliveriesService.closeExportCollection(order)
+    }
 
     // A shop paid at delivery (its delay, or the platform's, is zero) gets its
     // money now rather than at the next hourly run. After the run closure:
@@ -796,9 +867,19 @@ export class OrdersService {
     if (newStatus === OrderStatus.READY && order.pickupMode === PickupMode.DELIVERY) {
       await this.deliveriesService.createForOrder(order)
     }
+    // A terroir order turning READY: in COURIER mode a courier brings it from
+    // the shop to the eBio hub (011). Never blocks the shop's READY.
+    if (newStatus === OrderStatus.READY && order.pickupMode === PickupMode.EXPORT) {
+      try {
+        await this.deliveriesService.createExportCollection(order)
+      }
+      catch (error) {
+        this.logger.error(`Export collection not created for order ${order.id}`, error instanceof Error ? error.stack : String(error))
+      }
+    }
 
     // Cash order: eBio never touches the money, so its commission is
-    // collected as a wallet debit — the shop balance may go negative and the
+    // collected as a wallet debit, the shop balance may go negative and the
     // debt is absorbed by future sale credits.
     if (
       newStatus === OrderStatus.DELIVERED
@@ -815,7 +896,7 @@ export class OrdersService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.COMMISSION_DEBIT,
           amount: order.commissionAmount,
-          description: `Commission eBio — commande ${order.orderNumber} (espèces)`,
+          description: `Commission eBio, commande ${order.orderNumber} (espèces)`,
           orderId: order.id,
           allowNegative: true,
         })
@@ -825,7 +906,7 @@ export class OrdersService {
           await this.walletService.credit(wallet.id, {
             type: WalletTransactionType.PROMO_COMPENSATION,
             amount: order.discountAmount,
-            description: `Compensation code promo — ${order.orderNumber}`,
+            description: `Compensation code promo, ${order.orderNumber}`,
             orderId: order.id,
           })
         }
@@ -833,7 +914,7 @@ export class OrdersService {
           await this.walletService.credit(wallet.id, {
             type: WalletTransactionType.PROMO_COMPENSATION,
             amount: order.platformPromoCompensation,
-            description: `Compensation promotion eBio — ${order.orderNumber}`,
+            description: `Compensation promotion eBio, ${order.orderNumber}`,
             orderId: order.id,
           })
         }
@@ -843,13 +924,13 @@ export class OrdersService {
         await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
           type: WalletTransactionType.PLATFORM_COMMISSION,
           amount: order.commissionAmount,
-          description: `Commission — commande ${order.orderNumber} (espèces)`,
+          description: `Commission, commande ${order.orderNumber} (espèces)`,
           orderId: order.id,
         })
         await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: order.platformPromoCompensation + (order.discountFundedBy === 'PLATFORM' ? order.discountAmount : 0),
-          description: `Promotions eBio — commande ${order.orderNumber}`,
+          description: `Promotions eBio, commande ${order.orderNumber}`,
           orderId: order.id,
         })
 
@@ -886,7 +967,7 @@ export class OrdersService {
       // Fire-and-forget: the e-mail must never delay or fail the transition.
       void this.sendInvoiceEmail(order.id)
       // A referee's first delivered order: the referral is paid here and
-      // nowhere else. The service swallows its own errors — a missed reward
+      // nowhere else. The service swallows its own errors, a missed reward
       // must not hold back a delivered order.
       void this.referralsService.onOrderDelivered(order.id, order.buyer.id, order.totalAmount)
     }
@@ -1001,10 +1082,10 @@ export class OrdersService {
       mapSrc,
       // The web app only has supplier/admin order pages: the buyer lands in the mobile app.
       orderUrl: `ebio-mobile://orders/${order.id}`,
-      legalLine: 'eBio — facture émise pour le compte du vendeur ; TVA non applicable.',
+      legalLine: 'eBio, facture émise pour le compte du vendeur ; TVA non applicable.',
     }
 
-    const subject = `Votre facture eBio — commande ${order.orderNumber}`
+    const subject = `Votre facture eBio, commande ${order.orderNumber}`
     const html = await this.emailService.renderTemplate('order-invoice', data, subject)
     const text = this.invoicePlainText(data)
     return { subject, html, text, attachments }
@@ -1013,8 +1094,8 @@ export class OrdersService {
   private invoicePlainText(data: InvoiceData): string {
     const lines = [
       `Votre facture eBio ${data.invoiceNumber}`,
-      `Commande ${data.orderNumber} — commandée le ${data.orderDate}, livrée le ${data.deliveryDate}`,
-      `Vendeur : ${data.seller.shopName}${data.seller.address ? ` — ${data.seller.address}` : ''}`,
+      `Commande ${data.orderNumber}, commandée le ${data.orderDate}, livrée le ${data.deliveryDate}`,
+      `Vendeur : ${data.seller.shopName}${data.seller.address ? `, ${data.seller.address}` : ''}`,
       '',
       ...data.items.map(item => `- ${item.name}${item.variant ? ` (${item.variant})` : ''} × ${item.quantity} : ${item.totalPrice}`),
       '',
@@ -1035,6 +1116,12 @@ export class OrdersService {
 
   async confirmDelivery(orderId: string, userId: string): Promise<Order> {
     const order = await this.findById(orderId)
+
+    // A terroir order is delivered when eBio collects it, and the buyer
+    // follows the parcel instead (011).
+    if (order.pickupMode === PickupMode.EXPORT) {
+      throw exportOrderRefusal()
+    }
 
     const isBuyer = order.buyer.id === userId
     const isSupplier = order.supplier.user?.id === userId
@@ -1169,7 +1256,7 @@ export class OrdersService {
       lines: pricing.itemEntities.map(line => ({
         productId: line.product.id,
         variantId: line.variant?.id ?? null,
-        name: line.variant ? `${line.product.name} — ${line.variant.label}` : line.product.name,
+        name: line.variant ? `${line.product.name}, ${line.variant.label}` : line.product.name,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         regularPrice: line.regularPrice,
@@ -1338,8 +1425,8 @@ export class OrdersService {
       if (!product) {
         throw new NotFoundException('Produit introuvable')
       }
-      // Off the apps for buyers — withdrawn by its shop or by eBio, or still
-      // waiting for review — so not orderable from an old basket either.
+      // Off the apps for buyers, withdrawn by its shop or by eBio, or still
+      // waiting for review, so not orderable from an old basket either.
       if (product.status === ProductStatus.HIDDEN || product.moderationStatus !== ProductModeration.APPROVED) {
         throw new BadRequestException(`${product.name} n’est plus disponible`)
       }
@@ -1438,16 +1525,35 @@ export class OrdersService {
   /**
    * Whatever cancels an order (supplier reject, admin, auto-cancel), the
    * promo use returns to the pool and what the buyer paid comes back on their
-   * eBio wallet — never through the aggregator, whichever one took the money.
+   * eBio wallet, never through the aggregator, whichever one took the money.
    * A unified-cart order also adjusts the fee of the shortened run.
    */
+  /**
+   * Told of every cancelled EXPORT order (shop refusal, admin cancellation),
+   * after the products were refunded. Lets the terroir module shrink or
+   * cancel the parcel without this module importing it back (011).
+   */
+  onExportOrderCancelled(listener: (orderId: string) => Promise<void>): void {
+    this.exportCancelledListeners.push(listener)
+  }
+
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
     await this.compensationService.compensateOrder(order.id, 'commande annulée')
-    // A relative told a cart was coming is told it is not — once every order
+    // A relative told a cart was coming is told it is not, once every order
     // of the checkout is cancelled (the notifier checks both).
     if (order.checkout) {
       await this.giftNotifier.announceCancellation(order.checkout.id)
+    }
+    if (order.pickupMode === PickupMode.EXPORT) {
+      for (const listener of this.exportCancelledListeners) {
+        try {
+          await listener(order.id)
+        }
+        catch (error) {
+          this.logger.error(`Terroir parcel not updated after cancelling ${order.id}`, error instanceof Error ? error.stack : String(error))
+        }
+      }
     }
   }
 
@@ -1464,7 +1570,7 @@ export class OrdersService {
    * True while at least one delivered line still has no product review.
    *
    * Without it the rate button vanished as soon as the shop and the courier
-   * were rated, and the products step became unreachable — the buyer could
+   * were rated, and the products step became unreachable, the buyer could
    * never rate what they actually bought.
    */
   async hasUnratedProducts(orderId: string): Promise<boolean> {

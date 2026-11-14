@@ -134,7 +134,7 @@ export class Product {
 
   /**
    * Weighted average of this product's visible reviews, or null while it has
-   * fewer than three — same rule and same shape as `Supplier.globalRating`,
+   * fewer than three, same rule and same shape as `Supplier.globalRating`,
    * so the threshold reads the same on both sides. Denormalised so a product
    * page costs no extra query and the search can sort on it without a join.
    */

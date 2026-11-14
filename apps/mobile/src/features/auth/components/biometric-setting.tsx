@@ -14,7 +14,7 @@ import { useBiometricAuth } from '../hooks/use-biometric-auth'
  * alone: the sign-in screen is common to all of them, so a courier who could
  * never switch it on would simply never see the button.
  *
- * Renders nothing where the phone has no fingerprint enrolled — an inert
+ * Renders nothing where the phone has no fingerprint enrolled, an inert
  * switch explains less than an absent one.
  */
 export function BiometricSetting() {
@@ -62,7 +62,7 @@ export function BiometricSetting() {
         />
       </View>
 
-      {/* The other phones are listed so they can be taken away from here —
+      {/* The other phones are listed so they can be taken away from here,
           that is the point of trusting them one at a time. */}
       {devices.filter(device => !device.current).map(device => (
         <View key={device.id} style={styles.trustedRow}>

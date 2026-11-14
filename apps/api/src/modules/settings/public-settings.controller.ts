@@ -20,6 +20,8 @@ export class PublicSettingsController {
     const assistant = await this.platformSettings.getAssistantIdentity()
     // The apps hide every family wallet entry while it is closed.
     const familyWalletEnabled = await this.platformSettings.getFamilyWalletEnabled()
+    // Same for the terroir space abroad (011).
+    const terroirExportEnabled = await this.platformSettings.getTerroirExportEnabled()
     // Effective rates (margin included) for prices shown in EUR, USD or CAD.
     // Computed here rather than through ExchangeRatesService: the currency
     // module depends on this one, not the other way round.
@@ -35,6 +37,7 @@ export class PublicSettingsController {
       assistantName: assistant.name,
       assistantAvatarUrl: assistant.avatarUrl,
       familyWalletEnabled,
+      terroirExportEnabled,
       currencies,
     }
   }

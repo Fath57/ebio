@@ -28,7 +28,7 @@ export const deliveryPricingConfigSchema = z.object({
    * Grouping of shops into runs. The defaults cover a configuration written
    * before these thresholds existed.
    *
-   * `maxPickupSpreadKm` is capped by `maxDistanceKm` — checked below: grouping
+   * `maxPickupSpreadKm` is capped by `maxDistanceKm`, checked below: grouping
    * two shops farther apart than we deliver would make no sense.
    */
   grouping: z.object({
@@ -52,7 +52,7 @@ export const deliveryQuoteRequestSchema = z.object({
 })
 
 /**
- * Why the delivery costs what it costs — or why it cannot be priced. Mirrors
+ * Why the delivery costs what it costs, or why it cannot be priced. Mirrors
  * `DeliveryFeeReason` (common/delivery-fee.ts).
  *
  * `NO_SHOP_POSITION` is not blocking: the flat fee applies and the order goes
@@ -114,7 +114,7 @@ export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>
  * The assistant's switch.
  *
  * An object rather than a bare boolean: a request body reads better that way,
- * and the setting can gain a field — a list of buyers, a spending cap —
+ * and the setting can gain a field, a list of buyers, a spending cap,
  * without breaking its callers.
  */
 export const assistantSettingSchema = z.object({
@@ -137,8 +137,8 @@ export const assistantSettingSchema = z.object({
    * How fast she speaks, as a multiplier.
    *
    * Adjustable because the right pace is a matter of ear, not of doctrine.
-   * The default was chosen on measurement — four readings of the same
-   * sentence averaged 7.76 s at the original setting against 6.66 s — and the
+   * The default was chosen on measurement, four readings of the same
+   * sentence averaged 7.76 s at the original setting against 6.66 s, and the
    * range is left wide because 14 % may not be enough for everyone.
    */
   voiceSpeed: z.number().min(0.8).max(1.4).optional(),
@@ -158,6 +158,58 @@ export const familyWalletSettingSchema = z.object({
 })
 
 export type FamilyWalletSettingInput = z.infer<typeof familyWalletSettingSchema>
+
+/** How a shop's terroir order reaches the eBio hub (011). */
+export const exportCollectionModeEnum = z.enum(['COURIER', 'EBIO']).meta({
+  title: 'ExportCollectionMode',
+  description: 'COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte',
+})
+
+/** Terroir export (011): the switch and its tuning, every field optional on write. */
+const terroirExportSettingFieldsSchema = z.object({
+  enabled: z.boolean(),
+  packagingWeightG: z.number().int().min(0).max(5_000),
+  collectionDays: z.number().int().min(0).max(30),
+  weightTolerancePct: z.number().int().min(0).max(100),
+  insuranceRateBps: z.number().int().min(0).max(5_000),
+  insuranceMin: z.number().int().min(0).max(1_000_000),
+  bannedCategoryIds: z.array(z.string().uuid()).max(200),
+  pickupReminderDays: z.number().int().min(1).max(90),
+  /** Export criterion: minimum shelf life of a product, in days. */
+  minShelfLifeDays: z.number().int().min(1).max(3_650),
+  /** Export criterion: maximum packed weight of one unit, in grams. */
+  maxUnitWeightG: z.number().int().min(100).max(50_000),
+  /**
+   * Who brings each shop's terroir order to eBio: a platform courier
+   * (COURIER, the default) or eBio's own staff (EBIO).
+   */
+  collectionMode: exportCollectionModeEnum,
+  /** The eBio consolidation point in Cotonou, where couriers drop the orders. */
+  hubName: z.string().trim().max(120).nullable(),
+  hubAddress: z.string().trim().max(255).nullable(),
+  /** Both or neither: COURIER mode without them runs as EBIO. */
+  hubLatitude: z.number().min(-90).max(90).nullable(),
+  hubLongitude: z.number().min(-180).max(180).nullable(),
+  hubPhone: z.string().trim().regex(/^\+?[\d .-]{6,30}$/).nullable(),
+  hubHours: z.string().trim().max(200).nullable(),
+})
+
+export const terroirExportSettingSchema = terroirExportSettingFieldsSchema.extend({
+  /** What applies today: COURIER needs the hub's coordinates, else EBIO. */
+  effectiveCollectionMode: exportCollectionModeEnum,
+}).meta({
+  title: 'TerroirExportSetting',
+  description: 'Interrupteur et réglages de la Valise du pays',
+})
+
+export type TerroirExportSetting = z.infer<typeof terroirExportSettingSchema>
+
+export const updateTerroirExportSettingSchema = terroirExportSettingFieldsSchema.partial().meta({
+  title: 'UpdateTerroirExportSetting',
+  description: 'Réglages de la Valise du pays à modifier',
+})
+
+export type UpdateTerroirExportSettingInput = z.infer<typeof updateTerroirExportSettingSchema>
 
 /** The name and face the apps show, resolved. */
 export const assistantIdentitySchema = z.object({

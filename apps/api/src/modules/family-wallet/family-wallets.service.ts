@@ -113,7 +113,7 @@ export class FamilyWalletsService {
 
   /**
    * Opens the payer's family wallet, empty and without members (FR-001), and
-   * the `wallets` row that will hold its balance — both or neither.
+   * the `wallets` row that will hold its balance, both or neither.
    */
   async open(payerId: string): Promise<FamilyWallet> {
     const existing = await this.em.count(FamilyWallet, { payer: { id: payerId } })
@@ -225,7 +225,7 @@ export class FamilyWalletsService {
    * `FAMILY_CLOSURE_OUT` and lands on the payer's personal wallet as
    * `FAMILY_CLOSURE_IN`, with the status, in one transaction.
    *
-   * Replayed — a double tap, a retried request — it finds the wallet closed
+   * Replayed, a double tap, a retried request, it finds the wallet closed
    * under the row lock and moves nothing: the payer is credited once. Refused
    * while eBio holds it suspended: closing would move disputed money.
    */

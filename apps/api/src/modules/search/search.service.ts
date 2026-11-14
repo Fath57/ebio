@@ -88,7 +88,7 @@ const LOCAL_SYNONYMS: [RegExp, string][] = [
  * Linking words, dropped.
  *
  * Every term is required in the name, so keeping "avec" from "du gari avec de
- * l'huile" demands that the product be named "avec" — nothing matches.
+ * l'huile" demands that the product be named "avec", nothing matches.
  */
 const STOPWORDS = new Set([
   'au',
@@ -205,11 +205,11 @@ function singularize(term: string): string {
  * « Tomate » came after any product of a closer shop called « Tomate & Co ».
  * Distance stays the tie-breaker within a level.
  *
- * 4 — the product's name is the query
- * 3 — the name starts with the first word
- * 2 — every word is in the product's name
- * 1 — some word is in the product's name
- * 0 — matched through the shop's name only
+ * 4, the product's name is the query
+ * 3, the name starts with the first word
+ * 2, every word is in the product's name
+ * 1, some word is in the product's name
+ * 0, matched through the shop's name only
  */
 export function buildRelevanceSelect(q: string, terms: string[]): { sql: string, params: string[] } {
   if (terms.length === 0) {
@@ -298,7 +298,7 @@ export class SearchService {
     if (promoOnly === 'true') {
       // A promotion is a price cut, a 1+1 or a free delivery. Only the first
       // mirrors itself onto the product, so the other two are found where
-      // they live — otherwise the section showed none of them.
+      // they live, otherwise the section showed none of them.
       whereClause += `  AND (${LIVE_LEGACY_PROMO} OR EXISTS (${LIVE_PROMOTION_ROW}))\n`
     }
     const terms = q ? searchTerms(q) : []
@@ -358,7 +358,7 @@ export class SearchService {
         return { results: [], total: 0, page, hasMore: false, didYouMean: null }
       }
       // One placeholder per id: the driver cannot bind a JavaScript array
-      // behind `ANY(?::uuid[])` — it flattens it and the SQL stops parsing.
+      // behind `ANY(?::uuid[])`, it flattens it and the SQL stops parsing.
       whereClause += `  AND p.id IN (${productIds.map(() => '?').join(', ')})\n`
       baseParams.push(...productIds)
     }
@@ -454,7 +454,7 @@ export class SearchService {
    *
    * Each word missing from the catalogue is swapped for its closest catalogue
    * word; the hint is offered only if that query, with the same filters,
-   * returns products — a correction leading to another empty page helps no one.
+   * returns products, a correction leading to another empty page helps no one.
    */
   private async suggestSpelling(query: SearchProductsQuery, terms: string[]): Promise<string | null> {
     const connection = this.em.getConnection()
@@ -530,7 +530,7 @@ export class SearchService {
     `
 
     const connection = this.em.getConnection()
-    // One binding per ? in order of appearance — knex has no numbered params.
+    // One binding per ? in order of appearance, knex has no numbered params.
     const rows = await connection.execute(sql, [longitude, latitude, pattern, pattern, longitude, latitude, pattern]) as RawAutocompleteRow[]
 
     return {
@@ -576,8 +576,8 @@ export class SearchService {
     switch (sortBy) {
       case 'rating':
         // The product's own rating, not its shop's. `NULLS LAST` puts the
-        // products whose average is not published yet — fewer than three
-        // reviews — after those that have one, with no extra construction.
+        // products whose average is not published yet, fewer than three
+        // reviews, after those that have one, with no extra construction.
         return 'ORDER BY p.rating_avg DESC NULLS LAST, distance ASC'
       case 'price':
         return 'ORDER BY p.price_per_unit ASC, distance ASC'

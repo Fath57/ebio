@@ -9,7 +9,7 @@ import { DispatchPhase } from './dispatch-phase.enum'
  * A run: the deliveries of one checkout, handed to a single courier who
  * collects from every shop then hands over once.
  *
- * Each `Delivery` stays 1-1 with its order — status, events and proof of
+ * Each `Delivery` stays 1-1 with its order, status, events and proof of
  * handover do not move, and neither do the supplier screens. It is the run
  * that becomes the unit of dispatch, acceptance and pay.
  */
@@ -147,7 +147,7 @@ export class DeliveryRun {
   buyerPromptedAt?: Date
 
   /*
-   * Measurement. The grouping thresholds — two shops, 3 km apart — are set,
+   * Measurement. The grouping thresholds, two shops, 3 km apart, are set,
    * not guessed; these columns serve to tune them on facts rather than on a
    * hunch.
    */

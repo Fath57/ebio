@@ -99,7 +99,7 @@ export function SalesPointsManager() {
                 <Badge variant="outline">{t('settings.salesPoints.noPosition')}</Badge>
               )}
             </div>
-            <p className="text-muted-foreground truncate text-sm">{point.address ?? '—'}</p>
+            <p className="text-muted-foreground truncate text-sm">{point.address ?? '-'}</p>
           </div>
           <Switch
             checked={point.isActive}

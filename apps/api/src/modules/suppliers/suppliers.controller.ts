@@ -77,7 +77,7 @@ export class SuppliersController {
     const coordinates = await this.suppliersService.findCoordinates(supplier.id)
     const response = SupplierMapper.toResponse(supplier, coordinates)
 
-    // With the buyer's position, the profile can say how far the shop is —
+    // With the buyer's position, the profile can say how far the shop is,
     // measured to its nearest active place, like the map pin.
     const lat = Number(latitude)
     const lng = Number(longitude)

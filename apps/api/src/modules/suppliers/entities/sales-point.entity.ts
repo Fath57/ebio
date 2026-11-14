@@ -36,7 +36,7 @@ export class SalesPoint {
   location?: unknown
 
   /**
-   * Hours specific to this point — a market stall only lives on market days.
+   * Hours specific to this point, a market stall only lives on market days.
    * Same shape as the supplier's opening hours; null means « as the shop ».
    */
   @Property({ fieldName: 'opening_hours', type: 'jsonb', nullable: true })

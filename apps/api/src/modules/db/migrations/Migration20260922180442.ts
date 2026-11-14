@@ -12,7 +12,7 @@ import { Migration } from '@mikro-orm/migrations'
  *
  * Written by hand rather than generated. `migration:create` diffs the whole
  * schema, and this one carries years of drift applied through `schema:update`
- * — the generated file wanted to drop `commission_rates` and 90 constraints
+ * the generated file wanted to drop `commission_rates` and 90 constraints
  * across the database. Purely additive here: nothing is dropped.
  *
  * Every constraint is dropped before being added: the equivalent SQL script is

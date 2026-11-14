@@ -11,7 +11,7 @@ const MAX_CHARACTERS = 400
  * The model rewrites; it does not research. Everything it is allowed to say
  * arrives in the prompt, because a description that invents "produit bio du
  * plateau d'Abomey" for a product nobody described that way is a promise the
- * shop never made — and the buyer is the one who discovers it.
+ * shop never made, and the buyer is the one who discovers it.
  */
 @Injectable()
 export class ProductCopyService {

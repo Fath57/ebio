@@ -26,7 +26,7 @@ function limitReached(): HttpException {
  * The payer's address book of relatives.
  *
  * Owner-only: an entry of someone else answers 404, as if it did not exist.
- * Editing or deleting an entry never touches a past checkout — those copied
+ * Editing or deleting an entry never touches a past checkout, those copied
  * what they used, and their link is `ON DELETE SET NULL`.
  */
 @Injectable()

@@ -10,6 +10,9 @@ import { Media, MediaStatus } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
+import { ExportProfileStatus } from '../terroir/contracts/terroir.contract'
+import { ExportProfile } from '../terroir/entities/export-profile.entity'
+import { ExportCriteriaService } from '../terroir/export-criteria.service'
 import { CertificationsService } from './certifications.service'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
@@ -25,6 +28,7 @@ export class ProductsService {
     private readonly productUnitsService: ProductUnitsService,
     private readonly certificationsService: CertificationsService,
     private readonly moderation: ProductModerationService,
+    private readonly exportCriteria: ExportCriteriaService,
   ) {}
 
   async create(supplierId: string, data: CreateProduct): Promise<Product> {
@@ -174,6 +178,9 @@ export class ProductsService {
 
   async update(productId: string, supplierId: string, data: UpdateProduct): Promise<Product> {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
+    // What the export criteria read of the sheet (011): the composition and
+    // the category. A change recomputes the export status at once.
+    const exportInputsBefore = JSON.stringify([product.ingredients ?? null, product.allergens, product.category.id])
 
     if (data.name !== undefined)
       product.name = data.name
@@ -274,7 +281,7 @@ export class ProductsService {
 
       for (const variant of existing) {
         if (!keptLabels.has(variant.label)) {
-          // Variants quoted by past orders keep their row (FK) — the supplier
+          // Variants quoted by past orders keep their row (FK), the supplier
           // removing one from the form just stops offering it.
           const rows = await this.em.getConnection().execute(
             `SELECT COUNT(*)::int AS refs FROM order_items WHERE variant_id = ?`,
@@ -290,7 +297,26 @@ export class ProductsService {
     this.moderation.resubmitIfRejected(product)
 
     await this.em.flush()
+
+    const exportInputsAfter = JSON.stringify([product.ingredients ?? null, product.allergens, product.category.id])
+    if (exportInputsAfter !== exportInputsBefore) {
+      await this.exportCriteria.refreshProducts([product.id])
+    }
     return product
+  }
+
+  /** The product's export profile (011), for its owner's dashboard; null when never made. */
+  async exportProfileOf(productId: string): Promise<ExportProfile | null> {
+    return this.em.findOne(ExportProfile, { product: productId })
+  }
+
+  /** Export status of each product that has an export profile, by product id. */
+  async exportStatusesOf(productIds: string[]): Promise<Map<string, ExportProfileStatus>> {
+    if (productIds.length === 0) {
+      return new Map()
+    }
+    const profiles = await this.em.find(ExportProfile, { product: { $in: productIds } })
+    return new Map(profiles.map(profile => [profile.product.id, profile.status]))
   }
 
   async clearPromotion(productId: string, supplierId: string): Promise<Product> {

@@ -20,7 +20,7 @@ interface AnnouncementModalProps {
   onDismiss: () => void
   /** Called once the announcement is really on screen. */
   onShown: (id: string) => void
-  /** Follow what the announcement points at — a shop, a product, a link. */
+  /** Follow what the announcement points at, a shop, a product, a link. */
   onOpenTarget: (announcement: Announcement) => void
 }
 
@@ -28,7 +28,7 @@ interface AnnouncementModalProps {
  * The announcement of the day, on opening.
  *
  * It interrupts: it stands in front of what the buyer came to do. Two
- * consequences for how it is presented — it arrives gently rather than
+ * consequences for how it is presented, it arrives gently rather than
  * snapping onto the screen, and it closes with an obvious gesture. Something
  * that bursts in gets dismissed by reflex, unread.
  *
@@ -49,7 +49,7 @@ export function AnnouncementModal({ announcement, onDismiss, onShown, onOpenTarg
    * The poster's aspect ratio, measured before opening it.
    *
    * This is what lets it be shown whole **and** fill the card: the card takes
-   * its ratio, so the image covers it exactly — no white bands, no cropping.
+   * its ratio, so the image covers it exactly, no white bands, no cropping.
    * Imposing a format would have caused one or the other, and cutting into the
    * artwork of someone who paid for it is not an option.
    */

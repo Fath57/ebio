@@ -6,7 +6,7 @@ import { z } from 'zod'
 const MAX_RESULTS = 5
 
 const parameters = z.object({
-  termes: z.string().min(1).describe('Le produit seul, dans les mots de l\'acheteur : « gari », « huile rouge », « riz parfumé ». Jamais la quantité ni l\'unité — « tomate », pas « tomate 2 kg ».'),
+  termes: z.string().min(1).describe('Le produit seul, dans les mots de l\'acheteur : « gari », « huile rouge », « riz parfumé ». Jamais la quantité ni l\'unité, « tomate », pas « tomate 2 kg ».'),
   prixMaximum: z.number().positive().optional().describe('Plafond en FCFA, seulement si l\'acheteur en a donné un.'),
 })
 
@@ -14,7 +14,7 @@ const parameters = z.object({
  * The catalogue search, exactly as the app already uses it.
  *
  * It returns only active, in-stock products: offering an unavailable item out
- * loud costs a turn of conversation, and some trust. And it returns few —
+ * loud costs a turn of conversation, and some trust. And it returns few,
  * five references read to an ear are already four too many.
  */
 export function searchProductsTool(search: SearchService): AssistantTool<typeof parameters> {
@@ -37,7 +37,7 @@ export function searchProductsTool(search: SearchService): AssistantTool<typeof 
         limit: MAX_RESULTS,
       } as never)
 
-      // The search returns `{ results: [{ supplier, product }] }` — not a
+      // The search returns `{ results: [{ supplier, product }] }`, not a
       // flat list. Getting the shape wrong here breaks nothing visibly: the
       // assistant simply answers that it finds nothing, every time.
       const results = ((result as { results?: Array<{ supplier?: Record<string, unknown>, product?: Record<string, unknown> }> }).results ?? [])

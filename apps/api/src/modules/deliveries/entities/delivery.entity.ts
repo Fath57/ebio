@@ -47,9 +47,27 @@ export enum DeliveryFailReason {
   OTHER = 'OTHER',
 }
 
+/**
+ * Why the run exists. STANDARD: a shop's order to its buyer. EXPORT_COLLECTION
+ * (011): a terroir order carried from the shop to the eBio consolidation
+ * point, paid by eBio from its EXPORT account, confirmed with the hub's code.
+ */
+export enum DeliveryPurpose {
+  STANDARD = 'STANDARD',
+  EXPORT_COLLECTION = 'EXPORT_COLLECTION',
+}
+
+/** The eBio hub as it was when the collection was offered. */
+export interface ExportHubSnapshot {
+  name: string
+  address: string
+  phone: string | null
+  hours: string | null
+}
+
 @Entity({ tableName: 'deliveries' })
 export class Delivery {
-  [OptionalProps]?: 'id' | 'status' | 'proofFar' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'dispatchPhase' | 'offerRound' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'purpose' | 'status' | 'proofFar' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'dispatchPhase' | 'offerRound' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -65,6 +83,31 @@ export class Delivery {
   @ManyToOne(() => DeliveryRun, { fieldName: 'delivery_run_id', nullable: true })
   deliveryRun?: Rel<DeliveryRun>
 
+  @Enum({ items: () => DeliveryPurpose, columnType: 'varchar(20)', default: DeliveryPurpose.STANDARD })
+  purpose: DeliveryPurpose = DeliveryPurpose.STANDARD
+
+  /**
+   * The terroir parcel an EXPORT_COLLECTION run feeds (`export_shipments.id`).
+   * A plain uuid: the deliveries module does not depend on the terroir one.
+   */
+  @Index()
+  @Property({ fieldName: 'export_shipment_id', type: 'uuid', nullable: true })
+  exportShipmentId?: string | null
+
+  /** Hub name, address and contacts snapshotted for an EXPORT_COLLECTION run. */
+  @Property({ fieldName: 'export_hub', type: 'json', columnType: 'jsonb', nullable: true })
+  exportHub?: ExportHubSnapshot | null
+
+  /**
+   * Drop-off point of a run that does not end at the buyer's (the eBio hub).
+   * Null on STANDARD runs: the order's delivery point applies.
+   */
+  @Property({ fieldName: 'dropoff_latitude', type: 'double', nullable: true })
+  dropoffLatitude?: number | null
+
+  @Property({ fieldName: 'dropoff_longitude', type: 'double', nullable: true })
+  dropoffLongitude?: number | null
+
   /** Null until a courier wins the atomic claim (WHERE courier_id IS NULL). */
   @ManyToOne(() => CourierProfile, { fieldName: 'courier_id', nullable: true })
   courier?: Rel<CourierProfile> | null
@@ -73,7 +116,7 @@ export class Delivery {
   @Index()
   status: DeliveryStatus = DeliveryStatus.AWAITING_COURIER
 
-  /** Supplier address snapshotted at creation — later shop edits must not rewrite it. */
+  /** Supplier address snapshotted at creation, later shop edits must not rewrite it. */
   @Property({ fieldName: 'pickup_address' })
   pickupAddress!: string
 
@@ -95,8 +138,12 @@ export class Delivery {
   @Property({ fieldName: 'dropoff_address' })
   dropoffAddress!: string
 
-  /** 4-digit code generated at pickup, shown to the buyer only. */
-  @Property({ fieldName: 'confirmation_code', length: 4, nullable: true })
+  /**
+   * 4-digit code generated at pickup, shown to the buyer only. On an
+   * EXPORT_COLLECTION run: the hub's 6-digit code, drawn at creation and
+   * shown in the back office only.
+   */
+  @Property({ fieldName: 'confirmation_code', length: 6, nullable: true })
   confirmationCode?: string
 
   @Enum({ items: () => DeliveryProofType, fieldName: 'proof_type', nullable: true })
@@ -112,7 +159,7 @@ export class Delivery {
   @Property({ fieldName: 'proof_longitude', type: 'double', nullable: true })
   proofLongitude?: number | null
 
-  /** When the photo was taken — replayed as is when the courier was offline. */
+  /** When the photo was taken, replayed as is when the courier was offline. */
   @Property({ fieldName: 'proof_taken_at', type: 'Date', nullable: true })
   proofTakenAt?: Date | null
 

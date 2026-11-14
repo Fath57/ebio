@@ -28,7 +28,7 @@ export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
 
 /**
  * Returns the server's message: it is the one that knows why it refused.
- * `retry` tells a network failure apart from a refusal — only the first is
+ * `retry` tells a network failure apart from a refusal, only the first is
  * worth trying again later.
  */
 export async function claimReferralCode(code: string): Promise<{ ok: true, sponsorName: string } | { ok: false, message: string, retry: boolean }> {

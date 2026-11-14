@@ -390,7 +390,7 @@ export default function WalletPage() {
                   {validatedNumbers.map(number => (
                     <SelectItem key={number.id} value={number.id}>
                       {number.phoneNumber}
-                      {' — '}
+                      {', '}
                       {number.operatorLabel}
                     </SelectItem>
                   ))}

@@ -33,7 +33,7 @@ const SLIDES: Slide[] = [
     key: 'commander',
     image: require('../../../../assets/onboarding/commander.webp'),
     title: 'Commandez et payez en un geste',
-    body: 'Mobile Money, portefeuille eBio ou espèces à la livraison — vous choisissez, sans frais cachés.',
+    body: 'Mobile Money, portefeuille eBio ou espèces à la livraison, vous choisissez, sans frais cachés.',
   },
   {
     key: 'recevoir',
@@ -72,7 +72,7 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage, paddingTop: insets.top }]}>
-      {/* Skip — always available, top right */}
+      {/* Skip, always available, top right */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onFinish} hitSlop={12} accessibilityRole="button" accessibilityLabel="Passer l'introduction">
           <Text style={[styles.skip, { color: semantic.textTertiary }]}>Passer</Text>

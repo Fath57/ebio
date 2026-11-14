@@ -16,7 +16,7 @@ interface SupplierEscrowReleaseCardProps {
 
 /**
  * When this shop is paid for its online sales: the platform delay, or one set
- * for it alone — down to zero, paid the moment the order is delivered.
+ * for it alone, down to zero, paid the moment the order is delivered.
  */
 export function SupplierEscrowReleaseCard({ supplierId, hours }: SupplierEscrowReleaseCardProps) {
   const { t } = useTranslation()

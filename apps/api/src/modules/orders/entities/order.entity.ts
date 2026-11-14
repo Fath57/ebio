@@ -6,7 +6,7 @@ import { Supplier } from '../../suppliers/supplier.entity'
 import { OrderItem } from './order-item.entity'
 
 export enum OrderStatus {
-  /** Online payment started but not confirmed — invisible to the supplier. */
+  /** Online payment started but not confirmed, invisible to the supplier. */
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PLACED = 'PLACED',
   ACCEPTED = 'ACCEPTED',
@@ -21,6 +21,11 @@ export enum OrderStatus {
 export enum PickupMode {
   ON_SITE = 'ON_SITE',
   DELIVERY = 'DELIVERY',
+  /**
+   * Terroir sent abroad (011): eBio collects from the shop and ships a parcel.
+   * Never dispatched to a local courier, never carries a delivery fee.
+   */
+  EXPORT = 'EXPORT',
 }
 
 export enum PaymentMethod {
@@ -71,7 +76,7 @@ export class Order {
   @Property({ fieldName: 'delivery_address', nullable: true })
   deliveryAddress?: string
 
-  // Drop-off point picked on the map at checkout — what the courier navigates to.
+  // Drop-off point picked on the map at checkout, what the courier navigates to.
   @Property({ fieldName: 'delivery_latitude', type: 'float', nullable: true })
   deliveryLatitude?: number
 
@@ -99,7 +104,7 @@ export class Order {
   @Property({ fieldName: 'delivery_fee', type: 'float', default: 0 })
   deliveryFee: number = 0
 
-  /** Items subtotal plus `deliveryFee` — what the buyer actually pays. */
+  /** Items subtotal plus `deliveryFee`, what the buyer actually pays. */
   @Property({ fieldName: 'total_amount', type: 'float' })
   totalAmount!: number
 
@@ -155,13 +160,20 @@ export class Order {
    *
    * The invitation goes out hours after the delivery, not as the parcel is set
    * down: nobody judges a product they have not opened. The counter bounds the
-   * reminders — beyond it, silence is an answer.
+   * reminders, beyond it, silence is an answer.
    */
   @Property({ fieldName: 'review_invites_sent', default: 0 })
   reviewInvitesSent: number = 0
 
   @Property({ fieldName: 'review_invite_last_sent_at', nullable: true })
   reviewInviteLastSentAt?: Date | null
+
+  /**
+   * The terroir pack these lines came from (011), for display only. Plain
+   * uuid rather than a relation: the orders module never imports terroir.
+   */
+  @Property({ fieldName: 'export_pack_id', type: 'uuid', nullable: true })
+  exportPackId?: string | null
 
   @OneToMany(() => OrderItem, item => item.order)
   items = new Collection<OrderItem>(this)

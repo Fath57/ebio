@@ -3,8 +3,8 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { config } from '../../config/env.config'
 
 /**
- * Durées de cache. Les suggestions vieillissent peu — les villes ne changent
- * pas de nom — et les coordonnées d'un lieu, jamais.
+ * Durées de cache. Les suggestions vieillissent peu, les villes ne changent
+ * pas de nom, et les coordonnées d'un lieu, jamais.
  */
 const SUGGESTIONS_TTL_MS = 24 * 60 * 60 * 1000
 const PLACE_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -14,15 +14,15 @@ const MAX_ENTRIES = 2000
 /**
  * A Plus Code, Google's grid reference: `4HQ6+2MJ`, or `7FG8Q2+3V` in full.
  *
- * The alphabet is deliberately short — no vowels, no letters that look like
- * digits — so the pattern cannot swallow a real street name.
+ * The alphabet is deliberately short, no vowels, no letters that look like
+ * digits, so the pattern cannot swallow a real street name.
  */
 const PLUS_CODE = /^[2-9CFGHJMPQRVWX]{2,8}\+[2-9CFGHJMPQRVWX]{2,3}\b[\s,]*/i
 
 /**
  * The address a person can read, out of what Google returns for a point.
  *
- * Where streets are not named — much of Cotonou — Google answers with a Plus
+ * Where streets are not named, much of Cotonou, Google answers with a Plus
  * Code first, and « 4HQ6+2MJ, Cotonou » tells a buyer nothing and a courier
  * even less. So the first result that is not one is preferred; when every
  * result is one, the code is dropped and what follows is kept, which leaves
@@ -62,7 +62,7 @@ interface CacheEntry<T> {
  *
  * Le mobile ne parle jamais à Google directement : la clé resterait dans l'APK,
  * extractible par n'importe qui. Elle vit ici, et le cache absorbe les frappes
- * successives d'une même recherche — « Cot », « Coto », « Cotonou » — qui sont
+ * successives d'une même recherche, « Cot », « Coto », « Cotonou », qui sont
  * autrement facturées à l'unité.
  *
  * Le cache est en mémoire de processus, suffisant pour un conteneur unique. Il
@@ -97,7 +97,7 @@ export class GeocodingService {
 
     const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
     url.searchParams.set('input', query)
-    // `(cities)` narrows to localities — a buyer picks a town, not a shop. An
+    // `(cities)` narrows to localities, a buyer picks a town, not a shop. An
     // `address` search leaves the filter out entirely, so streets and
     // businesses both come back: a shopkeeper is pinning their own doorstep.
     if (kind === 'city') {

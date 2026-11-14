@@ -9,7 +9,7 @@ import { signSessionToken } from './session-token'
 /** 32 bytes: a bearer credential, so it is guessed rather than reasoned about. */
 const SECRET_BYTES = 32
 
-/** How long a session opened by a fingerprint lasts — the same as any other. */
+/** How long a session opened by a fingerprint lasts, the same as any other. */
 const SESSION_DAYS = 30
 
 export interface EnrolledDevice {

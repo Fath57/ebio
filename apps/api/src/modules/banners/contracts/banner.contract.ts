@@ -43,7 +43,7 @@ export const createBannerSchema = bannerBaseSchema.superRefine(checkTargetShape)
 
 export const updateBannerSchema = bannerBaseSchema.partial().superRefine(checkTargetShape).meta({
   title: 'UpdateBanner',
-  description: 'Update a banner — every field optional',
+  description: 'Update a banner, every field optional',
 })
 
 export const bannerSchema = z.object({
@@ -54,7 +54,7 @@ export const bannerSchema = z.object({
   targetType: bannerTargetTypeEnum,
   targetId: z.string().uuid().nullable(),
   targetUrl: z.string().nullable(),
-  /** Libellé de la cible, résolu à la lecture — `null` si elle a disparu. */
+  /** Libellé de la cible, résolu à la lecture, `null` si elle a disparu. */
   targetLabel: z.string().nullable(),
   isActive: z.boolean(),
   position: z.number(),

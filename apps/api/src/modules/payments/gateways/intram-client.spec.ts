@@ -77,7 +77,7 @@ describe('vérification des webhooks INTRAM', () => {
   })
 })
 
-describe('intramClient — réponse absente ou refus', () => {
+describe('intramClient, réponse absente ou refus', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })

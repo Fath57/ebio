@@ -49,7 +49,7 @@ export async function createTestOrm(dbConfig: {
     await orm.schema.dropDatabase()
   }
   catch {
-    // Database might not exist on first run — ignore
+    // Database might not exist on first run, ignore
   }
   await orm.schema.createDatabase()
   // PostGIS extension is required for the Supplier.location geography column.

@@ -17,6 +17,8 @@ import { formatTime } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { askPrepMinutes } from '../utils/prep-minutes'
+import { EXPORT_STATUS_LABELS, readOrderError } from '../utils/terroir-export'
+import { ExportCollectNotice, ExportOrderBadge } from './export-order-badge'
 
 interface OrderItem {
   productName: string
@@ -45,6 +47,8 @@ interface OrderDetail {
   deliveredAt: string | null
   /** Shop estimate of when the parcel will be ready (set while PREPARING a delivery order). */
   estimatedReadyAt: string | null
+  /** Export orders only: when eBio collects the parcel from the shop. */
+  collectBefore: string | null
 }
 
 interface OrderDetailScreenProps {
@@ -68,6 +72,7 @@ const STATUS_LABELS: Record<string, string> = {
 const PICKUP_LABELS: Record<string, string> = {
   ON_SITE: 'Retrait sur place',
   DELIVERY: 'Livraison',
+  EXPORT: 'Envoi à l’étranger par eBio',
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -152,6 +157,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           acceptedAt: (o.acceptedAt as string) ?? null,
           deliveredAt: (o.deliveredAt as string) ?? null,
           estimatedReadyAt: (o.estimatedReadyAt as string) ?? null,
+          collectBefore: (o.collectBefore as string) ?? null,
         })
       }
     }
@@ -177,8 +183,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
         ...(body ? { body: JSON.stringify(body) } : {}),
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { message?: string, aggregateErrors?: { message?: string }[] }
-        appAlert('Erreur', data.aggregateErrors?.[0]?.message ?? data.message ?? failure)
+        appAlert('Erreur', await readOrderError(res, failure))
         return
       }
       await load()
@@ -232,6 +237,8 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
   }
 
   const subtotal = order.items.reduce((s, it) => s + it.totalPrice, 0)
+  // An export order leaves through eBio: the shop only prepares it, no courier, no hand-over.
+  const isExport = order.pickupMode === 'EXPORT'
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
@@ -250,33 +257,59 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
         )}
       >
         <View style={styles.badgeRow}>
-          <Text style={styles.statusBadge}>{STATUS_LABELS[order.status] ?? order.status}</Text>
+          <Text style={styles.statusBadge}>{(isExport ? EXPORT_STATUS_LABELS[order.status] : undefined) ?? STATUS_LABELS[order.status] ?? order.status}</Text>
           <Text style={[styles.date, { color: semantic.textTertiary }]}>{formatDate(order.createdAt)}</Text>
         </View>
 
         <Text style={[styles.buyerName, { color: semantic.textPrimary }]}>{order.buyerName}</Text>
 
-        {/* Status transitions — same rules as the orders list */}
-        <View style={styles.actionBar}>
-          {order.status === 'PLACED' && (
-            <>
-              <ActionButton label="Accepter" onPress={() => { void transition('accept', undefined, 'Impossible d’accepter la commande.') }} disabled={acting} />
-              <ActionButton label="Refuser" onPress={askRejectReason} disabled={acting} variant="danger" />
-            </>
-          )}
-          {order.status === 'ACCEPTED' && (
-            <ActionButton label="Passer en préparation" onPress={startPreparation} disabled={acting} />
-          )}
-          {order.status === 'PREPARING' && (
-            <ActionButton label="Marquer comme prête" onPress={() => { void transition('status', { status: 'READY' }) }} disabled={acting} />
-          )}
-          {order.status === 'READY' && order.pickupMode === 'ON_SITE' && (
-            <ActionButton label="Remise au client — livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la remise.') }} disabled={acting} />
-          )}
-          {order.status === 'IN_DELIVERY' && (
-            <ActionButton label="Marquer comme livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la livraison.') }} disabled={acting} variant="secondary" />
-          )}
-        </View>
+        {isExport && (
+          <View style={styles.exportBlock}>
+            <ExportOrderBadge />
+            {!['DELIVERED', 'CANCELLED'].includes(order.status) && <ExportCollectNotice collectBefore={order.collectBefore} />}
+          </View>
+        )}
+
+        {/* Status transitions, same rules as the orders list */}
+        {isExport
+          ? (
+              <View style={styles.actionBar}>
+                {order.status === 'PLACED' && (
+                  <>
+                    <ActionButton label="Accepter" onPress={() => { void transition('accept', undefined, 'Impossible d’accepter la commande.') }} disabled={acting} />
+                    <ActionButton label="Refuser" onPress={askRejectReason} disabled={acting} variant="danger" />
+                  </>
+                )}
+                {order.status === 'ACCEPTED' && (
+                  <ActionButton label="Commencer la préparation" onPress={() => { void transition('status', { status: 'PREPARING' }) }} disabled={acting} />
+                )}
+                {order.status === 'PREPARING' && (
+                  <ActionButton label="Prête pour la collecte" onPress={() => { void transition('status', { status: 'READY' }) }} disabled={acting} />
+                )}
+              </View>
+            )
+          : (
+              <View style={styles.actionBar}>
+                {order.status === 'PLACED' && (
+                  <>
+                    <ActionButton label="Accepter" onPress={() => { void transition('accept', undefined, 'Impossible d’accepter la commande.') }} disabled={acting} />
+                    <ActionButton label="Refuser" onPress={askRejectReason} disabled={acting} variant="danger" />
+                  </>
+                )}
+                {order.status === 'ACCEPTED' && (
+                  <ActionButton label="Passer en préparation" onPress={startPreparation} disabled={acting} />
+                )}
+                {order.status === 'PREPARING' && (
+                  <ActionButton label="Marquer comme prête" onPress={() => { void transition('status', { status: 'READY' }) }} disabled={acting} />
+                )}
+                {order.status === 'READY' && order.pickupMode === 'ON_SITE' && (
+                  <ActionButton label="Remise au client, livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la remise.') }} disabled={acting} />
+                )}
+                {order.status === 'IN_DELIVERY' && (
+                  <ActionButton label="Marquer comme livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la livraison.') }} disabled={acting} variant="secondary" />
+                )}
+              </View>
+            )}
 
         {/* Items */}
         <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>ARTICLES</Text>
@@ -356,17 +389,17 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
         </View>
 
         {/* Delivery & payment */}
-        <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>LIVRAISON & PAIEMENT</Text>
+        <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>{isExport ? 'EXPORT & PAIEMENT' : 'LIVRAISON & PAIEMENT'}</Text>
         <View style={[styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}>
           <InfoRow label="Mode" value={PICKUP_LABELS[order.pickupMode] ?? order.pickupMode} semantic={semantic} />
-          {order.deliveryAddress != null && order.deliveryAddress !== '' && (
+          {!isExport && order.deliveryAddress != null && order.deliveryAddress !== '' && (
             <InfoRow label="Adresse" value={order.deliveryAddress} semantic={semantic} />
           )}
-          {order.deliverySlot != null && order.deliverySlot !== '' && (
+          {!isExport && order.deliverySlot != null && order.deliverySlot !== '' && (
             <InfoRow label="Créneau" value={order.deliverySlot} semantic={semantic} />
           )}
           <InfoRow label="Paiement" value={PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod} semantic={semantic} />
-          {order.paymentMethod === 'CASH_ON_DELIVERY' && (
+          {!isExport && order.paymentMethod === 'CASH_ON_DELIVERY' && (
             <InfoRow
               label="Espèces"
               value={order.pickupMode === 'DELIVERY'
@@ -393,11 +426,11 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
             </>
           )}
           {order.deliveredAt != null && order.deliveredAt !== '' && (
-            <InfoRow label="Livrée" value={formatDate(order.deliveredAt)} semantic={semantic} />
+            <InfoRow label={isExport ? 'Collectée par eBio' : 'Livrée'} value={formatDate(order.deliveredAt)} semantic={semantic} />
           )}
         </View>
 
-        {/* Course (courier delivery) — only meaningful once the order is READY */}
+        {/* Course (courier delivery), only meaningful once the order is READY */}
         {order.pickupMode === 'DELIVERY' && ['PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.status) && (
           <CourseSection orderId={orderId} refreshToken={refreshToken} />
         )}
@@ -445,7 +478,7 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
       }
     }
     catch {
-      // ignore — the block simply stays hidden
+      // ignore, the block simply stays hidden
     }
   }, [orderId])
 
@@ -475,7 +508,7 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
         {isFailed && course.failReason && (
           <InfoRow
             label="Échec"
-            value={`${COURSE_FAIL_LABELS[course.failReason] ?? course.failReason}${course.failComment ? ` — ${course.failComment}` : ''}`}
+            value={`${COURSE_FAIL_LABELS[course.failReason] ?? course.failReason}${course.failComment ? `, ${course.failComment}` : ''}`}
             semantic={semantic}
           />
         )}
@@ -566,6 +599,7 @@ const styles = StyleSheet.create({
   infoLabel: { ...typography.bodyS },
   infoValue: { ...typography.bodyS, fontFamily: fonts.sansMd, flexShrink: 1, textAlign: 'right' },
   infoHint: { ...typography.caption, textAlign: 'right', marginTop: -spacing[1], marginBottom: spacing[2] },
+  exportBlock: { gap: spacing[2], marginTop: spacing[2] },
   actionBar: {
     flexDirection: 'row',
     flexWrap: 'wrap',

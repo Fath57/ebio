@@ -74,7 +74,7 @@ export function encodeSlotChoice(choice: SlotChoice): string {
 
 /**
  * A draft written before the picker held free text: it cannot be read back,
- * and a stale range from yesterday is no better — both fall back to « asap ».
+ * and a stale range from yesterday is no better, both fall back to « asap ».
  */
 export function decodeSlotChoice(key: string | undefined, now: Date): SlotChoice {
   const match = key?.match(/^([01]):(\d{1,2})$/)

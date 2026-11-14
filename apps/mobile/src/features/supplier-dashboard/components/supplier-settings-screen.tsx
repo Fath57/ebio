@@ -97,7 +97,7 @@ export function SupplierSettingsScreen({
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>
 
-        {/* Paid ads stay off the iPhone app — see store-policy. */}
+        {/* Paid ads stay off the iPhone app, see store-policy. */}
         {CAN_SELL_ADS_IN_APP && (
           <>
             <View style={styles.menuDivider} />

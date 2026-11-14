@@ -13,7 +13,7 @@ interface AnnouncementImageFieldProps {
  * The poster, uploaded as it is.
  *
  * No cropper here, deliberately: the modal measures the real ratio and fits
- * itself to the artwork. Imposing a frame would cut a paid visual — and often
+ * itself to the artwork. Imposing a frame would cut a paid visual, and often
  * the very words it was drawn around.
  */
 export function AnnouncementImageField({ value, onChange }: AnnouncementImageFieldProps) {

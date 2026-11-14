@@ -31,7 +31,7 @@ export function deviceTimeZone(): string | null {
 }
 
 /**
- * Whether the device seems to be outside Benin, judged by its time zone —
+ * Whether the device seems to be outside Benin, judged by its time zone,
  * no permission needed, unlike the GPS. An unreadable zone counts as home:
  * the screens then keep today's phone-first flow.
  */

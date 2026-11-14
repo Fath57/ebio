@@ -340,7 +340,7 @@ export const adminOrderDeliveryWindowSchema = z.object({
   end: z.string().datetime({ offset: true }).nullable(),
   /** Text shown to the buyer, shop and courier; generated from the window when empty. */
   slotText: z.string().trim().max(200).optional(),
-  /** Why the window moved — kept in the audit trail. */
+  /** Why the window moved, kept in the audit trail. */
   reason: z.string().trim().max(500).optional(),
 }).refine(input => (input.start === null) === (input.end === null), {
   message: 'Indiquez le début et la fin du créneau, ou aucun des deux',

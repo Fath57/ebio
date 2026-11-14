@@ -11,11 +11,15 @@ import {
   BarChart3,
   Bell,
   Bike,
+  Building2,
   CheckCircle,
+  ClipboardCheck,
   ClipboardList,
   CreditCard,
+  Earth,
   Filter,
   FolderTree,
+  Gift,
   Globe,
   Images,
   Landmark,
@@ -28,6 +32,7 @@ import {
   Moon,
   Package,
   Percent,
+  Plane,
   QrCode,
   Ruler,
   Settings,
@@ -182,6 +187,16 @@ export default function AppLayout() {
       ],
     },
     {
+      group: { label: t('nav.groups.terroir'), icon: <Plane className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/terroir/controle', label: t('nav.terroirControl'), icon: <ClipboardCheck className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
+        { to: '/admin/terroir/packs', label: t('nav.terroirPacks'), icon: <Gift className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
+        { to: '/admin/terroir/pays', label: t('nav.terroirCountries'), icon: <Earth className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
+        { to: '/admin/terroir/agences', label: t('nav.terroirAgencies'), icon: <Building2 className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
+        { to: '/admin/terroir/departs', label: t('nav.terroirDepartures'), icon: <Plane className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
+      ],
+    },
+    {
       group: { label: t('nav.groups.suppliers'), icon: <Store className="h-4 w-4" /> },
       items: [
         { to: '/admin/fournisseurs', label: t('nav.suppliers'), icon: <Store className="h-4 w-4" />, permission: { action: 'read', subject: 'Supplier' } },
@@ -254,7 +269,7 @@ export default function AppLayout() {
                     <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">{session?.user?.email}</p>
                     <Badge variant="secondary" className="mt-1 w-fit text-xs">
-                      {role ? t(`userRoles.${role}`) : '—'}
+                      {role ? t(`userRoles.${role}`) : '-'}
                     </Badge>
                   </div>
                 ),

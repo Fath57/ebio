@@ -11,7 +11,7 @@ interface SalesPointMarkerProps {
 /**
  * A sales point is not the shop itself: it is a stall the shop holds
  * elsewhere. Sharing the supplier's green teardrop made the two impossible to
- * tell apart on a crowded map, so this one differs twice over — a squarer
+ * tell apart on a crowded map, so this one differs twice over, a squarer
  * plaque instead of a drop, and the palette's ochre instead of the brand
  * green. Shape carries the difference for anyone who reads colour poorly.
  *

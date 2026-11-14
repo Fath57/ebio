@@ -11,6 +11,8 @@ import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { StarRating } from '../../common/components/star-rating'
 import { hasMoreFromLength, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
+import { useValisePalette } from '../../terroir/components/valise/valise-palette'
+import { collectionLabel, isExportCollection } from '../types'
 
 interface HistoryScreenProps {
   onOpenDetail: (delivery: Delivery) => void
@@ -33,9 +35,10 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
-/** Finished deliveries (delivered and failed) — FR-019. */
+/** Finished deliveries (delivered and failed), FR-019. */
 export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
   const { semantic } = useTheme()
+  const palette = useValisePalette()
   const tabBarClearance = useTabBarClearance()
   // A failed page keeps the rows already shown (offline).
   const { items: deliveries, isLoading, isRefreshing, isLoadingMore, refresh, loadMore } = usePaginatedList(fetchHistoryPage)
@@ -53,6 +56,8 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
 
   function renderItem({ item }: { item: Delivery }) {
     const delivered = item.status === 'DELIVERED'
+    // A collection has no buyer address worth reading: the shop says which one it was.
+    const collection = isExportCollection(item)
     return (
       <Pressable
         style={[styles.card, { backgroundColor: semantic.bgCard }]}
@@ -65,7 +70,15 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
           : <XCircle size={20} color={colors.coral[400]} strokeWidth={2} />}
         <View style={styles.cardText}>
           <Text style={[styles.orderNumber, { color: semantic.textPrimary }]}>{item.orderNumber}</Text>
-          <Text style={[styles.address, { color: semantic.textSecondary }]} numberOfLines={1}>{item.dropoffAddress}</Text>
+          {collection
+            ? (
+                <Text style={[styles.address, { color: palette.inkSoft }]} numberOfLines={1}>
+                  {delivered
+                    ? `${collectionLabel(item.supplierShopName)} · ${(item.courierFee ?? 0).toLocaleString('fr-FR')} FCFA`
+                    : collectionLabel(item.supplierShopName)}
+                </Text>
+              )
+            : <Text style={[styles.address, { color: semantic.textSecondary }]} numberOfLines={1}>{item.dropoffAddress}</Text>}
           {delivered && (item.buyerRating || (item.tipAmount ?? 0) > 0)
             ? (
                 <View style={styles.feedbackRow}>

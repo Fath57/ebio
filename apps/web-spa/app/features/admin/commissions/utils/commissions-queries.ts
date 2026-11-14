@@ -67,7 +67,7 @@ export function fetchCommissionsQueryOptions(filters: CommissionFilters, page: n
     queryFn: async () => {
       const params = filterParams(filters)
       params.set('page', String(page))
-      // No typed response on this route — fallback to client
+      // No typed response on this route, fallback to client
       const result = await client.get({ url: `/api/admin/commissions?${params.toString()}` })
       return result.data as CommissionSummary
     },

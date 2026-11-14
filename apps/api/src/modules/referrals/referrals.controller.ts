@@ -12,7 +12,7 @@ import { ReferralsService } from './referrals.service'
  * Referrals, from the buyer's side.
  *
  * Signed in, except to read a shared code's invitation: a code belongs to someone, and a reward is paid into a
- * wallet. The holder's code is created the first time they look at it —
+ * wallet. The holder's code is created the first time they look at it,
  * nobody needs a code until they read it.
  */
 @Controller('referrals')

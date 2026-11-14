@@ -67,7 +67,7 @@ function addSummarySheet(workbook: Workbook, content: StatementContent): void {
   const sheet = workbook.addWorksheet('Résumé')
   sheet.columns = [{ width: 38 }, { width: 22 }]
 
-  const title = sheet.addRow([`Relevé des ventes — ${content.shopName}`])
+  const title = sheet.addRow([`Relevé des ventes, ${content.shopName}`])
   title.font = { bold: true, size: 14, color: { argb: BRAND_GREEN } }
   sheet.addRow([`Période : ${content.periodLabel}`])
   const generated = sheet.addRow(['Édité le', content.generatedAt])

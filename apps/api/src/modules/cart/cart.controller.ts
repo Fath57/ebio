@@ -20,7 +20,7 @@ import { cartReminderSettingsSchema, cartSyncSchema } from './contracts/cart.con
 export class CartController {
   constructor(private readonly cart: CartService) {}
 
-  /** What the server holds — read when the app starts on another phone. */
+  /** What the server holds, read when the app starts on another phone. */
   @Get()
   async read(@Session() session: LoggedInBetterAuthSession) {
     return this.cart.read(session.user.id)

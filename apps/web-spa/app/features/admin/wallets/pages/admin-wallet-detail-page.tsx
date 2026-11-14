@@ -31,7 +31,7 @@ function amountToneClass(value: number): string {
 
 /**
  * One wallet's history: its balance, every credit and debit that built it,
- * and the topups paid into it — confirmed, pending or failed.
+ * and the topups paid into it, confirmed, pending or failed.
  */
 export default function AdminWalletDetailPage() {
   const { t, i18n } = useTranslation()

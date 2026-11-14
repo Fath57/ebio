@@ -25,6 +25,10 @@ import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
+import { TerroirHomeEntry } from '../../terroir/components/terroir-home-entry'
+import { ValiseHomeSection } from '../../terroir/components/valise-home-section'
+import { ValiseModeBanner } from '../../terroir/components/valise-ui'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 import { useHomeBanners } from '../hooks/use-home-banners'
 import { useHomeSections } from '../hooks/use-home-sections'
 import { CategoryRail } from './category-rail'
@@ -63,6 +67,12 @@ interface HomeScreenProps {
   onOpenNotifications: () => void
   onOpenWallet: () => void
   onOpenAssistant: () => void
+  /** Turns the Valise mode on; its card hides while the module is off. */
+  onOpenTerroir?: () => void
+  /** Opens a pack of the « Packs du pays » rail (Valise mode). */
+  onOpenTerroirPack?: (packId: string) => void
+  /** The departure alert needs an account. */
+  onRequireLogin?: () => void
 }
 
 export function HomeScreen({
@@ -76,15 +86,19 @@ export function HomeScreen({
   onOpenNotifications,
   onOpenWallet,
   onOpenAssistant,
+  onOpenTerroir,
+  onOpenTerroirPack,
+  onRequireLogin,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
+  const { active: valise } = useValiseMode()
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
   const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
   // Permission refused or position unavailable: the app falls back to a
   // default city. Saying "near you" about someone else's city is a lie, and
-  // the one thing that would fix it — choosing a position — is one tap away.
+  // the one thing that would fix it, choosing a position, is one tap away.
   const positionIsAssumed = locationSource === 'default'
   const { categories, loadCategories } = useCategories()
   const { sections, loading } = useHomeSections(latitude, longitude)
@@ -95,8 +109,8 @@ export function HomeScreen({
   }, [loadCategories])
 
   // Les bannières pilotées depuis le back-office priment. Sans aucune bannière
-  // publiée, on retombe sur une sélection automatique — promotions, à défaut
-  // fournisseurs validés, à défaut les plus proches — pour ne jamais laisser
+  // publiée, on retombe sur une sélection automatique, promotions, à défaut
+  // fournisseurs validés, à défaut les plus proches, pour ne jamais laisser
   // la section vide.
   // With no published banner, we draw from what the sections already
   // returned rather than firing another search for nothing.
@@ -126,6 +140,9 @@ export function HomeScreen({
         onOpenAssistant={onOpenAssistant}
       />
 
+      {/* Valise mode: where the valise goes, and the way out. */}
+      <ValiseModeBanner />
+
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
@@ -139,6 +156,10 @@ export function HomeScreen({
             onOpenProduct={onNavigateToProduct}
           />
         </View>
+
+        {valise && onOpenTerroirPack && onRequireLogin
+          ? <ValiseHomeSection onOpenPack={onOpenTerroirPack} onRequireLogin={onRequireLogin} />
+          : onOpenTerroir && <TerroirHomeEntry onPress={onOpenTerroir} />}
 
         {/* Catégories */}
         <View style={styles.categoriesBlock}>

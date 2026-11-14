@@ -33,7 +33,7 @@ interface ShopInfoFormProps {
 export function ShopInfoForm({ onSubmit, isPending, initialData }: ShopInfoFormProps) {
   const { t } = useTranslation()
   const form = useForm<ShopInfoFormData>({
-    // `z.coerce` widens the resolver's generics — same cast as the other forms.
+    // `z.coerce` widens the resolver's generics, same cast as the other forms.
     resolver: zodResolver(shopInfoSchema) as Resolver<ShopInfoFormData>,
     defaultValues: {
       shopName: '',

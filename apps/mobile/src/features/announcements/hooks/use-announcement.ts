@@ -28,7 +28,7 @@ export interface Announcement {
  * The announcement to show on opening, if there is one.
  *
  * The server decides: it knows what this person has already seen and when, and
- * it returns only one. So the app has nothing to arbitrate — it opens a modal
+ * it returns only one. So the app has nothing to arbitrate, it opens a modal
  * or it does not.
  *
  * It asks on every opening, which is more than a cold start: an app sent to the

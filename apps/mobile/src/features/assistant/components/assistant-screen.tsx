@@ -21,7 +21,7 @@ import { AssistantTalkButton } from './assistant-talk-button'
 
 interface Exchange {
   id: string
-  /** What the buyer said, written down — a mis-heard word must be visible at once. */
+  /** What the buyer said, written down, a mis-heard word must be visible at once. */
   said: string
   /** What the assistant answered, growing sentence by sentence as it arrives. */
   answered: string | null
@@ -53,7 +53,7 @@ interface AssistantScreenProps {
  * Assita, in conversation.
  *
  * The screen is not decoration: speech leaves no trace, so everything that was
- * understood is written down — what was said, what she answered, what she put
+ * understood is written down, what was said, what she answered, what she put
  * in the cart and what it costs. That is what makes the exchange checkable.
  *
  * The answer appears sentence by sentence, at the pace the server verifies it:
@@ -92,7 +92,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
    *
    * A reply is fetched before it can be played, and a new turn can start
    * during that wait. Without this, the older request came back and spoke over
-   * the newer answer — two voices at once, one of them saying something that
+   * the newer answer, two voices at once, one of them saying something that
    * had already been said.
    */
   const voiceTurn = useRef(0)
@@ -133,7 +133,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     }
 
     const source = await voiceUrl(text)
-    // The voice is refused right now — she is not. Say it once, mute the
+    // The voice is refused right now, she is not. Say it once, mute the
     // speaker so we stop asking every turn, and the answer stays readable.
     // The button at the top turns it back on when the voice returns.
     if (source === VOICE_UNAVAILABLE) {
@@ -214,7 +214,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
           break
         case 'reset':
           // The server took back what it had started saying: clear it rather
-          // than leave a half-sentence that no longer leads anywhere — and cut
+          // than leave a half-sentence that no longer leads anywhere, and cut
           // the voice too, which would otherwise finish reading it out.
           update(exchange => ({ ...exchange, answered: null }))
           break

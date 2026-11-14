@@ -102,6 +102,7 @@ export class PendingEarningsService {
           deliveredAt: order.deliveredAt ?? null,
           bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
           supplierHours: supplier.escrowReleaseHours,
+          exportOrder: order.pickupMode === PickupMode.EXPORT,
         }, now).getTime()
         nextRelease = nextRelease === null ? releaseAt : Math.min(nextRelease, releaseAt)
       }

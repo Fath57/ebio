@@ -45,7 +45,7 @@ function toWalletRow(row: Record<string, unknown>) {
     id: row.id as string,
     balance: Number(row.balance ?? 0),
     ownerType: (row.supplier_id ? 'SUPPLIER' : row.courier_id ? 'COURIER' : row.family_wallet_id ? 'FAMILY' : 'USER') as WalletOwnerType,
-    ownerName: (row.owner_name as string) || '—',
+    ownerName: (row.owner_name as string) || '-',
     supplierId: (row.supplier_id as string | null) ?? null,
     courierId: (row.courier_id as string | null) ?? null,
     userId: (row.user_id as string | null) ?? null,
@@ -83,7 +83,7 @@ export function buildWalletConditions(filters: Omit<AdminWalletFilters, 'page' |
 
 /**
  * Wallets as the back office handles them: a paged, searchable list, and the
- * one manual movement staff may make — a debit, with its reason written in
+ * one manual movement staff may make, a debit, with its reason written in
  * the owner's history, in the audit trail and in a notification to them.
  */
 @Injectable()
@@ -173,7 +173,7 @@ export class AdminWalletsService {
     const balanceAfter = await this.walletService.debit(walletId, {
       type: WalletTransactionType.ADJUSTMENT,
       amount: input.amount,
-      description: `Débit eBio — ${reason}`,
+      description: `Débit eBio, ${reason}`,
     })
 
     await this.auditService.record({

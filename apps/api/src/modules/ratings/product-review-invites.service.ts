@@ -10,8 +10,8 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 /**
  * A delivered order still waiting on a review.
  *
- * Written in SQL because the question is about an absence — "orders where at
- * least one item has no review" — and a `NOT EXISTS` says it better than a
+ * Written in SQL because the question is about an absence, "orders where at
+ * least one item has no review", and a `NOT EXISTS` says it better than a
  * round trip through entities.
  */
 interface PendingOrder {
@@ -37,7 +37,7 @@ export class ProductReviewInvitesService {
    *
    * Asking as the parcel is set down makes no sense: nobody has opened the bag
    * yet, and the review would be about the packaging. So we wait, and we
-   * remind — a bounded number of times, because not answering is an answer
+   * remind, a bounded number of times, because not answering is an answer
    * too.
    *
    * Every ten minutes: minute-level accuracy is worth nothing here, and a
@@ -107,7 +107,7 @@ export class ProductReviewInvitesService {
       catch (error) {
         // One lost invitation is no reason to drop the others; since the
         // counter did not move, this one comes back on the next pass.
-        this.logger.error(`Invitation d'avis échouée pour la commande ${order.order_number} — ${error}`)
+        this.logger.error(`Invitation d'avis échouée pour la commande ${order.order_number}, ${error}`)
       }
     }
 

@@ -32,7 +32,7 @@ export class WalletController {
     }
   }
 
-  /** Every topup with its status — pending and failed ones included. */
+  /** Every topup with its status, pending and failed ones included. */
   @Get('me/topups')
   async getMyTopups(
     @Session() session: LoggedInBetterAuthSession,

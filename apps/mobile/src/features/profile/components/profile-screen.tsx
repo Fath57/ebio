@@ -208,7 +208,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
           <Text style={styles.guestLoginText}>Se connecter</Text>
         </TouchableOpacity>
 
-        {/* Theme selector — available even when not logged in */}
+        {/* Theme selector, available even when not logged in */}
         <View style={[styles.themeSelector, styles.guestThemeSelector, { backgroundColor: semantic.bgCard }]}>
           {THEME_OPTIONS.map((opt) => {
             const isActive = mode === opt.value

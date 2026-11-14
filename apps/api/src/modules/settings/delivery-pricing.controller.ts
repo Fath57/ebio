@@ -1,5 +1,5 @@
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
-import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, FamilyWalletSettingInput, NewProductSettingsInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
+import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, FamilyWalletSettingInput, NewProductSettingsInput, ProductReviewTimingInput, TerroirExportSetting, UpdateTerroirExportSettingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -8,7 +8,7 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
-import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, familyWalletSettingSchema, newProductSettingsSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
+import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, familyWalletSettingSchema, newProductSettingsSchema, productReviewTimingSchema, updateTerroirExportSettingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -69,7 +69,7 @@ export class AdminBannerOffersController {
  *
  * Two amounts and a floor, which must be fixable without deploying: a reward
  * set too generously shows up in the spending, and it has to be possible to
- * lower it — or pause the programme — the same day.
+ * lower it, or pause the programme, the same day.
  */
 @Controller('admin/referral-rewards')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -96,7 +96,7 @@ export class AdminReferralRewardsController {
  *
  * Every turn calls a paid model: it has to be possible to cut it off without
  * deploying, whether to contain spending or because it is answering badly. The
- * setting applies within the minute — the settings cache is cleared on write.
+ * setting applies within the minute, the settings cache is cleared on write.
  *
  * Her name and her portrait sit here too. They are not decoration: the name
  * goes into her own instructions, and the portrait is the first thing a buyer
@@ -208,7 +208,7 @@ export class AdminEscrowReleaseController {
 /**
  * New products: reviewed by eBio before going on sale or not, and who hears
  * about them. Turning review off does not release the products already
- * waiting — each one still takes a decision.
+ * waiting, each one still takes a decision.
  */
 @Controller('admin/new-products')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -259,5 +259,28 @@ export class AdminFamilyWalletSettingController {
   async update(@TypedBody(familyWalletSettingSchema) body: FamilyWalletSettingInput) {
     await this.platformSettings.setFamilyWalletEnabled(body.enabled)
     return { enabled: await this.platformSettings.getFamilyWalletEnabled() }
+  }
+}
+
+/**
+ * The terroir export switch and its tuning (011). Off by default: the module
+ * opens once the agency agreements are signed.
+ */
+@Controller('admin/terroir-export-setting')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminTerroirExportSettingController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get(): Promise<TerroirExportSetting> {
+    return this.platformSettings.getTerroirExportSettings()
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(updateTerroirExportSettingSchema) body: UpdateTerroirExportSettingInput): Promise<TerroirExportSetting> {
+    return this.platformSettings.setTerroirExportSettings(body)
   }
 }

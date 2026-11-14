@@ -73,7 +73,7 @@ export function adminWalletStatusText(suspended: boolean, reason: string | null)
     : 'eBio a levé la suspension de votre portefeuille famille : vos proches peuvent de nouveau l\'utiliser.'
 }
 
-/** « Maman a commandé chez Ferme Bio Tori : 6 800 FCFA. » — the payer calls the member by their nickname. */
+/** « Maman a commandé chez Ferme Bio Tori : 6 800 FCFA. », the payer calls the member by their nickname. */
 export function purchaseText(nickname: string, shopName: string, amount: number): string {
   return `${nickname} a commandé chez ${shopName} : ${spokenFcfa(amount)}.`
 }

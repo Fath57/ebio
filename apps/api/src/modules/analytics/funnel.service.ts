@@ -16,7 +16,7 @@ export interface FunnelReport {
    *
    * Baskets and quotes have only been recorded since the instrumentation was
    * added; orders go back further. Over a window that reaches before this,
-   * the upper stages are empty and the funnel widens downwards — which is not
+   * the upper stages are empty and the funnel widens downwards, which is not
    * a finding, it is an artefact, and the page has to say so rather than let
    * someone read a rate off it.
    */
@@ -129,7 +129,7 @@ export class FunnelService {
 function share(value: number, previous: number): number | null {
   // A stage cannot hold more people than the one above it. When it does, the
   // window reaches back before the upper stage was being recorded, and any
-  // ratio would be an artefact of that — not a rate.
+  // ratio would be an artefact of that, not a rate.
   if (previous === 0 || value > previous) {
     return null
   }

@@ -1,4 +1,4 @@
-import type { Delivery, DeliveryFailReason } from '../types'
+import type { Delivery, DeliveryFailReason, ExportHub } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
@@ -6,6 +6,7 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Store from 'lucide-react-native/dist/esm/icons/store'
+import Warehouse from 'lucide-react-native/dist/esm/icons/warehouse'
 import { useState } from 'react'
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, shadows, spacing, typography } from '../../../theme/theme'
@@ -16,8 +17,10 @@ import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { WhatsAppIcon } from '../../common/components/whatsapp-icon'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
+import { useValisePalette } from '../../terroir/components/valise/valise-palette'
 import { useLiveLocation } from '../hooks/use-live-location'
-import { FAIL_REASON_LABELS, giftContactLine } from '../types'
+import { COLLECTION_FAIL_LABELS, FAIL_REASON_LABELS, giftContactLine, isExportCollection } from '../types'
+import { CollectionTag } from './collection-tag'
 import { DeliveryItemsCard } from './delivery-items-card'
 
 interface ActiveDeliveryScreenProps {
@@ -26,6 +29,11 @@ interface ActiveDeliveryScreenProps {
   onTransition: (action: 'pickup' | 'start' | 'fail', body?: Record<string, unknown>) => Promise<{ ok: boolean, queued: boolean, errorMessage?: string }>
   onProof: () => void
   onChanged: () => void
+  /**
+   * A collection reported failed goes back on offer without its courier:
+   * the screen drops it at once rather than wait for the server to agree.
+   */
+  onReleased?: () => void
   /** Called with the buyer thread once created/fetched. */
   onOpenChat: (conversationId: string, peerName: string) => void
 }
@@ -37,9 +45,25 @@ const STEPS: Array<{ status: Delivery['status'], label: string }> = [
   { status: 'DELIVERED', label: 'Livrée' },
 ]
 
+/** A collection has two legs only: the hub is often around the corner, « en route » is skipped. */
+const COLLECTION_STEPS: Array<{ status: Delivery['status'], label: string }> = [
+  { status: 'ACCEPTED', label: 'Acceptée' },
+  { status: 'PICKED_UP', label: 'Récupérer chez la boutique' },
+  { status: 'DELIVERED', label: 'Déposer au point eBio' },
+]
+
+/** Index of the current step; on a collection, « en route » still counts as picked up. */
+function stepIndex(status: Delivery['status'], collection: boolean): number {
+  if (collection) {
+    const effective = status === 'IN_TRANSIT' ? 'PICKED_UP' : status
+    return COLLECTION_STEPS.findIndex(step => step.status === effective)
+  }
+  return STEPS.findIndex(step => step.status === status)
+}
+
 /**
  * Turn-by-turn to the exact point when the buyer (or the shop) pinned one;
- * the free-text address is only the fallback — « Cotonou » is not a door.
+ * the free-text address is only the fallback, « Cotonou » is not a door.
  */
 function openItinerary(address: string, position: { latitude: number, longitude: number } | null) {
   if (position) {
@@ -67,9 +91,66 @@ function callNumber(phone: string | null) {
 
 const FAIL_REASONS = Object.keys(FAIL_REASON_LABELS) as DeliveryFailReason[]
 
-/** The courier's current job: itinerary, contacts and step transitions. */
-export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onProof, onChanged, onOpenChat }: ActiveDeliveryScreenProps) {
+interface HubBlockProps {
+  hub: ExportHub | null
+  /** The run's drop-off: the hub's address and point, as the API sets them. */
+  dropoffAddress: string
+  dropoffPosition: Delivery['dropoffPosition']
+}
+
+/** Where a collection ends: the eBio consolidation point, its hours and its phone. */
+function HubBlock({ hub, dropoffAddress, dropoffPosition }: HubBlockProps) {
   const { semantic } = useTheme()
+  const palette = useValisePalette()
+  const address = hub?.address ?? dropoffAddress
+  const phone = hub?.phone ?? null
+  return (
+    <View style={styles.addressRow}>
+      <Warehouse size={18} color={palette.sky} strokeWidth={2} />
+      <View style={styles.addressText}>
+        <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Dépôt au point eBio</Text>
+        <Text style={[styles.addressValue, styles.hubName, { color: semantic.textPrimary }]}>{hub?.name ?? 'Point de regroupement eBio'}</Text>
+        <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>{address}</Text>
+        {hub?.hours
+          ? (
+              <Text style={[styles.contactName, { color: semantic.textSecondary }]}>{`Horaires : ${hub.hours}`}</Text>
+            )
+          : null}
+      </View>
+      <View style={styles.actionColumn}>
+        <Pressable
+          style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+          onPress={() => openItinerary(address, dropoffPosition)}
+          accessibilityRole="button"
+          accessibilityLabel="Itinéraire vers le point eBio"
+        >
+          <Navigation size={18} color={colors.green[600]} strokeWidth={2} />
+        </Pressable>
+        {phone
+          ? (
+              <Pressable
+                style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                onPress={() => callNumber(phone)}
+                accessibilityRole="button"
+                accessibilityLabel={`Appeler le point eBio ${hub?.name ?? ''}`.trim()}
+              >
+                <Phone size={18} color={colors.green[600]} strokeWidth={2} />
+              </Pressable>
+            )
+          : null}
+      </View>
+    </View>
+  )
+}
+
+/** The courier's current job: itinerary, contacts and step transitions. */
+export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onProof, onChanged, onReleased, onOpenChat }: ActiveDeliveryScreenProps) {
+  const { semantic } = useTheme()
+  const palette = useValisePalette()
+  // « La Valise du pays »: shop to eBio hub, paid by eBio, no buyer at the end.
+  const collection = isExportCollection(delivery)
+  const steps = collection ? COLLECTION_STEPS : STEPS
+  const failLabels = collection ? COLLECTION_FAIL_LABELS : FAIL_REASON_LABELS
   const tabBarClearance = useTabBarClearance()
   const [openingChat, setOpeningChat] = useState(false)
 
@@ -95,10 +176,10 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
   )
   const [failVisible, setFailVisible] = useState(false)
 
-  const currentIndex = STEPS.findIndex(step => step.status === delivery.status)
+  const currentIndex = stepIndex(delivery.status, collection)
   const isCancelled = delivery.status === 'CANCELLED'
   const courierFee = delivery.courierFee ?? 0
-  const isCash = delivery.paymentMethod === 'CASH_ON_DELIVERY'
+  const isCash = !collection && delivery.paymentMethod === 'CASH_ON_DELIVERY'
   // Gift delivery: the contact is the recipient, not the payer (who is often abroad).
   const giftLine = giftContactLine(delivery.buyerContact)
   const contactCallLabel = giftLine && delivery.buyerContact ? `Appeler ${delivery.buyerContact.name}` : 'Appeler le client'
@@ -125,6 +206,9 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
     setFailVisible(false)
     const result = await onTransition('fail', { reason })
     if (result.ok || result.queued) {
+      if (collection) {
+        onReleased?.()
+      }
       onChanged()
     }
     else {
@@ -159,10 +243,11 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
         : null}
 
       <View style={[styles.card, { backgroundColor: semantic.bgCard }, shadows.sm]}>
+        {collection ? <CollectionTag style={styles.collectionTag} /> : null}
         <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{delivery.orderNumber}</Text>
 
         <View style={styles.stepper}>
-          {STEPS.map((step, index) => {
+          {steps.map((step, index) => {
             const done = index <= currentIndex
             return (
               <View key={step.status} style={styles.stepItem}>
@@ -184,6 +269,13 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
               ? (
                   <Text style={[styles.contactName, { color: semantic.textSecondary }]}>
                     {`Commission eBio de ${formatAmount(cashCommission)} prélevée sur votre portefeuille`}
+                  </Text>
+                )
+              : null}
+            {collection
+              ? (
+                  <Text style={[styles.contactName, { color: palette.inkSoft }]}>
+                    Payée par eBio, rien à encaisser
                   </Text>
                 )
               : null}
@@ -217,11 +309,11 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
           <View style={styles.addressText}>
             <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Retrait</Text>
             <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>
-              {`${delivery.supplierShopName} — ${delivery.pickupAddress}`}
+              {`${delivery.supplierShopName}, ${delivery.pickupAddress}`}
             </Text>
             {delivery.status === 'ACCEPTED' && isFutureIso(delivery.pickupReadyAt) && (
               <Text style={[styles.readyHint, { color: semantic.textSecondary }]}>
-                {`Colis prêt vers ${formatTime(delivery.pickupReadyAt)} — inutile d'arriver avant`}
+                {`Colis prêt vers ${formatTime(delivery.pickupReadyAt)}, inutile d'arriver avant`}
               </Text>
             )}
           </View>
@@ -266,72 +358,76 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
 
         <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
 
-        <View style={styles.addressRow}>
-          <MapPin size={18} color={colors.coral[400]} strokeWidth={2} />
-          <View style={styles.addressText}>
-            <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Livraison</Text>
-            <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
-            {delivery.buyerContact
-              ? (
-                  <Text style={[styles.contactName, { color: giftLine ? semantic.textPrimaryColor : semantic.textSecondary }]}>
-                    {giftLine ?? delivery.buyerContact.name}
-                  </Text>
-                )
-              : null}
-          </View>
-          <View style={styles.actionColumn}>
-            <Pressable
-              style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
-              onPress={() => openItinerary(delivery.dropoffAddress, delivery.dropoffPosition)}
-              accessibilityRole="button"
-              accessibilityLabel="Itinéraire vers le client"
-            >
-              <Navigation size={18} color={colors.green[600]} strokeWidth={2} />
-            </Pressable>
-            {delivery.buyerContact?.phone
-              ? (
+        {collection
+          ? <HubBlock hub={delivery.exportHub ?? null} dropoffAddress={delivery.dropoffAddress} dropoffPosition={delivery.dropoffPosition} />
+          : (
+              <View style={styles.addressRow}>
+                <MapPin size={18} color={colors.coral[400]} strokeWidth={2} />
+                <View style={styles.addressText}>
+                  <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Livraison</Text>
+                  <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
+                  {delivery.buyerContact
+                    ? (
+                        <Text style={[styles.contactName, { color: giftLine ? semantic.textPrimaryColor : semantic.textSecondary }]}>
+                          {giftLine ?? delivery.buyerContact.name}
+                        </Text>
+                      )
+                    : null}
+                </View>
+                <View style={styles.actionColumn}>
                   <Pressable
                     style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
-                    onPress={() => callNumber(delivery.buyerContact?.phone ?? null)}
+                    onPress={() => openItinerary(delivery.dropoffAddress, delivery.dropoffPosition)}
                     accessibilityRole="button"
-                    accessibilityLabel={contactCallLabel}
+                    accessibilityLabel="Itinéraire vers le client"
                   >
-                    <Phone size={18} color={colors.green[600]} strokeWidth={2} />
+                    <Navigation size={18} color={colors.green[600]} strokeWidth={2} />
                   </Pressable>
-                )
-              : null}
-            {delivery.buyerContact?.phone
-              ? (
-                  <Pressable
-                    style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
-                    onPress={() => openWhatsApp(
-                      delivery.buyerContact?.phone ?? '',
-                      giftLine
-                        ? `Bonjour, je suis votre livreur eBio : j'apporte le panier envoyé par ${delivery.buyerContact?.payerFirstName ?? 'un proche'}.`
-                        : `Bonjour, je suis votre livreur eBio pour la commande ${delivery.orderNumber}.`,
-                    )}
-                    accessibilityRole="button"
-                    accessibilityLabel={giftLine && delivery.buyerContact ? `Écrire à ${delivery.buyerContact.name} sur WhatsApp` : 'Écrire à l\'acheteur sur WhatsApp'}
-                  >
-                    <WhatsAppIcon size={18} color={colors.green[600]} />
-                  </Pressable>
-                )
-              : null}
-            {delivery.buyerContact
-              ? (
-                  <Pressable
-                    style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
-                    onPress={openChat}
-                    disabled={openingChat}
-                    accessibilityRole="button"
-                    accessibilityLabel="Envoyer un message au client"
-                  >
-                    <MessageCircle size={18} color={colors.green[600]} strokeWidth={2} />
-                  </Pressable>
-                )
-              : null}
-          </View>
-        </View>
+                  {delivery.buyerContact?.phone
+                    ? (
+                        <Pressable
+                          style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                          onPress={() => callNumber(delivery.buyerContact?.phone ?? null)}
+                          accessibilityRole="button"
+                          accessibilityLabel={contactCallLabel}
+                        >
+                          <Phone size={18} color={colors.green[600]} strokeWidth={2} />
+                        </Pressable>
+                      )
+                    : null}
+                  {delivery.buyerContact?.phone
+                    ? (
+                        <Pressable
+                          style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                          onPress={() => openWhatsApp(
+                            delivery.buyerContact?.phone ?? '',
+                            giftLine
+                              ? `Bonjour, je suis votre livreur eBio : j'apporte le panier envoyé par ${delivery.buyerContact?.payerFirstName ?? 'un proche'}.`
+                              : `Bonjour, je suis votre livreur eBio pour la commande ${delivery.orderNumber}.`,
+                          )}
+                          accessibilityRole="button"
+                          accessibilityLabel={giftLine && delivery.buyerContact ? `Écrire à ${delivery.buyerContact.name} sur WhatsApp` : 'Écrire à l\'acheteur sur WhatsApp'}
+                        >
+                          <WhatsAppIcon size={18} color={colors.green[600]} />
+                        </Pressable>
+                      )
+                    : null}
+                  {delivery.buyerContact
+                    ? (
+                        <Pressable
+                          style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                          onPress={openChat}
+                          disabled={openingChat}
+                          accessibilityRole="button"
+                          accessibilityLabel="Envoyer un message au client"
+                        >
+                          <MessageCircle size={18} color={colors.green[600]} strokeWidth={2} />
+                        </Pressable>
+                      )
+                    : null}
+                </View>
+              </View>
+            )}
       </View>
 
       <DeliveryItemsCard items={delivery.items ?? []} itemsCount={delivery.itemsCount} />
@@ -339,18 +435,25 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
       {delivery.status === 'ACCEPTED'
         ? (
             <Pressable style={styles.primary} onPress={() => runTransition('pickup')} accessibilityRole="button" accessibilityLabel="Marquer la commande comme récupérée">
-              <Text style={styles.primaryText}>Commande récupérée</Text>
+              <Text style={styles.primaryText}>{collection ? 'Colis récupéré chez la boutique' : 'Commande récupérée'}</Text>
             </Pressable>
           )
         : null}
-      {delivery.status === 'PICKED_UP'
+      {collection && (delivery.status === 'PICKED_UP' || delivery.status === 'IN_TRANSIT')
+        ? (
+            <Pressable style={styles.primary} onPress={onProof} accessibilityRole="button" accessibilityLabel="Déposer le colis au point eBio">
+              <Text style={styles.primaryText}>Déposer au point eBio</Text>
+            </Pressable>
+          )
+        : null}
+      {!collection && delivery.status === 'PICKED_UP'
         ? (
             <Pressable style={styles.primary} onPress={() => runTransition('start')} accessibilityRole="button" accessibilityLabel="Démarrer la livraison">
               <Text style={styles.primaryText}>En route vers le client</Text>
             </Pressable>
           )
         : null}
-      {delivery.status === 'IN_TRANSIT'
+      {!collection && delivery.status === 'IN_TRANSIT'
         ? (
             <Pressable style={styles.primary} onPress={onProof} accessibilityRole="button" accessibilityLabel="Confirmer la livraison">
               <Text style={styles.primaryText}>Confirmer la livraison</Text>
@@ -371,15 +474,22 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Motif de l'échec</Text>
+            {collection
+              ? (
+                  <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
+                    La collecte sera proposée à un autre livreur.
+                  </Text>
+                )
+              : null}
             {FAIL_REASONS.map(reason => (
               <Pressable
                 key={reason}
                 style={[styles.modalOption, { borderColor: semantic.borderLight }]}
                 onPress={() => reportFail(reason)}
                 accessibilityRole="button"
-                accessibilityLabel={FAIL_REASON_LABELS[reason]}
+                accessibilityLabel={failLabels[reason]}
               >
-                <Text style={[styles.modalOptionText, { color: semantic.textPrimary }]}>{FAIL_REASON_LABELS[reason]}</Text>
+                <Text style={[styles.modalOptionText, { color: semantic.textPrimary }]}>{failLabels[reason]}</Text>
               </Pressable>
             ))}
             <Pressable
@@ -419,6 +529,16 @@ const styles = StyleSheet.create({
   orderNumber: {
     ...typography.caption,
     marginBottom: spacing[3],
+  },
+  collectionTag: {
+    marginBottom: spacing[3],
+  },
+  hubName: {
+    fontFamily: typography.h3.fontFamily,
+  },
+  modalHint: {
+    ...typography.bodyS,
+    marginBottom: spacing[2],
   },
   stepper: {
     flexDirection: 'row',

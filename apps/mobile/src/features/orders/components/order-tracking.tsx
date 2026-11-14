@@ -42,6 +42,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { StarRating } from '../../common/components/star-rating'
 import { formatFrozenMoney, formatXof, parseFrozenDisplay } from '../../common/hooks/use-money'
+import { findShipmentIdForCheckout } from '../../terroir/terroir-api'
 import { GiftRecipientCard, parseOrderGift, parseOrderProof } from './gift-recipient-card'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
@@ -102,6 +103,11 @@ interface OrderTrackingProps {
   onRate: (supplierId: string, hasReview: boolean) => void
   /** Opens the tip step alone (courier already rated). */
   onTipCourier: (supplierId: string) => void
+  /**
+   * An EXPORT order is one shop's share of a valise: its local steps mean
+   * nothing for a parcel abroad, so the screen hands over to the valise.
+   */
+  onOpenShipment?: (shipmentId: string) => void
 }
 
 const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED']
@@ -140,6 +146,7 @@ export function OrderTracking({
   onOpenCourierChat,
   onRate,
   onTipCourier,
+  onOpenShipment,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   // Lifted from the courier card so the action bar knows whether the courier still awaits a rating.
@@ -150,12 +157,31 @@ export function OrderTracking({
   const [detailsExpanded, setDetailsExpanded] = useState(true)
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
+  // The focus effect and the mount both load: the hand-over must happen once.
+  const redirectedRef = useRef(false)
+  // Read through a ref: the wrapper passes a new function on every render.
+  const openShipmentRef = useRef(onOpenShipment)
+  openShipmentRef.current = onOpenShipment
 
   const fetchOrder = useCallback(async (): Promise<void> => {
     try {
       const res = await apiFetch(`/api/orders/${orderId}`)
       if (res.ok) {
         const raw = await res.json()
+        const openShipment = openShipmentRef.current
+        if (raw.pickupMode === 'EXPORT' && typeof raw.checkoutId === 'string' && openShipment) {
+          if (redirectedRef.current) {
+            return
+          }
+          const shipmentId = await findShipmentIdForCheckout(raw.checkoutId)
+          if (shipmentId) {
+            if (!redirectedRef.current) {
+              redirectedRef.current = true
+              openShipment(shipmentId)
+            }
+            return
+          }
+        }
         const mapped: OrderDetail = {
           id: raw.id,
           orderNumber: raw.orderNumber,
@@ -1148,7 +1174,7 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  *
  * The platform has exhausted its options: back-office alert at 15 minutes,
  * ungrouping at 30. Waiting on in silence would be worse than asking the
- * question — the buyer decides, and cancelling gives everything back, fee included.
+ * question, the buyer decides, and cancelling gives everything back, fee included.
  */
 function BuyerDecisionCard({ runId, onResolved }: { runId: string, onResolved: () => void }) {
   const { semantic } = useTheme()

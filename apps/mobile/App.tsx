@@ -30,6 +30,8 @@ import { CurrencyProvider } from './src/features/common/currency-context'
 import { LocationProvider } from './src/features/common/location-context'
 import { ImageCropperHost } from './src/features/media/components/image-cropper'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
+import { TerroirCartProvider } from './src/features/terroir/terroir-cart-context'
+import { ValiseModeProvider } from './src/features/terroir/valise-mode-context'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
 import { useAccountBlock } from './src/utils/account-block'
@@ -60,7 +62,7 @@ export default function App(): React.JSX.Element | null {
       .catch(() => setShowOnboarding(false))
   }, [])
   // Notifications are mounted once inside each variant's navigation root,
-  // where the session is known — a second mount here double-fired every tap.
+  // where the session is known, a second mount here double-fired every tap.
   const [fontsLoaded, fontError] = useFonts({
     DMSerifDisplay_400Regular,
     PlusJakartaSans_400Regular,
@@ -108,34 +110,38 @@ export default function App(): React.JSX.Element | null {
 
   return (
     // Racine des gestes : sans cette enveloppe, un geste de
-    // react-native-gesture-handler n'atteint jamais son composant — et
+    // react-native-gesture-handler n'atteint jamais son composant, et
     // l'échec est silencieux, le doigt ne fait simplement rien.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <CurrencyProvider>
           <LocationProvider>
             <CartProvider>
-              <SafeAreaProvider onLayout={onLayoutRootView}>
-                <AppNavigation />
-                {accountBlock && <AccountBlockedScreen block={accountBlock} />}
-                <AppAlertHost />
-                <ImageCropperHost />
-                <UpdatePrompt />
-                {/* The store's version, which no over-the-air update can bring. */}
-                <StoreUpdateGate />
-                <StatusBar style="auto" />
-                {showOnboarding === true && (
-                  <OnboardingScreen
-                    onFinish={() => {
-                      storage.set(ONBOARDING_KEY, '1')
-                      setShowOnboarding(false)
-                    }}
-                  />
-                )}
-                {showSplash && (
-                  <AnimatedSplash onFinish={() => setShowSplash(false)} />
-                )}
-              </SafeAreaProvider>
+              <TerroirCartProvider>
+                <ValiseModeProvider>
+                  <SafeAreaProvider onLayout={onLayoutRootView}>
+                    <AppNavigation />
+                    {accountBlock && <AccountBlockedScreen block={accountBlock} />}
+                    <AppAlertHost />
+                    <ImageCropperHost />
+                    <UpdatePrompt />
+                    {/* The store's version, which no over-the-air update can bring. */}
+                    <StoreUpdateGate />
+                    <StatusBar style="auto" />
+                    {showOnboarding === true && (
+                      <OnboardingScreen
+                        onFinish={() => {
+                          storage.set(ONBOARDING_KEY, '1')
+                          setShowOnboarding(false)
+                        }}
+                      />
+                    )}
+                    {showSplash && (
+                      <AnimatedSplash onFinish={() => setShowSplash(false)} />
+                    )}
+                  </SafeAreaProvider>
+                </ValiseModeProvider>
+              </TerroirCartProvider>
             </CartProvider>
           </LocationProvider>
         </CurrencyProvider>

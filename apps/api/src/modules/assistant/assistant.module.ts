@@ -14,7 +14,7 @@ import { AssistantRealtimeGateway } from './realtime/realtime.gateway'
 
 /**
  * The assistant owns no business rules: its tools are the existing services.
- * That is what makes grounding tenable — it can only say what the domain
+ * That is what makes grounding tenable, it can only say what the domain
  * answers.
  */
 @Module({

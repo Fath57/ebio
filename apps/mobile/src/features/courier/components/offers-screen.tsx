@@ -17,6 +17,9 @@ import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
+import { useValisePalette } from '../../terroir/components/valise/valise-palette'
+import { isExportCollection } from '../types'
+import { CollectionTag } from './collection-tag'
 import { DeliveryItemRow } from './delivery-items-card'
 
 interface OffersScreenProps {
@@ -283,7 +286,7 @@ interface CashBreakdownProps {
 /**
  * The cash the courier handles, as a statement rather than a sentence: the
  * advance is what they risk, and the gap between what they keep and what they
- * earn is eBio's commission, debited from their wallet — said here so it
+ * earn is eBio's commission, debited from their wallet, said here so it
  * never reads as a mistake.
  */
 function CashBreakdown({ offer }: CashBreakdownProps) {
@@ -334,12 +337,16 @@ interface OfferCardProps {
  * One delivery offered to the courier.
  *
  * Read top to bottom in the order the decision is made: what it pays and how
- * far it goes, where to, what to carry, the cash to handle — then the answer.
+ * far it goes, where to, what to carry, the cash to handle, then the answer.
  * The order number, useless for deciding, closes the card.
  */
 function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps) {
   const { semantic, isDark } = useTheme()
-  const isCash = offer.paymentMethod === 'CASH_ON_DELIVERY'
+  const palette = useValisePalette()
+  // « La Valise du pays »: from the shop to the eBio hub, paid by eBio, no buyer.
+  const collection = isExportCollection(offer)
+  const hub = collection ? offer.exportHub ?? null : null
+  const isCash = !collection && offer.paymentMethod === 'CASH_ON_DELIVERY'
   const targeted = offer.isTargeted
   const km = totalKm(offer)
   const items = offer.items ?? []
@@ -347,7 +354,10 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
 
   const cardStyle = targeted
     ? [styles.card, styles.targetedCard, { backgroundColor: isDark ? colors.green[900] : colors.green[50] }]
-    : [styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]
+    : collection
+      ? [styles.card, styles.collectionCard, { backgroundColor: semantic.bgCard, borderColor: palette.leather }]
+      : [styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]
+  const runNoun = collection ? 'la collecte' : 'la course'
 
   return (
     <View style={cardStyle}>
@@ -362,6 +372,8 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
             </View>
           )
         : null}
+
+      {collection ? <CollectionTag style={styles.collectionTag} /> : null}
 
       <View style={styles.hero}>
         <View style={styles.heroLeft}>
@@ -415,7 +427,9 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
             <View style={[styles.railLine, { backgroundColor: semantic.borderNormal }]} />
           </View>
           <View style={styles.stopBody}>
-            <Text style={[styles.stopTitle, { color: semantic.textPrimary }]} numberOfLines={1}>{offer.supplierShopName}</Text>
+            <Text style={[styles.stopTitle, { color: semantic.textPrimary }]} numberOfLines={1}>
+              {collection ? `De : ${offer.supplierShopName}` : offer.supplierShopName}
+            </Text>
             <Text style={[styles.stopAddress, { color: semantic.textSecondary }]} numberOfLines={2}>{offer.pickupAddress}</Text>
             {offer.distanceKm !== null
               ? (
@@ -428,10 +442,22 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
         </View>
         <View style={styles.stop}>
           <View style={styles.rail}>
-            <View style={[styles.dot, { backgroundColor: colors.blue[600] }]} />
+            <View style={[styles.dot, { backgroundColor: collection ? palette.sky : colors.blue[600] }]} />
           </View>
           <View style={styles.stopBody}>
-            <Text style={[styles.stopTitle, { color: semantic.textPrimary }]} numberOfLines={2}>{offer.dropoffAddress}</Text>
+            <Text style={[styles.stopTitle, { color: semantic.textPrimary }]} numberOfLines={3}>
+              {collection
+                ? `Vers : ${hub ? `${hub.name}, ${hub.address}` : offer.dropoffAddress}`
+                : offer.dropoffAddress}
+            </Text>
+            {hub?.hours
+              ? (
+                  <View style={styles.stopMetaRow}>
+                    <Clock size={12} color={semantic.textSecondary} strokeWidth={2.2} />
+                    <Text style={[styles.stopMetaInline, { color: semantic.textSecondary }]}>{`Horaires : ${hub.hours}`}</Text>
+                  </View>
+                )
+              : null}
             <View style={styles.stopMetaRow}>
               {offer.dropoffPosition
                 ? <MapPin size={12} color={colors.blue[600]} strokeWidth={2.2} />
@@ -439,7 +465,7 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
               <Text style={[styles.stopMetaInline, { color: offer.dropoffPosition ? semantic.textSecondary : colors.earth[600] }]}>
                 {[
                   offer.routeKm !== null ? `${formatKm(offer.routeKm)} depuis la boutique` : null,
-                  offer.dropoffPosition ? 'Point exact' : 'Adresse approximative',
+                  collection ? 'Point de regroupement eBio' : offer.dropoffPosition ? 'Point exact' : 'Adresse approximative',
                 ].filter(Boolean).join(' · ')}
               </Text>
             </View>
@@ -452,8 +478,8 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
       {isCash && offer.cashToShop !== null
         ? <CashBreakdown offer={offer} />
         : (
-            <Text style={[styles.paidNote, { color: semantic.textSecondary }]}>
-              Commande déjà payée : rien à encaisser.
+            <Text style={[styles.paidNote, { color: collection ? palette.inkSoft : semantic.textSecondary }]}>
+              {collection ? 'Payée par eBio, rien à encaisser.' : 'Commande déjà payée : rien à encaisser.'}
             </Text>
           )}
 
@@ -466,7 +492,7 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
                 disabled={disabled}
                 accessibilityRole="button"
                 accessibilityState={{ disabled }}
-                accessibilityLabel={`Refuser la course ${offer.orderNumber}`}
+                accessibilityLabel={`Refuser ${runNoun} ${offer.orderNumber}`}
               >
                 <Text style={[styles.declineText, { color: semantic.textPrimaryColor }]}>Refuser</Text>
               </Pressable>
@@ -478,11 +504,11 @@ function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps)
           disabled={disabled}
           accessibilityRole="button"
           accessibilityState={{ disabled, busy }}
-          accessibilityLabel={`Accepter la course ${offer.orderNumber}`}
+          accessibilityLabel={`Accepter ${runNoun} ${offer.orderNumber}`}
         >
           {busy
             ? <ActivityIndicator color={colors.neutral[0]} />
-            : <Text style={styles.acceptText}>Accepter la course</Text>}
+            : <Text style={styles.acceptText}>{collection ? 'Accepter la collecte' : 'Accepter la course'}</Text>}
         </Pressable>
       </View>
 
@@ -498,7 +524,7 @@ export function OffersScreen({ offers, refreshing, unavailable, notAllowed, debt
   // card's button slides under it and becomes untappable.
   const tabBarHeight = useBottomTabBarHeight()
   // One answer at a time: a second tap while the first is in flight used to
-  // send a second accept, which came back as « already taken » — by oneself.
+  // send a second accept, which came back as « already taken », by oneself.
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   async function accept(offer: CourierOffer) {
@@ -632,6 +658,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     padding: spacing[4],
+    marginBottom: spacing[3],
+  },
+  collectionCard: {
+    borderWidth: 1,
+  },
+  collectionTag: {
     marginBottom: spacing[3],
   },
   targetedCard: {

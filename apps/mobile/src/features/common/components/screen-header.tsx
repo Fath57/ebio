@@ -6,13 +6,13 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 
 /**
- * `surface` — barre pleine, posée dans le flux, pour les écrans de contenu.
- * `transparent` — barre flottante sans fond, superposée à un média plein cadre.
+ * `surface`, barre pleine, posée dans le flux, pour les écrans de contenu.
+ * `transparent`, barre flottante sans fond, superposée à un média plein cadre.
  */
 type ScreenHeaderVariant = 'surface' | 'transparent'
 
 interface ScreenHeaderProps {
-  /** Titre affiché, toujours visible — repère « où suis-je ». */
+  /** Titre affiché, toujours visible, repère « où suis-je ». */
   title?: string
   /** Sous-titre optionnel (ex. nombre d'articles, statut de présence). */
   subtitle?: string

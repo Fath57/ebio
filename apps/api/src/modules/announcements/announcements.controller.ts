@@ -37,7 +37,7 @@ export class AnnouncementsController {
    * The announcement of the moment, or nothing.
    *
    * Returning `null` rather than an empty array: the app has a decision to
-   * make — open a modal or not — not a list to walk.
+   * make, open a modal or not, not a list to walk.
    */
   @Get('current')
   async current(@Session() session: LoggedInBetterAuthSession) {

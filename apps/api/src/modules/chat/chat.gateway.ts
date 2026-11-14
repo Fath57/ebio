@@ -66,7 +66,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Client ${client.id} connected as user ${payload.sub}`)
     }
     catch (error) {
-      this.logger.warn(`Client ${client.id} disconnected: invalid token — ${error}`)
+      this.logger.warn(`Client ${client.id} disconnected: invalid token, ${error}`)
       client.disconnect()
     }
   }
@@ -83,7 +83,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const { userId } = client.data
 
-      // The WS path bypasses nzoth, so the contract is applied by hand —
+      // The WS path bypasses nzoth, so the contract is applied by hand,
       // unbounded content used to go straight to the database.
       const parsed = wsSendMessageSchema.safeParse(raw)
       if (!parsed.success) {
@@ -130,7 +130,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true, message: messagePayload }
     }
     catch (error) {
-      this.logger.error(`chat:send error — ${error}`)
+      this.logger.error(`chat:send error, ${error}`)
       return { success: false, error: 'Failed to send message' }
     }
   }
@@ -138,7 +138,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Fan-out for a message that did not come in over the socket: the
    * back-office answers support over REST, and without this the phone only
-   * learned of the reply on its next refetch — which is what made support
+   * learned of the reply on its next refetch, which is what made support
    * feel like e-mail instead of chat.
    *
    * Same room, same event name and same payload as `chat:send`, so the apps
@@ -170,7 +170,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
-   * Push NEW_MESSAGE unless the recipient has a live socket in the room —
+   * Push NEW_MESSAGE unless the recipient has a live socket in the room,
    * being connected means the message just arrived over the socket.
    */
   private async pushToOfflineRecipient(
@@ -218,7 +218,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     catch (error) {
       // A failed push must never fail the message send
-      this.logger.warn(`NEW_MESSAGE push failed for conversation ${conversationId} — ${error}`)
+      this.logger.warn(`NEW_MESSAGE push failed for conversation ${conversationId}, ${error}`)
     }
   }
 
@@ -268,7 +268,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true }
     }
     catch (error) {
-      this.logger.error(`chat:read error — user ${client.data.userId} conversation ${data?.conversationId} — ${error}`)
+      this.logger.error(`chat:read error, user ${client.data.userId} conversation ${data?.conversationId}, ${error}`)
       return { success: false, error: 'Failed to mark as read' }
     }
   }
@@ -279,7 +279,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string, isTyping: boolean },
   ): void {
     // Room membership is granted server-side only (handshake or chat:join),
-    // so it doubles as the participant check — no DB hit per keystroke.
+    // so it doubles as the participant check, no DB hit per keystroke.
     if (!client.rooms.has(`conversation:${data.conversationId}`)) {
       return
     }

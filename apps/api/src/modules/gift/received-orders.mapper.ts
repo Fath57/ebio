@@ -4,7 +4,7 @@ import { thumbnailUrlFor } from '../../common/media-urls'
 import { OrderStatus } from '../orders/entities/order.entity'
 import { firstName } from './gift-texts'
 
-/** A received cart as the relative reads it: what, from whom, from where — never an amount (FR-031). */
+/** A received cart as the relative reads it: what, from whom, from where, never an amount (FR-031). */
 export class ReceivedOrdersMapper {
   static toResponse(order: Order): ReceivedOrder {
     return {

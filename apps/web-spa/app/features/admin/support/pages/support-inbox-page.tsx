@@ -74,7 +74,7 @@ const POLL_INTERVAL_MS = 5000
 /**
  * The support inbox: every buyer's permanent thread with eBio.
  *
- * Support is a team, so there is no assignment — whoever is on duty opens a
+ * Support is a team, so there is no assignment, whoever is on duty opens a
  * thread and answers it. The buyer always sees the same correspondent.
  */
 export default function SupportInboxPage() {
@@ -86,7 +86,7 @@ export default function SupportInboxPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Read by the poll timer, which must not restart every time the selection
-  // changes — an interval that resets keeps postponing its own tick.
+  // changes, an interval that resets keeps postponing its own tick.
   const selectedId = useRef<string | null>(null)
   selectedId.current = selected?.id ?? null
   const scroller = useRef<HTMLDivElement | null>(null)

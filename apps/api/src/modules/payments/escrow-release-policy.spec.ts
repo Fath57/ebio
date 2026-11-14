@@ -26,4 +26,10 @@ describe('délai de versement des ventes en ligne', () => {
     expect(effectiveDelays({ heuresApresConfirmation: 48, heuresMaximum: 168 }, 12))
       .toEqual({ heuresApresConfirmation: 12, heuresMaximum: 12 })
   })
+
+  it('verse une commande terroir dès la collecte, quel que soit le délai de la boutique', () => {
+    expect(escrowReleaseAt(platform, { deliveredAt, bothConfirmed: false, supplierHours: 72, exportOrder: true }).toISOString())
+      .toBe(deliveredAt.toISOString())
+    expect(effectiveDelays(platform, null, true)).toEqual({ heuresApresConfirmation: 0, heuresMaximum: 0 })
+  })
 })

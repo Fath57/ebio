@@ -30,7 +30,7 @@ export const updateProductUnitSchema = createProductUnitSchema
   .partial()
   .meta({
     title: 'UpdateProductUnit',
-    description: 'Update a unit of sale — every field optional, the code is immutable',
+    description: 'Update a unit of sale, every field optional, the code is immutable',
   })
 
 export const productUnitSchema = z.object({

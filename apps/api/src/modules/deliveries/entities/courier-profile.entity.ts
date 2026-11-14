@@ -83,7 +83,7 @@ export class CourierProfile {
   @Property({ fieldName: 'last_location_at', nullable: true })
   lastLocationAt?: Date
 
-  // Plain copies of lastKnownLocation, readable without PostGIS functions —
+  // Plain copies of lastKnownLocation, readable without PostGIS functions,
   // written by the same UPDATE, consumed by the buyer live-tracking map.
   @Property({ fieldName: 'last_latitude', type: 'float', nullable: true })
   lastLatitude?: number

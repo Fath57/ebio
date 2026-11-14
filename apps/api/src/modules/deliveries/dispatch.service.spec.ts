@@ -57,7 +57,7 @@ function buildDelivery(extra: Partial<TestDelivery> = {}): TestDelivery {
 /**
  * The search runs three queries: the dispatched object's radius, its
  * starting point, then the couriers. The first two come from the object's
- * table — `deliveries` or `delivery_runs` — and that is all that tells
+ * table, `deliveries` or `delivery_runs`, and that is all that tells
  * a lone delivery from a run.
  */
 function mockLookup(execute: ReturnType<typeof vi.fn>, options: { radiusKm?: number, origin?: { latitude: number, longitude: number } | null } = {}) {
@@ -73,7 +73,7 @@ describe('dispatchService', () => {
       const { service, execute, settings } = buildService()
       settings.getCourierMaxDebt.mockResolvedValue(5000)
       // Avec une origine : sans point de retrait, plus aucune requête
-      // d'éligibilité n'est faite — c'est le sujet du test suivant.
+      // d'éligibilité n'est faite, c'est le sujet du test suivant.
       mockLookup(execute, { origin: { latitude: 6.36, longitude: 2.42 } })
       execute.mockResolvedValueOnce([])
       await service.findEligibleCouriers('delivery-1')
@@ -316,7 +316,7 @@ describe('dispatchService', () => {
 
     // The entry point of the loop: a run is born TARGETED with no open offer,
     // so this cron matched every brand-new one and pushed it to broadcast
-    // behind startRunDispatch's back — leaving dispatchStartedAt null, which
+    // behind startRunDispatch's back, leaving dispatchStartedAt null, which
     // is what the escalation reads to end a search.
     it('ignore une tournée dont la recherche n\'a jamais démarré', async () => {
       const { service, em } = buildService()

@@ -134,7 +134,7 @@ export default function AdminCommissionsPage() {
       meta: { numeric: true },
       cell: ({ row }) => (row.original.pendingCommission > 0
         ? formatAmount(row.original.pendingCommission)
-        : <span className="text-muted-foreground">—</span>),
+        : <span className="text-muted-foreground">-</span>),
     },
     {
       id: 'filter',

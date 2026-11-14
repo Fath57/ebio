@@ -41,7 +41,7 @@ import { buildOrderConditions } from './order-filters'
 import { buildProductConditions, PRODUCT_SALES_JOIN } from './product-filters'
 import { buildSupplierConditions, SUPPLIER_LIST_FROM } from './supplier-filters'
 
-/** Colonnes triables — liste fermée, aucune valeur de requête n'atteint le SQL. */
+/** Colonnes triables, liste fermée, aucune valeur de requête n'atteint le SQL. */
 const ORDER_SORT_COLUMNS: Record<string, string> = {
   createdAt: 'o."createdAt"',
   orderNumber: 'o.order_number',
@@ -837,7 +837,7 @@ export class AdminService {
   }
 
   // ===========================================================================
-  // Vues transverses — l'admin n'a pas de profil fournisseur, il ne peut donc
+  // Vues transverses, l'admin n'a pas de profil fournisseur, il ne peut donc
   // pas passer par les endpoints `me`-scopés. Ces lectures couvrent le support
   // client : retrouver une commande, un fournisseur, un compte.
   // ===========================================================================
@@ -897,7 +897,7 @@ export class AdminService {
   }
 
   /**
-   * Every order matching the list's filters, status and sort included — the
+   * Every order matching the list's filters, status and sort included, the
    * file says what the screen says, without the pagination.
    */
   async exportOrdersCsv(params: {
@@ -1255,13 +1255,13 @@ export class AdminService {
       THEN p.promotional_price
     END)`
 
-    // A promotion counts as live only while it runs — an expired row would
+    // A promotion counts as live only while it runs, an expired row would
     // otherwise keep the product in the list forever.
     //
     // Two mechanisms coexist: the `product_promotions` rows, and the older
     // `promotional_price` column still written by the legacy endpoint. Both
     // are checked, because both are what the price column shows struck
-    // through — a filter that ignored one would contradict the list under it.
+    // through, a filter that ignored one would contradict the list under it.
     const LIVE_PROMOTION = `(
       EXISTS (
         SELECT 1 FROM product_promotions pp

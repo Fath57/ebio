@@ -11,8 +11,8 @@ export enum HomeSectionMode {
  * What defines a section's products.
  *
  * The fields mirror the search on purpose: a section is nothing but a saved
- * search, and everything the search already does — distance, promotions,
- * rating — holds here without being rewritten.
+ * search, and everything the search already does, distance, promotions,
+ * rating, holds here without being rewritten.
  */
 export interface HomeSectionCriteria {
   categorySlug?: string
@@ -30,8 +30,8 @@ export interface HomeSectionCriteria {
 /**
  * A home section, as the back-office defines it.
  *
- * They used to be hard-coded in the app — "Près de vous", "Validé eBio", "En
- * promotion" — and renaming one meant a build and a Play Store submission.
+ * They used to be hard-coded in the app, "Près de vous", "Validé eBio", "En
+ * promotion", and renaming one meant a build and a Play Store submission.
  * They become data: created, renamed, reordered, switched off.
  */
 @Entity({ tableName: 'home_sections' })

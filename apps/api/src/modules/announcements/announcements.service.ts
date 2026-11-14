@@ -40,7 +40,7 @@ export class AnnouncementsService {
    *
    * Only one: two modals back to back and nobody reads the second. The highest
    * priority among those running that the buyer has not seen within the
-   * configured interval — an announcement that returns on every opening stops
+   * configured interval, an announcement that returns on every opening stops
    * being read after the second time.
    *
    * At equal priority, the one this buyer saw longest ago goes first, never-seen
@@ -128,7 +128,7 @@ export class AnnouncementsService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.BANNER_PAYMENT,
           amount: offer.price,
-          description: `Annonce ${offer.days} jour(s) — « ${labelOf(data.title)} »`,
+          description: `Annonce ${offer.days} jour(s), « ${labelOf(data.title)} »`,
         })
       }
       catch (error) {
@@ -138,7 +138,7 @@ export class AnnouncementsService {
       await this.walletService.post(PlatformAccount.BANNERS, 'credit', {
         type: WalletTransactionType.PLATFORM_BANNER,
         amount: offer.price,
-        description: `Annonce ${offer.days} jour(s) — ${supplier.shopName}`,
+        description: `Annonce ${offer.days} jour(s), ${supplier.shopName}`,
       })
     }
 
@@ -184,7 +184,7 @@ export class AnnouncementsService {
    * Approving: the request becomes a running announcement.
    *
    * The paid duration starts at the chosen start, not when the request was
-   * filed — a shop that waits three days for approval must not lose them.
+   * filed, a shop that waits three days for approval must not lose them.
    */
   async approveRequest(requestId: string, data: ApproveAnnouncementInput): Promise<AnnouncementRequest> {
     const request = await this.loadRequest(requestId)
@@ -222,7 +222,7 @@ export class AnnouncementsService {
 
     request.status = AnnouncementRequestStatus.REJECTED
     request.rejectionReason = reason
-    await this.refund(request, `Annonce refusée — ${reason}`)
+    await this.refund(request, `Annonce refusée, ${reason}`)
     await this.em.flush()
     return request
   }
@@ -294,7 +294,7 @@ export class AnnouncementsService {
     await this.walletService.post(PlatformAccount.BANNERS, 'debit', {
       type: WalletTransactionType.PLATFORM_BANNER,
       amount: request.price,
-      description: `Remboursement annonce — ${request.supplier.shopName}`,
+      description: `Remboursement annonce, ${request.supplier.shopName}`,
     })
   }
 }

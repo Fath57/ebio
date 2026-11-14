@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { ImageCropper } from '@/features/media/components/image-cropper'
 import { useMediaUpload } from '@/features/media/hooks/use-media-upload'
 
-/** Banners are drawn 2:1 by the mobile carousel — the frame matches exactly. */
+/** Banners are drawn 2:1 by the mobile carousel, the frame matches exactly. */
 const BANNER_ASPECT = 2
 
 interface BannerImageFieldProps {

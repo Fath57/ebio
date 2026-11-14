@@ -53,7 +53,7 @@ export class TopupService {
    * The provider behind the widget the apps embed.
    *
    * A top-up is settled by re-reading the transaction the widget produced, so
-   * this has to be the same provider the phone just paid through — asking
+   * this has to be the same provider the phone just paid through, asking
    * FedaPay about an INTRAM reference finds nothing, and the wallet would
    * never be credited.
    */
@@ -145,7 +145,7 @@ export class TopupService {
 
   /**
    * Called by the app when the widget completes. The server re-checks the
-   * transaction with FedaPay and compares the paid amount to the topup —
+   * transaction with FedaPay and compares the paid amount to the topup,
    * the client's word is never enough to credit a wallet.
    */
   async verify(userId: string, topupId: string, fedapayTransactionId: string): Promise<{ status: string, balance: number }> {
@@ -352,7 +352,7 @@ export class TopupService {
    *
    * The app only verifies while its payment screen is open, and the provider
    * sends the buyer back to the same page whether the payment went through or
-   * not — usually before the operator has answered. Without this, a topup
+   * not, usually before the operator has answered. Without this, a topup
    * that failed (or succeeded) a few seconds later stayed « en attente » for
    * good. The webhook would do the same job; it is not relied on.
    */
@@ -380,7 +380,7 @@ export class TopupService {
     if (check.status === 'completed') {
       const topup = await this.em.findOne(WalletTopup, { fedapayTransactionId: reference })
       if (topup && check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {
-        this.logger.error(`Recharge ${topup.id} : ${check.amount} payés, ${topup.amount} attendus — à régler à la main`)
+        this.logger.error(`Recharge ${topup.id} : ${check.amount} payés, ${topup.amount} attendus, à régler à la main`)
         return
       }
       await this.settleFromProvider(reference, 'completed')

@@ -13,7 +13,7 @@ const MAX_SEEDED = 3
  *
  * Idempotent et sans identifiant codé en dur : les cibles sont choisies dans la
  * base au moment de l'exécution. Ce seeder peut donc être rejoué seul sur un
- * environnement déjà peuplé — production comprise — sans rien dupliquer :
+ * environnement déjà peuplé, production comprise, sans rien dupliquer :
  *
  *   pnpm exec mikro-orm seeder:run --class=BannerSeeder
  */
@@ -52,7 +52,7 @@ export class BannerSeeder extends Seeder {
       { orderBy: { globalRating: 'DESC' }, limit: MAX_SEEDED * 3 },
     )
 
-    // Une base peut contenir plusieurs lignes pour la même boutique — seeds
+    // Une base peut contenir plusieurs lignes pour la même boutique, seeds
     // rejoués, imports successifs. Sans ce filtre, le carrousel afficherait
     // deux fois la même enseigne.
     const seenShops = new Set<string>()

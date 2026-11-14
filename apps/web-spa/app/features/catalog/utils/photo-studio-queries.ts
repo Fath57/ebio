@@ -130,7 +130,7 @@ export interface RestagedPhoto {
 /**
  * The deep pass: the product kept, its surroundings redrawn by a model.
  *
- * Slow — count up to a minute — and never innocent: the answer always carries
+ * Slow, count up to a minute, and never innocent: the answer always carries
  * a fidelity verdict, because the model has been observed adding a label to a
  * bottle that had none.
  */

@@ -18,7 +18,7 @@ interface ThumbnailProps {
  * A picture that takes its place before it arrives.
  *
  * Images used to pop in one after another and push the page around as they
- * landed — on a slow connection that is what reads as « ça rame », whatever
+ * landed, on a slow connection that is what reads as « ça rame », whatever
  * the real speed. The block holds the space from the first paint, fills when
  * the file lands, and says plainly when there is nothing to show rather than
  * leaving a hole.

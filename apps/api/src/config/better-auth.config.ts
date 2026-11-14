@@ -12,7 +12,7 @@ const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com']
 /**
  * Checks a Google ID token against every client the apps sign in with.
  *
- * Better Auth only accepts its single `clientId` as audience — the web client.
+ * Better Auth only accepts its single `clientId` as audience, the web client.
  * Android tokens carry it, but Google issues an iPhone's token for the app's
  * own iOS client, so every iOS sign-in was refused. Same checks otherwise:
  * Google's keys, issuer, freshness and the nonce when one was sent.
@@ -112,7 +112,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         : {}),
       // Native Sign in with Apple only: the app hands over the identity token
       // and Better Auth checks it against Apple's keys, with the bundle id as
-      // audience. No secret is involved — that one only serves the web
+      // audience. No secret is involved, that one only serves the web
       // redirect flow, which the apps never use.
       ...(options.appleBundleIds.length > 0
         ? {

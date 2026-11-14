@@ -87,7 +87,7 @@ export class ChatService {
     await em.persistAndFlush(conversation)
 
     if (productId) {
-      // The prompt needs the product NAME — sending the raw UUID produced
+      // The prompt needs the product NAME, sending the raw UUID produced
       // « est-ce que votre a3f1c2e0-… est disponible ? »
       const product = await em.findOne(Product, { id: productId })
       const promptContent = this.generatePromptMessage(product?.name ?? 'produit')
@@ -268,7 +268,7 @@ export class ChatService {
     return message
   }
 
-  /** Throws unless the user is a participant — used by the WS gateway. */
+  /** Throws unless the user is a participant, used by the WS gateway. */
   async assertParticipant(conversationId: string, userId: string): Promise<void> {
     await this.verifyParticipant(this.em.fork(), conversationId, userId)
   }
@@ -334,8 +334,8 @@ export class ChatService {
    * What the back-office badge shows: support messages written by a buyer
    * that nobody on the team has opened yet.
    *
-   * Raw SQL because the condition compares two columns — the sender is the
-   * thread's own buyer — which the query builder cannot express. Counting
+   * Raw SQL because the condition compares two columns, the sender is the
+   * thread's own buyer, which the query builder cannot express. Counting
    * this way stays one index scan however many threads exist, so the badge
    * can be polled every few seconds without weighing on the API.
    */
@@ -376,7 +376,7 @@ export class ChatService {
 
   /**
    * Every conversation the user takes part in, whichever seat they hold.
-   * A back-office seat additionally holds every support thread — that is what
+   * A back-office seat additionally holds every support thread, that is what
    * makes support answerable by whoever is on duty.
    */
   participantFilter(userId: string, staff = false): Array<Record<string, unknown>> {

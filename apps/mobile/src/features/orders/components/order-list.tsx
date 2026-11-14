@@ -1,4 +1,5 @@
 import type { FrozenDisplay } from '../../common/hooks/use-money'
+import type { TerroirShipmentStatus, TerroirShipmentSummary } from '../../terroir/terroir-api'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
@@ -10,7 +11,7 @@ import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -19,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable, StaggerItem } from '../../../utils/animations'
@@ -29,6 +31,8 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { formatFrozenMoney, parseFrozenDisplay } from '../../common/hooks/use-money'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { ValiseOrderRow } from '../../terroir/components/valise/valise-order-row'
+import { fetchTerroirShipments, useTerroirCountries } from '../../terroir/terroir-api'
 import { useReorder } from '../hooks/use-reorder'
 import { ReceivedOrders, useReceivedOrders } from './received-orders'
 
@@ -63,13 +67,13 @@ interface DeliveryRun {
 function runProgressLabel(delivery: DeliveryRun): string | null {
   const run = delivery.run
   if (run !== null && run.awaitingBuyerDecision) {
-    return 'Aucun livreur disponible — attendre ou annuler ?'
+    return 'Aucun livreur disponible, attendre ou annuler ?'
   }
   if (run === null || run.shopCount <= 1) {
     return RUN_LABELS[delivery.status]
   }
   if (run.awaitingBuyerDecision) {
-    return 'Aucun livreur disponible — attendre ou annuler ?'
+    return 'Aucun livreur disponible, attendre ou annuler ?'
   }
   if (delivery.status === 'AWAITING_COURIER') {
     return `Recherche d’un livreur pour vos ${run.shopCount} boutiques…`
@@ -93,7 +97,7 @@ const RUN_LABELS: Record<DeliveryRunStatus, string | null> = {
   PICKED_UP: 'Colis récupéré par le livreur',
   IN_TRANSIT: 'Livreur en route vers vous',
   DELIVERED: null,
-  FAILED: 'Livraison non aboutie — la boutique vous recontacte',
+  FAILED: 'Livraison non aboutie, la boutique vous recontacte',
   CANCELLED: null,
 }
 const LIVE_RUN_STATUSES: DeliveryRunStatus[] = ['AWAITING_COURIER', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT']
@@ -121,7 +125,14 @@ interface OrderListItem {
   delivery: DeliveryRun | null
   /** Currency frozen at checkout; null when paid in FCFA. */
   display: FrozenDisplay | null
+  /** EXPORT: one shop's share of a valise, shown through the valise instead. */
+  pickupMode: string | null
 }
+
+/** One line of the list: a local order, or a whole valise sent abroad. */
+type ListRow
+  = | { kind: 'order', key: string, at: string, order: OrderListItem }
+    | { kind: 'valise', key: string, at: string, shipment: TerroirShipmentSummary }
 
 interface OrderListProps {
   onOpenOrder: (orderId: string) => void
@@ -130,6 +141,8 @@ interface OrderListProps {
   /** Rating of a basket received from a relative: its products, then its courier. */
   onRateReceivedProducts?: (orderId: string) => void
   onRateReceivedCourier?: (orderId: string, supplierId: string | null) => void
+  /** Opens « Ma valise envoyée »: valises are rows of the list, like orders. */
+  onOpenShipment?: (shipmentId: string) => void
 }
 
 type Segment = 'MINE' | 'RECEIVED'
@@ -164,6 +177,14 @@ const FILTER_STATUSES: Record<FilterTab, OrderStatus[]> = {
   ACTIVE: ACTIVE_STATUSES,
   COMPLETED: ['DELIVERED'],
   CANCELLED: ['CANCELLED'],
+}
+
+/** The valises each tab shows: handed over is done, lost or damaged sits with the cancelled. */
+const VALISE_FILTER: Record<FilterTab, (status: TerroirShipmentStatus) => boolean> = {
+  ALL: () => true,
+  ACTIVE: status => !['HANDED_OVER', 'CANCELLED', 'LOST', 'DAMAGED'].includes(status),
+  COMPLETED: status => status === 'HANDED_OVER',
+  CANCELLED: status => ['CANCELLED', 'LOST', 'DAMAGED'].includes(status),
 }
 
 const FILTER_TABS: Array<{ key: FilterTab, label: string }> = [
@@ -207,6 +228,7 @@ function toOrderListItem(o: Record<string, unknown>): OrderListItem {
     })),
     delivery: (o.delivery ?? null) as DeliveryRun | null,
     display: parseFrozenDisplay(o.display),
+    pickupMode: typeof o.pickupMode === 'string' ? o.pickupMode : null,
   }
 }
 
@@ -229,7 +251,38 @@ function getFirstPhoto(items: OrderItem[]): string | null {
   return items.find(i => i.productPhoto)?.productPhoto ?? null
 }
 
-export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onRateReceivedCourier }: OrderListProps) {
+/**
+ * The buyer's valises, read on focus. Not behind the module's switch: a paid
+ * valise is followed to the end, even once the module closes.
+ */
+function useValises(): { valises: TerroirShipmentSummary[], reload: () => Promise<void> } {
+  const { data: session } = useSession()
+  const signedIn = Boolean(session?.user)
+  const [valises, setValises] = useState<TerroirShipmentSummary[]>([])
+
+  const reload = useCallback(async (): Promise<void> => {
+    if (!signedIn) {
+      setValises([])
+      return
+    }
+    try {
+      setValises(await fetchTerroirShipments())
+    }
+    catch {
+      // Keep what was there: the orders still show.
+    }
+  }, [signedIn])
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload()
+    }, [reload]),
+  )
+
+  return { valises, reload }
+}
+
+export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onRateReceivedCourier, onOpenShipment }: OrderListProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL')
   const [segment, setSegment] = useState<Segment>('MINE')
@@ -276,20 +329,41 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
 
   // The tab's count on the server, not only the orders loaded so far.
   const [totalOrders, setTotalOrders] = useState(0)
+  // EXPORT orders the server counted but the list does not show (their valise
+  // does): taken off the count as the pages come in.
+  const exportIdsRef = useRef(new Set<string>())
+  const [exportCount, setExportCount] = useState(0)
+  const noteExports = useCallback((items: OrderListItem[], reset: boolean): void => {
+    if (reset) {
+      exportIdsRef.current = new Set()
+    }
+    items.filter(order => order.pickupMode === 'EXPORT').forEach(order => exportIdsRef.current.add(order.id))
+    setExportCount(exportIdsRef.current.size)
+  }, [])
   const filterStatuses = FILTER_STATUSES[activeFilter]
   const {
     items: orders,
     isLoading,
     isRefreshing,
     isLoadingMore,
+    hasMore,
     refresh: handleRefresh,
     loadMore,
     setItems: setOrders,
   } = usePaginatedList<OrderListItem>(async (page) => {
     const result = await fetchOrdersPage(page, filterStatuses)
     setTotalOrders(result.total)
+    noteExports(result.items, page === 1)
     return { items: result.items, hasMore: hasMoreAfter(page, PAGE_SIZE, result.total) }
   }, activeFilter)
+
+  const { valises, reload: reloadValises } = useValises()
+  // Fills the flags and country names the valise rows read.
+  useTerroirCountries(true, valises.length > 0)
+  const handleRefreshAll = useCallback(() => {
+    void reloadValises()
+    handleRefresh()
+  }, [handleRefresh, reloadValises])
 
   // Live delivery line: while a run is in progress and the screen is focused,
   // re-read the first page quietly and patch the rows in place, so the
@@ -299,6 +373,7 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
     try {
       const latest = await fetchOrdersPage(1, filterStatuses)
       setTotalOrders(latest.total)
+      noteExports(latest.items, false)
       setOrders((current) => {
         const fresh = new Map(latest.items.map(order => [order.id, order]))
         const known = new Set(current.map(order => order.id))
@@ -309,7 +384,7 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
     catch {
       // The next tick tries again.
     }
-  }, [setOrders, filterStatuses])
+  }, [setOrders, filterStatuses, noteExports])
   useFocusEffect(
     useCallback(() => {
       if (!hasLiveRun) {
@@ -326,15 +401,35 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
 
   // The server already filtered by tab; this only drops an order whose status
   // moved out of it since it was loaded (a live poll, for instance).
+  // EXPORT orders never show on their own: one valise row stands for them all.
   const filteredOrders = useMemo(
-    () => (filterStatuses.length === 0 ? orders : orders.filter(order => filterStatuses.includes(order.status))),
+    () => orders
+      .filter(order => order.pickupMode !== 'EXPORT')
+      .filter(order => filterStatuses.length === 0 || filterStatuses.includes(order.status)),
     [orders, filterStatuses],
   )
 
-  const orderCount = totalOrders
+  const tabValises = useMemo(
+    () => valises.filter(valise => VALISE_FILTER[activeFilter](valise.status)),
+    [valises, activeFilter],
+  )
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: OrderListItem, index: number }) => {
+  // Valises and orders by date, newest first. While older orders remain to
+  // load, a valise older than the last one loaded waits for its page, or it
+  // would sit at the bottom ahead of the orders that come before it.
+  const rows = useMemo<ListRow[]>(() => {
+    const orderRows = filteredOrders.map((order): ListRow => ({ kind: 'order', key: `o${order.id}`, at: order.createdAt, order }))
+    const oldestLoaded = orders.length > 0 ? orders[orders.length - 1].createdAt : null
+    const valiseRows = tabValises
+      .filter(valise => !hasMore || oldestLoaded === null || (valise.createdAt ?? '') >= oldestLoaded)
+      .map((valise): ListRow => ({ kind: 'valise', key: `v${valise.id}`, at: valise.createdAt ?? '', shipment: valise }))
+    return [...orderRows, ...valiseRows].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+  }, [filteredOrders, orders, tabValises, hasMore])
+
+  const orderCount = Math.max(0, totalOrders - exportCount) + tabValises.length
+
+  const renderOrder = useCallback(
+    (item: OrderListItem, index: number) => {
       const statusColor = STATUS_COLORS[item.status]
       const photo = getFirstPhoto(item.items)
       const summary = buildItemsSummary(item.items)
@@ -441,7 +536,7 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
 
                 {/* Le geste le plus fréquent d'un acheteur de courses : refaire
                   * celle de la semaine dernière. Offert seulement une fois la
-                  * commande livrée — avant, elle est encore en cours. */}
+                  * commande livrée, avant, elle est encore en cours. */}
                 {item.status === 'DELIVERED' && (
                   <TouchableOpacity
                     style={[styles.reorderButton, { borderColor: semantic.borderNormal }]}
@@ -465,7 +560,22 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
     [handleReorder, isReordering, onOpenOrder, semantic],
   )
 
-  const keyExtractor = useCallback((item: OrderListItem) => item.id, [])
+  const openShipment = useCallback((shipmentId: string) => {
+    onOpenShipment?.(shipmentId)
+  }, [onOpenShipment])
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: ListRow, index: number }) => (item.kind === 'valise'
+      ? (
+          <StaggerItem index={index}>
+            <ValiseOrderRow shipment={item.shipment} onPress={openShipment} />
+          </StaggerItem>
+        )
+      : renderOrder(item.order, index)),
+    [openShipment, renderOrder],
+  )
+
+  const keyExtractor = useCallback((item: ListRow) => item.key, [])
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
@@ -551,7 +661,7 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
             )
           : (
               <FlatList
-                data={filteredOrders}
+                data={rows}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 contentContainerStyle={[
@@ -559,10 +669,10 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
                   // The tab bar floats over the list: without its height the
                   // last card sits underneath it.
                   { paddingBottom: tabBarHeight + spacing[6] },
-                  filteredOrders.length === 0 && styles.listContentEmpty,
+                  rows.length === 0 && styles.listContentEmpty,
                 ]}
                 refreshing={isRefreshing}
-                onRefresh={handleRefresh}
+                onRefresh={handleRefreshAll}
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}

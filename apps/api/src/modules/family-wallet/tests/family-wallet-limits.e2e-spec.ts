@@ -31,7 +31,7 @@ async function setMemberCap(em: EntityManager, memberId: string, monthlyCap: num
 }
 
 /** US3: what each member may spend, per month, per order and on which products. */
-describe('portefeuille famille — limites au paiement (e2e)', { timeout: 30_000 }, () => {
+describe('portefeuille famille, limites au paiement (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, DeliveriesModule, OrdersModule, FamilyWalletModule],

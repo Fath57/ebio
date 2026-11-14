@@ -11,7 +11,8 @@ import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
-import { DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS, giftContactLine } from '../types'
+import { COLLECTION_FAIL_LABELS, collectionLabel, DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS, giftContactLine, isExportCollection } from '../types'
+import { CollectionTag } from './collection-tag'
 
 interface DeliveryDetailProps {
   delivery: Delivery
@@ -33,6 +34,13 @@ const EVENT_LABELS: Record<string, string> = {
   REASSIGNED: 'Réattribuée',
   ORDER_CANCELLED: 'Commande annulée',
   SELF_DELIVERED: 'Livrée par le fournisseur',
+}
+
+/** What changes in the timeline when the run ends at the eBio hub. */
+const COLLECTION_EVENT_LABELS: Record<string, string> = {
+  IN_TRANSIT: 'En route vers le point eBio',
+  DELIVERED: 'Déposée au point eBio',
+  FAILED: 'Échec de la collecte',
 }
 
 function formatDateTime(iso: string): string {
@@ -63,6 +71,9 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
   const giftLine = giftContactLine(delivery.buyerContact)
   const recipientPhone = giftLine ? delivery.buyerContact?.phone ?? null : null
   const runOpen = delivery.status === 'ACCEPTED' || delivery.status === 'PICKED_UP' || delivery.status === 'IN_TRANSIT'
+  // « La Valise du pays »: shop to eBio hub, paid by eBio, no buyer.
+  const collection = isExportCollection(delivery)
+  const hub = collection ? delivery.exportHub ?? null : null
 
   async function openChat(): Promise<void> {
     if (openingChat || !onOpenChat) {
@@ -81,7 +92,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
     }
   }
   const courierFee = delivery.courierFee ?? 0
-  const isCash = delivery.paymentMethod === 'CASH_ON_DELIVERY'
+  const isCash = !collection && delivery.paymentMethod === 'CASH_ON_DELIVERY'
   // Cash orders: eBio's share of the delivery fee is debited from the wallet.
   const cashCommission = isCash
     ? Math.max(0, (delivery.deliveryFee ?? 0) - courierFee)
@@ -90,6 +101,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
   return (
     <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={[styles.container, { paddingBottom: tabBarClearance + spacing[6] }]}>
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
+        {collection ? <CollectionTag style={styles.collectionTag} /> : null}
         <View style={styles.headerRow}>
           <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{delivery.orderNumber}</Text>
           <View style={[styles.statusBadge, { backgroundColor: failed ? colors.coral[50] : semantic.bgPrimaryLight }]}>
@@ -101,10 +113,30 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
 
         <Text style={[styles.label, { color: semantic.textTertiary }]}>Retrait</Text>
         <Text style={[styles.value, { color: semantic.textPrimary }]}>
-          {`${delivery.supplierShopName} — ${delivery.pickupAddress}`}
+          {`${delivery.supplierShopName}, ${delivery.pickupAddress}`}
         </Text>
-        <Text style={[styles.label, { color: semantic.textTertiary }]}>Livraison</Text>
-        <Text style={[styles.value, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
+        <Text style={[styles.label, { color: semantic.textTertiary }]}>{collection ? 'Dépôt au point eBio' : 'Livraison'}</Text>
+        <Text style={[styles.value, { color: semantic.textPrimary }]}>
+          {hub ? `${hub.name}, ${hub.address}` : delivery.dropoffAddress}
+        </Text>
+        {hub?.hours
+          ? <Text style={[styles.value, { color: semantic.textSecondary }]}>{`Horaires : ${hub.hours}`}</Text>
+          : null}
+        {hub?.phone && runOpen
+          ? (
+              <Pressable
+                style={[styles.routeButton, { borderColor: semantic.borderNormal }]}
+                onPress={() => {
+                  void Linking.openURL(`tel:${hub.phone}`)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Appeler le point eBio"
+              >
+                <Phone size={16} color={colors.green[600]} strokeWidth={2.2} />
+                <Text style={[styles.routeText, { color: colors.green[800] }]}>Appeler le point eBio</Text>
+              </Pressable>
+            )
+          : null}
         {giftLine && (
           <Text style={[styles.value, { color: semantic.textPrimaryColor }]}>{giftLine}</Text>
         )}
@@ -128,10 +160,12 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
             style={[styles.routeButton, { borderColor: semantic.borderNormal }]}
             onPress={() => openRoute(delivery.dropoffPosition!)}
             accessibilityRole="button"
-            accessibilityLabel="Ouvrir l’itinéraire vers le client"
+            accessibilityLabel={collection ? 'Ouvrir l’itinéraire vers le point eBio' : 'Ouvrir l’itinéraire vers le client'}
           >
             <Navigation size={16} color={colors.green[600]} strokeWidth={2.2} />
-            <Text style={[styles.routeText, { color: colors.green[800] }]}>Itinéraire vers le client</Text>
+            <Text style={[styles.routeText, { color: colors.green[800] }]}>
+              {collection ? 'Itinéraire vers le point eBio' : 'Itinéraire vers le client'}
+            </Text>
           </Pressable>
         )}
         {delivery.buyerContact && onOpenChat && (
@@ -150,6 +184,13 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
         <Text style={[styles.amount, { color: semantic.textPrimary }]}>{formatAmount(delivery.totalAmount)}</Text>
         <Text style={[styles.label, { color: semantic.textTertiary }]}>Votre gain</Text>
         <Text style={[styles.amount, { color: semantic.textPrimaryColor }]}>{`Vous gagnez ${formatAmount(courierFee)}`}</Text>
+        {collection
+          ? (
+              <Text style={[styles.value, { color: semantic.textSecondary }]}>
+                {`${collectionLabel(delivery.supplierShopName)}. Payée par eBio, rien à encaisser.`}
+              </Text>
+            )
+          : null}
         {cashCommission > 0
           ? (
               <Text style={[styles.value, { color: semantic.textSecondary }]}>
@@ -206,8 +247,8 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
           ? (
               <View style={[styles.failBox, { backgroundColor: colors.coral[50] }]}>
                 <Text style={[styles.failText, { color: colors.coral[800] }]}>
-                  {FAIL_REASON_LABELS[delivery.failReason]}
-                  {delivery.failComment ? ` — ${delivery.failComment}` : ''}
+                  {(collection ? COLLECTION_FAIL_LABELS : FAIL_REASON_LABELS)[delivery.failReason]}
+                  {delivery.failComment ? `, ${delivery.failComment}` : ''}
                 </Text>
               </View>
             )
@@ -221,7 +262,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
             <View style={[styles.eventDot, { backgroundColor: colors.green[400] }]} />
             <View style={styles.eventText}>
               <Text style={[styles.eventLabel, { color: semantic.textPrimary }]}>
-                {EVENT_LABELS[event.type] ?? event.type}
+                {(collection ? COLLECTION_EVENT_LABELS[event.type] : undefined) ?? EVENT_LABELS[event.type] ?? event.type}
               </Text>
               <Text style={[styles.eventDate, { color: semantic.textTertiary }]}>{formatDateTime(event.occurredAt)}</Text>
             </View>
@@ -233,6 +274,9 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
 }
 
 const styles = StyleSheet.create({
+  collectionTag: {
+    marginBottom: spacing[3],
+  },
   routeButton: {
     minHeight: 44,
     marginTop: spacing[2],

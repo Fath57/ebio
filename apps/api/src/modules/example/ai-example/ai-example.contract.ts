@@ -273,7 +273,7 @@ export const useCase3LogicalUnitsResponseSchema = z.object({
 })
 export type UseCase3LogicalUnitsResponse = z.infer<typeof useCase3LogicalUnitsResponseSchema>
 
-/** Use case 4: Simple generation with sessionId — group traces in Langfuse by session (e.g. conversation). */
+/** Use case 4: Simple generation with sessionId, group traces in Langfuse by session (e.g. conversation). */
 export const useCase4ChatSessionRequestSchema = z.object({
   prompt: z.string().min(1),
   sessionId: z.string().min(1).describe('Session ID to group traces in Langfuse (e.g. conversation or thread)'),

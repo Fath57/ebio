@@ -4,7 +4,7 @@ import { ProductThumb } from '../../common/components/product-thumb'
  * The message as a phone will show it.
  *
  * Written next to the fields rather than after sending: a notification is
- * read in two seconds, in a tray, next to twenty others — and a title that
+ * read in two seconds, in a tray, next to twenty others, and a title that
  * looked fine in a form is often three words too long there.
  */
 export function CampaignPreview({ title, body, imageUrl }: {

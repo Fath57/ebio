@@ -18,7 +18,7 @@ const CHECK_INTERVAL_MS = 30 * 60 * 1000
 /**
  * Compares two versions as numbers, not as text.
  *
- * "1.10.0" comes after "1.9.0", which a string comparison gets backwards —
+ * "1.10.0" comes after "1.9.0", which a string comparison gets backwards,
  * and would have told everyone on 1.9 that they were up to date for the whole
  * of the 1.10 series.
  */
@@ -40,7 +40,7 @@ function isOlder(current: string, other: string): boolean {
  *
  * Over-the-air updates carry JavaScript alone. A release that needs a native
  * module, or an API that stops accepting what an old build sends, can only
- * arrive through the store — and the app cannot notice that by itself. The
+ * arrive through the store, and the app cannot notice that by itself. The
  * server says what it expects; here we compare.
  *
  * Failing silently is the right answer: an app that cannot reach the server

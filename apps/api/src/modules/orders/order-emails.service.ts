@@ -7,7 +7,7 @@ import { buildInvoiceItems, formatFcfa, formatInvoiceDate, PAYMENT_LABELS } from
 /**
  * Written trace of a fresh order: a recap to the buyer and an alert to the
  * shop, both listing the items with their photos. Sent the moment the order
- * becomes real — right away for cash and wallet, at payment confirmation for
+ * becomes real, right away for cash and wallet, at payment confirmation for
  * FedaPay. Never throws: a mail server outage must not fail a paid order.
  *
  * Lives in its own module so the payments module can trigger it without
@@ -56,7 +56,7 @@ export class OrderEmailsService {
       if (order.buyer.email) {
         await this.emailService.sendTemplatedEmail({
           to: order.buyer.email,
-          subject: `Commande confirmée — ${order.orderNumber}`,
+          subject: `Commande confirmée, ${order.orderNumber}`,
           template: 'order-confirmation',
           data,
         })
@@ -65,7 +65,7 @@ export class OrderEmailsService {
       if (shopEmail) {
         await this.emailService.sendTemplatedEmail({
           to: shopEmail,
-          subject: `Nouvelle commande ${order.orderNumber} — ${formatFcfa(order.totalAmount)}`,
+          subject: `Nouvelle commande ${order.orderNumber}, ${formatFcfa(order.totalAmount)}`,
           template: 'order-new-supplier',
           data: { ...data, buyerPhone: order.buyer.phone ?? null },
         })

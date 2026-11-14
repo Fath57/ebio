@@ -183,8 +183,8 @@ export function ConversationList({ currentUserId, onOpenConversation, onOpenSupp
 
   /**
    * Refresh on focus, then stay live: the socket is opened for the list too,
-   * and any message — sent from here, from the other side, or from the
-   * back-office — refreshes the previews and the unread counters at once.
+   * and any message, sent from here, from the other side, or from the
+   * back-office, refreshes the previews and the unread counters at once.
    * Without it the list only ever caught up when it regained focus.
    */
   const isFirstFocus = useRef(true)
@@ -275,7 +275,7 @@ export function ConversationList({ currentUserId, onOpenConversation, onOpenSupp
   /**
    * Support sits above the list and is always there, whether the thread
    * exists yet or not. A buyer who opens Messages with no order has nobody
-   * to write to otherwise — which was the whole problem.
+   * to write to otherwise, which was the whole problem.
    */
   const supportRow = useMemo(() => {
     const existing = conversations.find(c => c.kind === 'SUPPORT')

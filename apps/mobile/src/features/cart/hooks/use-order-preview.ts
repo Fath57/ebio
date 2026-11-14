@@ -48,7 +48,7 @@ export interface OrderPreview {
    */
   deliveryRunCount: number
   /**
-   * The shop is closed right now — `null` when it is open.
+   * The shop is closed right now, `null` when it is open.
    *
    * Read above the order button: ordering from a closed shop is still
    * possible, but no longer unknowingly.
@@ -209,7 +209,7 @@ function parseClosedShop(raw: unknown): OrderPreview['closedShop'] {
  * delivery fee, computed server-side so the summary never invents an amount.
  *
  * Pass `null` to idle (no call, no state). The server recomputes everything at
- * order creation and stays the authority — this mirrors it for display.
+ * order creation and stays the authority, this mirrors it for display.
  */
 export function useOrderPreview(input: OrderPreviewInput | null): OrderPreviewState {
   const [preview, setPreview] = useState<OrderPreview | null>(null)

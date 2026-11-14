@@ -34,7 +34,7 @@ async function deliver(em: EntityManager, orderId: string, deliveryId: string): 
 
 /**
  * « Paniers reçus »: a cart sent to a number shows on the account that
- * proved owning it by SMS — and on no other, and not after the number
+ * proved owning it by SMS, and on no other, and not after the number
  * changed. The relative may rate what they received.
  */
 describe('paniers reçus par le proche (e2e)', () => {

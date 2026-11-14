@@ -16,7 +16,7 @@ const { width, height } = Dimensions.get('window')
 /**
  * The three leaves drift in from off-screen while the logo lands, each on its
  * own delay and trajectory, then keep a slow float until the global fade.
- * Artwork generated in the brand style (gpt-image), layered here — an
+ * Artwork generated in the brand style (gpt-image), layered here, an
  * animation no still asset could carry by itself.
  */
 const LEAVES = [

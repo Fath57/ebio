@@ -34,7 +34,7 @@ const QUERY_KEY = ['admin', 'home-sections']
  *
  * They used to be hard-coded in the app: renaming "Validé eBio" meant a build
  * and a Play Store submission. The list here is in display order, and moves a
- * notch at a time — that is the gesture people make, and it avoids the states
+ * notch at a time, that is the gesture people make, and it avoids the states
  * where two sections fight over a place.
  */
 export function HomeSectionsManager() {

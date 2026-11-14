@@ -22,9 +22,9 @@ const RESTAGE_SIZE = 1024
 /** `medium` kept the bottle's shape; `low` turned its cork into a metal cap. */
 const RESTAGE_QUALITY = 'medium'
 /**
- * The image editor. `gpt-image-1` was withdrawn from `/v1/images/edits` —
+ * The image editor. `gpt-image-1` was withdrawn from `/v1/images/edits`,
  * OpenAI now answers « does not exist » although it is still listed in
- * `/v1/models` — so the studio's restage failed on every call.
+ * `/v1/models`, so the studio's restage failed on every call.
  */
 const RESTAGE_MODEL = 'gpt-image-2'
 /** Redrawing a scene takes its time; a shorter leash just loses the result. */
@@ -34,7 +34,7 @@ const RESTAGE_TIMEOUT_MS = 120_000
  * Retouching a product photo, and saying what is wrong with it.
  *
  * Two deliberately separate things. The retouching is arithmetic on the pixels
- * that were photographed — brightness, framing, a clean backdrop — and invents
+ * that were photographed, brightness, framing, a clean backdrop, and invents
  * nothing. The review only *reads* the photo and answers in words. Neither
  * ever produces a picture of a product from a description: a buyer who
  * receives something other than what the listing showed has been misled, and
@@ -112,7 +112,7 @@ export class PhotoStudioService {
    * The pixels, and only the pixels.
    *
    * Order matters: straighten before measuring, trim before centring, and
-   * light before sharpening — sharpening noise first only makes it louder.
+   * light before sharpening, sharpening noise first only makes it louder.
    */
   private async render(input: Buffer, adjustments: PhotoAdjustments): Promise<Buffer> {
     // `failOn: 'none'` keeps a slightly malformed phone JPEG usable; `.rotate()`
@@ -169,7 +169,7 @@ export class PhotoStudioService {
    * What a buyer would hold against this photo.
    *
    * The model is asked to look and report, never to retouch. Its answer is
-   * advice for the person holding the phone — which is the only thing that
+   * advice for the person holding the phone, which is the only thing that
    * actually fixes a bad product photo.
    */
   async review(url: string, productName: string | undefined, userId: string, manageAll: boolean): Promise<PhotoReview> {
@@ -235,7 +235,7 @@ export class PhotoStudioService {
    *
    * The prompt insists, at length, that the product itself must not change.
    * It is not enough. Asked to restage a bottle carrying **no** label, the
-   * editor produced one reading « EXTRA VIRGIN OLIVE OIL » — a commercial
+   * editor produced one reading « EXTRA VIRGIN OLIVE OIL », a commercial
    * claim the shop never made, on a food listing. So the result is never
    * returned alone: it comes with a verdict from a second pass that compares
    * it against the original, and the screen refuses to treat a result judged
@@ -330,7 +330,7 @@ export class PhotoStudioService {
   /**
    * Did the product survive the redraw?
    *
-   * Background, light and framing are allowed to change — that is the point.
+   * Background, light and framing are allowed to change, that is the point.
    * What is not allowed is a different product, a different quantity, or text
    * that was not there.
    */

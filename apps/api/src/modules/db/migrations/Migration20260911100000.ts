@@ -55,7 +55,7 @@ export class Migration20260911100000 extends Migration {
       WHERE NOT EXISTS (SELECT 1 FROM "wallets" w WHERE w.platform_account = v.account);`)
 
     this.addSql(`INSERT INTO "wallet_transactions" ("id", "wallet_id", "type", "amount", "balance_after", "description", "createdAt")
-      SELECT gen_random_uuid(), w.id, 'ADJUSTMENT', w.balance, w.balance, 'Solde d''ouverture — reprise de l''historique', NOW()
+      SELECT gen_random_uuid(), w.id, 'ADJUSTMENT', w.balance, w.balance, 'Solde d''ouverture, reprise de l''historique', NOW()
       FROM "wallets" w
       WHERE w.platform_account IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM "wallet_transactions" t WHERE t.wallet_id = w.id);`)

@@ -13,7 +13,7 @@ const productReviewInputSchema = z.object({
 
 /**
  * The whole rating step travels in one request. Three products rated means
- * one round trip, not three — on a mobile network, three sequential calls are
+ * one round trip, not three, on a mobile network, three sequential calls are
  * three chances to half-fail.
  */
 export const createProductReviewsSchema = z.object({

@@ -11,7 +11,7 @@ import { Migration } from '@mikro-orm/migrations'
  *    that a run offer counts like the others. An offer targets one or the
  *    other, never both.
  *
- * 2. The run gets the same dispatch columns as the delivery — pickup point,
+ * 2. The run gets the same dispatch columns as the delivery, pickup point,
  *    radius, offer round, targeted courier. The mechanism is identical; only
  *    the object being dispatched changes.
  */

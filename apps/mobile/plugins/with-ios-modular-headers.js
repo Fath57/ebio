@@ -10,7 +10,7 @@ const { withPodfile } = require('@expo/config-plugins')
  *     The Swift pod `AppCheckCore` depends upon `GoogleUtilities` and
  *     `RecaptchaInterop`, which do not define modules.
  *
- * Modular headers are switched on for those two pods only — not globally, and
+ * Modular headers are switched on for those two pods only, not globally, and
  * not through `use_frameworks!`, which would change how every other native
  * module links. The Podfile is regenerated on every prebuild, hence a plugin.
  */

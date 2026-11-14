@@ -7,7 +7,7 @@ const LEADING_GAP = 24
 /**
  * Keeps the selected item of a horizontal row in view.
  *
- * A category picked elsewhere — a suggestion, the filter panel, a home tile —
+ * A category picked elsewhere, a suggestion, the filter panel, a home tile,
  * was marked active in a chip scrolled off to the right: selected, and
  * invisible. The row now scrolls to it whenever the selection changes, and on
  * first layout when the screen opens with one already selected.

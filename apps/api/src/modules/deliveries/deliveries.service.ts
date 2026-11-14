@@ -31,7 +31,7 @@ import { isLinkedRecipient } from '../gift/recipient-link'
 import { Media, MediaContext } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
-import { Order, OrderStatus, PaymentMethod } from '../orders/entities/order.entity'
+import { Order, OrderStatus, PaymentMethod, PickupMode } from '../orders/entities/order.entity'
 import { OrdersService } from '../orders/orders.service'
 import { Checkout } from '../payments/entities/checkout.entity'
 import { DeliveryPricingService } from '../settings/delivery-pricing.service'
@@ -45,7 +45,29 @@ import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
 import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
-import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
+import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryPurpose, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
+
+/** What the terroir module learns of a shop's order handed over at the eBio hub. */
+export interface ExportCollectionReceived {
+  deliveryId: string
+  orderId: string
+  supplierId: string
+  shipmentId: string
+  /** Courier (hub code) or back-office user (« Reçu »). */
+  actorUserId: string | null
+  source: ExportReceptionSource
+}
+
+/** A shop's terroir order picked up by the courier, on its way to the hub. */
+export interface ExportCollectionPickedUp {
+  deliveryId: string
+  orderId: string
+  shopName: string
+  shipmentId: string
+}
+
+/** How the hub took delivery of a collection run. */
+export type ExportReceptionSource = 'HUB_CODE' | 'ADMIN_RECEIVED' | 'ADMIN_COLLECTED'
 
 /** What a delivery response needs, down to the products the courier carries. */
 const DELIVERY_POPULATE = [
@@ -78,6 +100,8 @@ export interface DispatchBlock {
 @Injectable()
 export class DeliveriesService {
   private readonly logger = new Logger(DeliveriesService.name)
+  private readonly exportReceivedListeners: Array<(event: ExportCollectionReceived) => Promise<void>> = []
+  private readonly exportPickedUpListeners: Array<(event: ExportCollectionPickedUp) => Promise<void>> = []
 
   constructor(
     private readonly em: EntityManager,
@@ -257,9 +281,9 @@ export class DeliveriesService {
 
   /**
    * Called by OrdersService when a DELIVERY order turns READY. Snapshots both
-   * addresses, the fee split (the platform rate may change later — the run
+   * addresses, the fee split (the platform rate may change later, the run
    * is paid at the rate in force when it was offered), and copies the
-   * supplier position (may be null — the broadcast then targets everyone and
+   * supplier position (may be null, the broadcast then targets everyone and
    * the supplier is nudged to set a location).
    */
   /**
@@ -269,7 +293,7 @@ export class DeliveriesService {
    * when each shop accepts. The dispatch only happens once every pickup is
    * known.
    *
-   * Pay follows the existing rule — `computeCourierFee` on the fee — applied
+   * Pay follows the existing rule, `computeCourierFee` on the fee, applied
    * to the run's single fee. The courier gets their share of the road they
    * actually ride, not a share per order carried, which would pay them three
    * times for one trip.
@@ -306,7 +330,7 @@ export class DeliveriesService {
   }
 
   /**
-   * The parcel is ready. The search starts now — unless the buyer's window is
+   * The parcel is ready. The search starts now, unless the buyer's window is
    * still far: then the run waits, SCHEDULED, until the window nears. A courier
    * found at 9 h for a 14 h delivery had nothing to do but lose the run.
    */
@@ -332,7 +356,7 @@ export class DeliveriesService {
   /**
    * PREPARING with a readiness estimate: the run exists at once (visible to
    * the back-office, assignable by hand) but stays SCHEDULED until
-   * DISPATCH_LEAD_MINUTES before the estimate — or until the buyer's window
+   * DISPATCH_LEAD_MINUTES before the estimate, or until the buyer's window
    * nears, whichever is later.
    */
   async scheduleForOrder(order: Order): Promise<Delivery | null> {
@@ -347,7 +371,7 @@ export class DeliveriesService {
   /**
    * The back office moved the buyer's window. An unclaimed run follows it: back
    * to waiting if the window moved away, searched now if it came closer. A
-   * claimed run keeps its courier — the pickup clock reads the window live —
+   * claimed run keeps its courier, the pickup clock reads the window live,
    * but the reminder may fire again.
    */
   async applyWindowChange(order: Order, actorUserId: string): Promise<Delivery | null> {
@@ -424,7 +448,7 @@ export class DeliveriesService {
     // in full: the snapshot is the real fee, whoever covers it.
     const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
-    // The delivery joins the run that collects from its shop — a cart may hold
+    // The delivery joins the run that collects from its shop, a cart may hold
     // several, and picking the wrong one would send the courier to the wrong
     // address.
     const run = order.checkout
@@ -451,9 +475,30 @@ export class DeliveriesService {
         : { orderNumber: order.orderNumber },
     })
     await this.em.flush()
+    await this.snapshotShopPosition(delivery, order)
 
-    // Copy the supplier's PostGIS point, raw SQL like every geo access. The
-    // plain lat/lng snapshot feeds the buyer tracking map without PostGIS.
+    if (schedule && schedule.dispatchAt.getTime() > Date.now()) {
+      // The scheduled-dispatch cron takes over at dispatchAt.
+      return delivery
+    }
+    try {
+      await this.dispatchService.startDispatch(delivery.id)
+    }
+    catch (error) {
+      // A failed push must not block the READY transition; the cron rebroadcasts.
+      this.logger.error(`Initial broadcast failed for delivery ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+    }
+
+    return delivery
+  }
+
+  /**
+   * Copies the supplier's PostGIS point onto the run, raw SQL like every geo
+   * access. The plain lat/lng snapshot feeds the tracking map without
+   * PostGIS. A shop without a position is nudged to set one.
+   */
+  private async snapshotShopPosition(delivery: Delivery, order: Order): Promise<void> {
+    const supplier = order.supplier
     await this.em.getConnection().execute(
       `UPDATE deliveries SET
          pickup_location = (SELECT location FROM suppliers WHERE id = ?),
@@ -480,20 +525,327 @@ export class DeliveriesService {
         })
       }
     }
+  }
 
-    if (schedule && schedule.dispatchAt.getTime() > Date.now()) {
-      // The scheduled-dispatch cron takes over at dispatchAt.
-      return delivery
+  // ===== Terroir collection to the eBio hub (011) =====
+
+  /**
+   * The terroir module hears of every order handed over at the hub, to run
+   * its collection (order DELIVERED, shop paid, parcel advanced). A listener
+   * rather than a dependency: the terroir module already depends on this one.
+   */
+  onExportCollectionReceived(listener: (event: ExportCollectionReceived) => Promise<void>): void {
+    this.exportReceivedListeners.push(listener)
+  }
+
+  /** Told when the courier leaves the shop, for the buyer's « en route vers eBio ». */
+  onExportCollectionPickedUp(listener: (event: ExportCollectionPickedUp) => Promise<void>): void {
+    this.exportPickedUpListeners.push(listener)
+  }
+
+  /**
+   * A shop's terroir order is READY and eBio sends couriers (COURIER mode): a
+   * run from the shop to the eBio hub, broadcast like any lone delivery.
+   *
+   * Priced with the platform quote, shop → hub, and paid by eBio from its
+   * EXPORT account: the buyer paid the kilo price, which covers it, the shop
+   * pays nothing, nothing is collected in cash. The courier keeps the usual
+   * share of that fee (`computeCourierFee`), so a collection pays like any
+   * course of the same length; eBio's own share is not posted, it would be
+   * eBio charging itself a commission.
+   *
+   * Null, the eBio staff collecting instead, in EBIO mode, without a parcel,
+   * or when the shop is out of the delivery range.
+   */
+  async createExportCollection(order: Order): Promise<Delivery | null> {
+    if (order.pickupMode !== PickupMode.EXPORT || !order.checkout) {
+      return null
     }
+    const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
+    if (existing) {
+      return existing
+    }
+    const setup = await this.platformSettings.getExportCollectionSetup()
+    if (setup.mode !== 'COURIER') {
+      return null
+    }
+    const hub = setup.hub
+    const [shipment] = await this.em.getConnection().execute(
+      `SELECT id FROM export_shipments WHERE checkout_id = ?`,
+      [order.checkout.id],
+    ) as Array<{ id: string }>
+    if (!shipment) {
+      this.logger.warn(`Export order ${order.id} has no parcel: no courier collection`)
+      return null
+    }
+    const supplier = order.supplier
+    const quote = await this.deliveryPricing.quote({
+      supplierId: supplier.id,
+      itemsTotal: 0,
+      isDelivery: true,
+      latitude: hub.latitude,
+      longitude: hub.longitude,
+    })
+    if (quote.fee === null) {
+      this.logger.warn(`Export collection of order ${order.id} cannot be priced (${quote.reason}): eBio collects it`)
+      return null
+    }
+    const rate = await this.platformSettings.getDeliveryCommissionRate()
+    const dropoff = hub.address === hub.name ? hub.address : `${hub.name}, ${hub.address}`
+    const delivery = this.em.create(Delivery, {
+      order,
+      purpose: DeliveryPurpose.EXPORT_COLLECTION,
+      exportShipmentId: shipment.id,
+      exportHub: { name: hub.name, address: hub.address, phone: hub.phone, hours: hub.hours },
+      pickupAddress: supplier.address ?? supplier.shopName,
+      dropoffAddress: dropoff.slice(0, 255),
+      dropoffLatitude: hub.latitude,
+      dropoffLongitude: hub.longitude,
+      offeredAt: new Date(),
+      deliveryFee: quote.fee,
+      courierFee: computeCourierFee(quote.fee, rate),
+      // The hub's code: the staff give it once the parcel is in their hands.
+      confirmationCode: String(randomInt(0, 1_000_000)).padStart(6, '0'),
+      dispatchPhase: DispatchPhase.BROADCAST,
+      pickupReadyAt: new Date(),
+    })
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.CREATED,
+      payload: { orderNumber: order.orderNumber, purpose: DeliveryPurpose.EXPORT_COLLECTION, exportShipmentId: shipment.id, distanceKm: quote.distanceKm },
+    })
+    await this.em.flush()
+    await this.snapshotShopPosition(delivery, order)
     try {
       await this.dispatchService.startDispatch(delivery.id)
     }
     catch (error) {
-      // A failed push must not block the READY transition; the cron rebroadcasts.
-      this.logger.error(`Initial broadcast failed for delivery ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Initial broadcast failed for export collection ${delivery.id}`, error instanceof Error ? error.stack : String(error))
     }
-
     return delivery
+  }
+
+  /**
+   * « Reçu au point de regroupement »: the hub staff confirm from the back
+   * office instead of giving the courier the code. Same effect as the code,
+   * and a no-op once the order was received either way.
+   */
+  async receiveExportCollection(deliveryId: string, actorUserId: string): Promise<Delivery> {
+    const delivery = await this.em.findOne(Delivery, { id: deliveryId }, {
+      populate: [...DELIVERY_POPULATE, 'courier.user'],
+      refresh: true,
+    })
+    if (!delivery || delivery.purpose !== DeliveryPurpose.EXPORT_COLLECTION) {
+      throw new NotFoundException({ statusCode: 404, code: 'EXPORT_COLLECTION_NOT_FOUND', message: 'Collecte introuvable.' })
+    }
+    if (delivery.status === DeliveryStatus.DELIVERED) {
+      return delivery
+    }
+    if (!delivery.courier || !ACTIVE_STATUSES.includes(delivery.status)) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'EXPORT_COLLECTION_NO_COURIER',
+        message: 'Aucun livreur n’apporte cette commande : si elle est au point de regroupement, utilisez « Collecté ».',
+      })
+    }
+    await this.completeExportCollection(delivery, actorUserId, 'ADMIN_RECEIVED', new Date(), true)
+    return delivery
+  }
+
+  /**
+   * The order was collected through the back office (« Collecté ») while a
+   * collection run existed. A courier carrying it is closed and paid, he
+   * made the trip; a run nobody picked up yet is withdrawn, unpaid.
+   */
+  async closeExportCollection(order: Order): Promise<void> {
+    const delivery = await this.em.findOne(Delivery, { order: { id: order.id }, purpose: DeliveryPurpose.EXPORT_COLLECTION }, {
+      populate: ['order', 'courier', 'courier.user'],
+    })
+    if (!delivery) {
+      return
+    }
+    if (delivery.status === DeliveryStatus.PICKED_UP || delivery.status === DeliveryStatus.IN_TRANSIT) {
+      await this.completeExportCollection(delivery, null, 'ADMIN_COLLECTED', new Date(), false)
+      return
+    }
+    if (delivery.status !== DeliveryStatus.AWAITING_COURIER && delivery.status !== DeliveryStatus.ACCEPTED) {
+      return
+    }
+    const assignedCourier = delivery.courier
+    await this.dispatchService.cancelPendingOffer(delivery.id)
+    delivery.status = DeliveryStatus.CANCELLED
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.SELF_DELIVERED,
+      payload: { source: 'EBIO_COLLECTED' },
+    })
+    await this.em.flush()
+    if (assignedCourier) {
+      await this.notificationsService.send({
+        user: assignedCourier.user,
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Course retirée',
+        body: `eBio a déjà récupéré la commande ${order.orderNumber} : la course est retirée de votre liste.`,
+        data: { deliveryId: delivery.id },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+  }
+
+  /**
+   * The hub took the parcel. The atomic status guard makes the first of the
+   * hub code, « Reçu » and « Collecté » win: the others find it delivered
+   * and change nothing, so neither the courier nor the shop is paid twice.
+   * `notify`: run the terroir collection; false when it is the caller.
+   */
+  private async completeExportCollection(delivery: Delivery, actorUserId: string | null, source: ExportReceptionSource, when: Date, notify: boolean): Promise<boolean> {
+    const proofType = source === 'HUB_CODE' ? DeliveryProofType.CODE : null
+    const claimed = await this.em.getConnection().execute(
+      `UPDATE deliveries SET status = 'DELIVERED', delivered_at = ?, proof_type = ?, "updatedAt" = NOW()
+       WHERE id = ? AND status IN ('ACCEPTED', 'PICKED_UP', 'IN_TRANSIT')
+       RETURNING id`,
+      [when, proofType, delivery.id],
+    )
+    if (claimed.length === 0) {
+      return false
+    }
+    // Same values as the row: keeps the entity in step with the raw update.
+    delivery.status = DeliveryStatus.DELIVERED
+    delivery.deliveredAt = when
+    delivery.proofType = proofType ?? undefined
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.DELIVERED,
+      actorUserId: actorUserId ?? undefined,
+      occurredAt: when,
+      payload: { purpose: DeliveryPurpose.EXPORT_COLLECTION, source, proofType },
+    })
+    await this.em.flush()
+
+    await this.settleExportCollection(delivery)
+
+    if (!notify || !delivery.exportShipmentId) {
+      return true
+    }
+    const event: ExportCollectionReceived = {
+      deliveryId: delivery.id,
+      orderId: delivery.order.id,
+      supplierId: delivery.order.supplier.id,
+      shipmentId: delivery.exportShipmentId,
+      actorUserId,
+      source,
+    }
+    for (const listener of this.exportReceivedListeners) {
+      try {
+        await listener(event)
+      }
+      catch (error) {
+        this.logger.error(`Terroir collection not run after hub reception of ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+      }
+    }
+    return true
+  }
+
+  /**
+   * Pays the courier of a collection run: the usual earning, credited, and
+   * the same amount debited from eBio's EXPORT account, the logistics cost
+   * the kilo price covers. Idempotent on the earning; never throws.
+   */
+  private async settleExportCollection(delivery: Delivery): Promise<void> {
+    const courier = delivery.courier
+    if (!courier) {
+      return
+    }
+    try {
+      const already = await this.em.getConnection().execute(
+        `SELECT 1 FROM wallet_transactions WHERE delivery_id = ? AND type = 'DELIVERY_EARNING' LIMIT 1`,
+        [delivery.id],
+      )
+      const amount = Math.round(delivery.courierFee ?? 0)
+      if (already.length > 0 || !(amount > 0)) {
+        return
+      }
+      const orderNumber = delivery.order.orderNumber
+      const wallet = await this.walletService.getOrCreate({ courierId: courier.id })
+      await this.walletService.credit(wallet.id, {
+        type: WalletTransactionType.DELIVERY_EARNING,
+        amount,
+        description: `Gain de la course, commande #${orderNumber} apportée au point eBio`,
+        orderId: delivery.order.id,
+        deliveryId: delivery.id,
+      })
+      await this.walletService.post(PlatformAccount.EXPORT, 'debit', {
+        type: WalletTransactionType.EXPORT_COLLECTION_COST,
+        amount,
+        description: `Collecte vers le point eBio, commande #${orderNumber}`,
+        orderId: delivery.order.id,
+        deliveryId: delivery.id,
+      })
+      const courierUser = await this.em.findOneOrFail(User, { id: courier.user.id })
+      await this.notificationsService.send({
+        user: courierUser,
+        type: NotificationType.COURIER_EARNING,
+        title: 'Course réglée',
+        body: `+${amount.toLocaleString('fr-FR')} FCFA crédités sur votre portefeuille`,
+        data: { deliveryId: delivery.id, orderId: delivery.order.id, amount },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    catch (error) {
+      this.logger.error(`Export collection settlement failed for delivery ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+    }
+  }
+
+  /**
+   * A collection run the courier declared failed goes back on offer at once:
+   * the order is still READY at the shop's (it never left that status), and
+   * the parcel still has to reach the hub. The failed courier is not paid.
+   */
+  private async reofferExportCollection(delivery: Delivery): Promise<void> {
+    const released = delivery.courier
+    delivery.courier = null
+    delivery.status = DeliveryStatus.AWAITING_COURIER
+    delivery.acceptedAt = undefined
+    delivery.pickedUpAt = undefined
+    delivery.inTransitAt = undefined
+    delivery.pickupWarnedAt = null
+    delivery.offeredToCourier = null
+    delivery.offerExpiresAt = null
+    delivery.dispatchPhase = DispatchPhase.BROADCAST
+    delivery.reassignmentCount += 1
+    delivery.offeredAt = new Date()
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.REASSIGNED,
+      payload: { releasedCourierId: released?.id ?? null, reason: 'FAILED' },
+    })
+    await this.em.flush()
+    try {
+      await this.dispatchService.startDispatch(delivery.id)
+    }
+    catch (error) {
+      this.logger.error(`Re-offer failed for export collection ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+    }
+  }
+
+  private async announceExportPickup(delivery: Delivery): Promise<void> {
+    if (!delivery.exportShipmentId) {
+      return
+    }
+    const event: ExportCollectionPickedUp = {
+      deliveryId: delivery.id,
+      orderId: delivery.order.id,
+      shopName: delivery.order.supplier.shopName,
+      shipmentId: delivery.exportShipmentId,
+    }
+    for (const listener of this.exportPickedUpListeners) {
+      try {
+        await listener(event)
+      }
+      catch (error) {
+        this.logger.error(`Terroir not told of the pickup of ${delivery.id}`, error instanceof Error ? error.stack : String(error))
+      }
+    }
   }
 
   /**
@@ -545,12 +897,14 @@ export class DeliveriesService {
            GREATEST(COALESCE(zone_radius_km, 0) * 1000, 0) AS zone_radius_m
          FROM courier_profiles WHERE id = ?
        )
-       SELECT d.id, o.order_number, d.pickup_address, d.dropoff_address, d.offered_at,
+       SELECT d.id, d.purpose, d.export_hub, o.order_number, d.pickup_address, d.dropoff_address, d.offered_at,
               s.shop_name, o.total_amount, o.payment_method, d.delivery_fee, d.courier_fee,
               o.delivery_fee AS buyer_delivery_fee,
               (d.offered_to_courier_id = ?) AS is_targeted,
               CASE WHEN d.offered_to_courier_id = ? THEN d.offer_expires_at END AS offer_expires_at,
-              o.delivery_latitude AS dropoff_latitude, o.delivery_longitude AS dropoff_longitude,
+              -- A collection ends at the eBio hub, not at the buyer's (011).
+              COALESCE(d.dropoff_latitude, o.delivery_latitude) AS dropoff_latitude,
+              COALESCE(d.dropoff_longitude, o.delivery_longitude) AS dropoff_longitude,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count,
               -- What the courier will carry: they decide on the load too, not
               -- only on the fee (does it fit the bike, is it fragile).
@@ -568,9 +922,9 @@ export class DeliveriesService {
               CASE WHEN d.pickup_location IS NOT NULL AND me.loc IS NOT NULL
                 THEN ROUND((ST_Distance(d.pickup_location, me.loc) / 1000)::numeric, 2)
               END AS distance_km,
-              CASE WHEN d.pickup_location IS NOT NULL AND o.delivery_latitude IS NOT NULL
+              CASE WHEN d.pickup_location IS NOT NULL AND COALESCE(d.dropoff_latitude, o.delivery_latitude) IS NOT NULL
                 THEN ROUND((ST_Distance(d.pickup_location,
-                  ST_SetSRID(ST_MakePoint(o.delivery_longitude, o.delivery_latitude), 4326)::geography) / 1000)::numeric, 2)
+                  ST_SetSRID(ST_MakePoint(COALESCE(d.dropoff_longitude, o.delivery_longitude), COALESCE(d.dropoff_latitude, o.delivery_latitude)), 4326)::geography) / 1000)::numeric, 2)
               END AS route_km
        FROM deliveries d
        JOIN orders o ON o.id = d.order_id
@@ -636,7 +990,7 @@ export class DeliveriesService {
 
     await this.dispatchService.respondToOffer(deliveryId, profile.id, DeliveryOfferResponse.ACCEPTED)
     // The claim was a raw UPDATE: without a refresh the courier got back the
-    // delivery as it was before — no courier, still awaiting one.
+    // delivery as it was before, no courier, still awaiting one.
     const delivery = await this.loadDelivery(deliveryId, { refresh: true })
     this.em.create(DeliveryEvent, {
       delivery,
@@ -658,14 +1012,17 @@ export class DeliveriesService {
             channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
           })
         : Promise.resolve(),
-      this.notificationsService.send({
-        user: delivery.order.buyer,
-        type: NotificationType.DELIVERY_ASSIGNED,
-        title: 'Livreur en route',
-        body: `${profile.fullName} livrera votre commande ${delivery.order.orderNumber}`,
-        data: { deliveryId: delivery.id, orderId: delivery.order.id },
-        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
-      }),
+      // A collection goes to the eBio hub: the buyer abroad follows the parcel instead.
+      delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+        ? Promise.resolve()
+        : this.notificationsService.send({
+            user: delivery.order.buyer,
+            type: NotificationType.DELIVERY_ASSIGNED,
+            title: 'Livreur en route',
+            body: `${profile.fullName} livrera votre commande ${delivery.order.orderNumber}`,
+            data: { deliveryId: delivery.id, orderId: delivery.order.id },
+            channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+          }),
     ])
 
     return delivery
@@ -675,8 +1032,8 @@ export class DeliveriesService {
    * The runs offered to this courier: the ones they hold exclusively, and the
    * ones the broadcast pushed into their radius.
    *
-   * Same reference point as for lone deliveries — a live position under 12 h,
-   * the declared zone otherwise — and the same visibility rules.
+   * Same reference point as for lone deliveries, a live position under 12 h,
+   * the declared zone otherwise, and the same visibility rules.
    */
   async getRunOffers(userId: string): Promise<RunOfferRow[]> {
     const profile = await this.getMyProfile(userId)
@@ -750,7 +1107,7 @@ export class DeliveriesService {
    * Orders the pickups of a run from a starting point.
    *
    * Called twice: at opening, with no known courier, so the offer shows a
-   * plausible order; then on acceptance, from the courier's real position —
+   * plausible order; then on acceptance, from the courier's real position,
    * that one is authoritative, and it is the one the courier follows.
    */
   private async applyPickupOrder(run: DeliveryRun, origin: { latitude: number, longitude: number } | null): Promise<void> {
@@ -795,7 +1152,7 @@ export class DeliveriesService {
    * A courier claims a whole run. As for a lone delivery, the
    * `courier_id IS NULL` guard is the lock: first write wins.
    *
-   * Acceptance covers the whole — that is FR-015, and it is what makes the
+   * Acceptance covers the whole, that is FR-015, and it is what makes the
    * single fee tenable. Deliveries follow the run; they are not accepted one
    * by one.
    */
@@ -846,7 +1203,7 @@ export class DeliveriesService {
     // the courier starts from.
     await this.applyPickupOrder(run, await this.courierPosition(profile.id))
 
-    // Each delivery follows its run. The per-order status keeps its shape —
+    // Each delivery follows its run. The per-order status keeps its shape,
     // which is what leaves the supplier app untouched.
     const deliveries = run.deliveries.getItems()
     for (const delivery of deliveries) {
@@ -929,9 +1286,13 @@ export class DeliveriesService {
     }
 
     const when = await this.clampOccurredAt(delivery, occurredAt)
+    const isCollection = delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
     delivery.status = DeliveryStatus.PICKED_UP
     delivery.pickedUpAt = when
-    delivery.confirmationCode = String(randomInt(0, 10000)).padStart(4, '0')
+    // A collection keeps the hub's code, drawn at creation.
+    if (!isCollection) {
+      delivery.confirmationCode = String(randomInt(0, 10000)).padStart(4, '0')
+    }
 
     this.em.create(DeliveryEvent, {
       delivery,
@@ -940,6 +1301,13 @@ export class DeliveriesService {
       occurredAt: when,
     })
     await this.em.flush()
+
+    // The order stays READY on the shop's side until the hub receives it;
+    // the buyer reads « en route vers eBio » on the parcel, no code (011).
+    if (isCollection) {
+      await this.announceExportPickup(delivery)
+      return delivery
+    }
 
     await this.ordersService.applyStatusFromDelivery(delivery.order.id, OrderStatus.IN_DELIVERY)
 
@@ -953,10 +1321,10 @@ export class DeliveriesService {
     })
 
     // The relative is the one at the door: they get the code too. The payer
-    // keeps their push — their fallback if the text never arrives.
+    // keeps their push, their fallback if the text never arrives.
     const gift = await this.giftCheckoutOf(delivery.order)
     if (gift) {
-      await this.giftNotifier.sendCodeToRecipient(gift.id, delivery.confirmationCode)
+      await this.giftNotifier.sendCodeToRecipient(gift.id, delivery.confirmationCode ?? '')
     }
 
     return delivery
@@ -1058,7 +1426,7 @@ export class DeliveriesService {
       await this.walletService.credit(target.walletId, {
         type: WalletTransactionType.REFUND,
         amount: fee,
-        description: 'Remboursement des frais de livraison — aucun livreur disponible',
+        description: 'Remboursement des frais de livraison, aucun livreur disponible',
         deliveryRunId: run.id,
         familyMemberId: target.familyMemberId,
       })
@@ -1081,7 +1449,7 @@ export class DeliveriesService {
    * by the same rules as the original quote, on the remaining shops.
    *
    * If the pickup already happened, nothing changes: the courier rode that
-   * road and is paid for it (FR-021 — the run goes on for the others).
+   * road and is paid for it (FR-021, the run goes on for the others).
    */
   async removeSupplierFromRun(input: { checkoutId: string, supplierId: string }): Promise<{ runId: string, refund: number, remainingShops: number } | null> {
     // Filtering in memory rather than in SQL: `supplier_ids` is jsonb, which
@@ -1124,7 +1492,7 @@ export class DeliveriesService {
     }
 
     // The courier already rode that road: we do not take it back from them,
-    // and we refund nothing either — the kilometre was covered.
+    // and we refund nothing either, the kilometre was covered.
     if (collected) {
       await this.em.flush()
       return { runId: run.id, refund: 0, remainingShops: remaining.length }
@@ -1208,7 +1576,7 @@ export class DeliveriesService {
    *
    * The status moves for **that** order only (FR-017): the shop sees its order
    * leave, the others keep waiting for the courier. That is what leaves the
-   * supplier app unchanged — it does not know a run exists, and it does not
+   * supplier app unchanged, it does not know a run exists, and it does not
    * need to.
    *
    * The handover code, however, belongs to the run: drawn at the first pickup,
@@ -1259,7 +1627,7 @@ export class DeliveriesService {
     }
 
     // Everything is loaded: the run is on the road, and the buyer gets their
-    // code — once, not once per shop.
+    // code, once, not once per shop.
     run.status = DeliveryRunStatus.DELIVERING
     run.deliveringAt = when
     for (const item of siblings) {
@@ -1301,7 +1669,7 @@ export class DeliveriesService {
    * Handover of a run: one code, every order delivered.
    *
    * The buyer holds a single parcel and should not recite one code per shop.
-   * The courier is settled here, once, on the run's fee — the orders of a
+   * The courier is settled here, once, on the run's fee, the orders of a
    * unified cart carry zero, and a per-order settlement would pay them
    * nothing.
    */
@@ -1379,7 +1747,7 @@ export class DeliveriesService {
     run.deliveredAt = when
     await this.em.flush()
 
-    // The courier's money first: a failure here is logged, never surfaced —
+    // The courier's money first: a failure here is logged, never surfaced,
     // the goods are handed over whatever the ledger says.
     await this.settleRunWallet(run, cash)
 
@@ -1411,7 +1779,7 @@ export class DeliveriesService {
    *
    * Paid online: the buyer paid the fee to the platform, the courier is
    * credited their share. Cash: they kept the whole fee at the door, so eBio's
-   * cut is debited — the balance may go below zero, which is what top-ups are
+   * cut is debited, the balance may go below zero, which is what top-ups are
    * for. Replayable: the entry carries the run.
    */
   private async settleRunWallet(run: DeliveryRun, isCash: boolean): Promise<void> {
@@ -1515,13 +1883,13 @@ export class DeliveriesService {
   async complete(deliveryId: string, userId: string, data: CompleteDelivery): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     if (delivery.deliveryRun) {
-      // Closing a lone delivery would settle the courier on a zero fee — the
+      // Closing a lone delivery would settle the courier on a zero fee, the
       // orders of a unified cart carry none, the fee sits on the run. The
       // handover happens as a whole, with a single code.
       throw new ConflictException('Cette course fait partie d\'une tournée : remettez la tournée entière')
     }
     // Already delivered: the courier tapped twice, or the offline queue is
-    // replaying what the network swallowed — the answer was lost, not the
+    // replaying what the network swallowed, the answer was lost, not the
     // request. Confirming beats worrying someone who did their job. The code
     // is still checked: a completed handover does not excuse a wrong one.
     if (delivery.status === DeliveryStatus.DELIVERED) {
@@ -1529,6 +1897,9 @@ export class DeliveriesService {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
       return delivery
+    }
+    if (delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION) {
+      return this.completeAtHub(delivery, userId, data)
     }
     this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)
 
@@ -1578,7 +1949,7 @@ export class DeliveriesService {
     })
     await this.em.flush()
 
-    // The courier's money first: a failure here is logged, never surfaced —
+    // The courier's money first: a failure here is logged, never surfaced,
     // the parcel is delivered whatever the ledger says.
     await this.settleCourierWallet(delivery)
 
@@ -1599,10 +1970,35 @@ export class DeliveriesService {
   }
 
   /**
+   * Hand-over at the eBio hub: the code the hub staff give once the parcel
+   * is in their hands, nothing else (no photo, no buyer). The run may skip
+   * « en route »: the hub is often around the corner.
+   */
+  private async completeAtHub(delivery: Delivery, userId: string, data: CompleteDelivery): Promise<Delivery> {
+    if (delivery.status !== DeliveryStatus.PICKED_UP) {
+      this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)
+    }
+    if (data.proofType !== 'CODE') {
+      throw new UnprocessableEntityException({
+        statusCode: 422,
+        code: 'EXPORT_HUB_CODE_REQUIRED',
+        message: 'Collecte eBio : saisissez le code que vous donne le point de regroupement.',
+      })
+    }
+    if (delivery.confirmationCode !== data.code) {
+      throw new UnprocessableEntityException('Code du point de regroupement invalide')
+    }
+    const when = await this.clampOccurredAt(delivery, data.occurredAt)
+    const done = await this.completeExportCollection(delivery, userId, 'HUB_CODE', when, true)
+    // Received meanwhile through the back office: the answer is the same.
+    return done ? delivery : this.loadDelivery(delivery.id, { refresh: true })
+  }
+
+  /**
    * Settles the delivery fee with the courier wallet once the run is done.
    * Paid online: the buyer's fee sits on the platform account, the courier
    * is credited their share. Cash: the courier pocketed the whole fee at the
-   * door, so eBio's cut is debited (the balance may go negative — that is
+   * door, so eBio's cut is debited (the balance may go negative, that is
    * what top-ups are for). Idempotent on wallet_transactions.delivery_id.
    */
   private async settleCourierWallet(delivery: Delivery): Promise<void> {
@@ -1638,7 +2034,7 @@ export class DeliveriesService {
         await this.walletService.debit(shopWallet.id, {
           type: WalletTransactionType.DELIVERY_SPONSORSHIP,
           amount: deliveryFee,
-          description: `Livraison offerte (promotion) — commande #${order.orderNumber}`,
+          description: `Livraison offerte (promotion), commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
           allowNegative: true,
@@ -1648,7 +2044,7 @@ export class DeliveriesService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.DELIVERY_COMMISSION,
           amount,
-          description: `Commission eBio sur la course — commande #${order.orderNumber}`,
+          description: `Commission eBio sur la course, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
           allowNegative: true,
@@ -1658,7 +2054,7 @@ export class DeliveriesService {
         await this.walletService.credit(wallet.id, {
           type: WalletTransactionType.DELIVERY_EARNING,
           amount,
-          description: `Gain de la course — commande #${order.orderNumber}`,
+          description: `Gain de la course, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1670,7 +2066,7 @@ export class DeliveriesService {
         await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: courierFee,
-          description: `Livraison offerte par eBio — commande #${order.orderNumber}`,
+          description: `Livraison offerte par eBio, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1679,7 +2075,7 @@ export class DeliveriesService {
         await this.walletService.post(PlatformAccount.DELIVERY_COMMISSION, 'credit', {
           type: WalletTransactionType.PLATFORM_DELIVERY_SHARE,
           amount: deliveryFee - courierFee,
-          description: `Part eBio sur la livraison — commande #${order.orderNumber}`,
+          description: `Part eBio sur la livraison, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1727,16 +2123,24 @@ export class DeliveriesService {
     })
     await this.em.flush()
 
+    const isCollection = delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
     const supplierUser = await this.resolveSupplierUser(delivery.order)
     if (supplierUser) {
       await this.notificationsService.send({
         user: supplierUser,
         type: NotificationType.DELIVERY_FAILED,
-        title: 'Échec de livraison',
-        body: `La livraison de la commande ${delivery.order.orderNumber} a échoué (${this.failReasonLabel(data.reason)})`,
+        title: isCollection ? 'Collecte eBio reportée' : 'Échec de livraison',
+        body: isCollection
+          ? `Le livreur n’a pas pu apporter la commande ${delivery.order.orderNumber} au point eBio : un autre livreur va passer.`
+          : `La livraison de la commande ${delivery.order.orderNumber} a échoué (${this.failReasonLabel(data.reason)})`,
         data: { deliveryId: delivery.id, orderId: delivery.order.id, reason: data.reason },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
+    }
+
+    if (isCollection) {
+      await this.reofferExportCollection(delivery)
+      return delivery
     }
 
     // A cart for a relative cannot wait for the payer to sort things out from
@@ -1827,7 +2231,7 @@ export class DeliveriesService {
   /**
    * The supplier advances READY → IN_DELIVERY manually (self-delivery). An
    * unclaimed delivery is closed and withdrawn from courier lists; a claimed
-   * one blocks the manual move — a courier is already on it.
+   * one blocks the manual move, a courier is already on it.
    */
   async handleSupplierTakeover(order: Order): Promise<void> {
     const delivery = await this.em.findOne(Delivery, { order: { id: order.id } })
@@ -1896,7 +2300,7 @@ export class DeliveriesService {
       populate: ['courier', 'courier.user'],
     })
     // A failed hand-over stays failed: the order is cancelled after it (a
-    // gift refunded), and the courier already knows — they declared it.
+    // gift refunded), and the courier already knows, they declared it.
     if (!delivery || delivery.status === DeliveryStatus.CANCELLED || delivery.status === DeliveryStatus.DELIVERED || delivery.status === DeliveryStatus.FAILED) {
       return
     }

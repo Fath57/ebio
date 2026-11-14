@@ -24,7 +24,7 @@ const STALE_AFTER_MS = 24 * 60 * 60 * 1000
 const LIVE_POLL_MS = 45_000
 
 /**
- * While nothing is moving there is nothing to miss, so we ask rarely — most
+ * While nothing is moving there is nothing to miss, so we ask rarely, most
  * buyers open the app with no order in progress, and data costs them money.
  */
 const IDLE_POLL_MS = 180_000
@@ -75,7 +75,7 @@ const RANK: Record<string, number> = { ACCEPTED: 1, PREPARING: 2, READY: 3, IN_D
 /**
  * The order in progress, wherever the buyer happens to be.
  *
- * The orders screen already refreshed itself while a courier was moving — but
+ * The orders screen already refreshed itself while a courier was moving, but
  * only while that screen was open, which is precisely when the buyer does not
  * need telling. Held here instead, so one poll serves the whole app: the bar
  * that shows it, and the badge on the orders tab.
@@ -98,6 +98,9 @@ export function LiveOrderProvider({ children }: { children: ReactNode }) {
       const raw = await res.json() as RawOrder[] | { orders?: RawOrder[], data?: RawOrder[] }
       const list = Array.isArray(raw) ? raw : raw.orders ?? raw.data ?? []
       const moving = list
+        // An EXPORT order is one shop's share of a valise: the valise has its
+        // own track, local steps would mean nothing for a parcel abroad.
+        .filter(item => item.pickupMode !== 'EXPORT')
         .filter(item => MOVING.has(item.status) && Date.now() - lastActivity(item) < STALE_AFTER_MS)
         .sort((a, b) => (RANK[b.status] ?? 0) - (RANK[a.status] ?? 0))
       const first = moving[0]

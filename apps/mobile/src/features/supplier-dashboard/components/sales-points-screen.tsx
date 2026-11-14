@@ -422,7 +422,7 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
                 <>
                   <MapPin size={18} color={semantic.textSecondary} />
                   <Text style={[styles.locationText, { color: semantic.textSecondary }]}>
-                    Aucune position — le point n'apparaîtra pas sur la carte
+                    Aucune position, le point n'apparaîtra pas sur la carte
                   </Text>
                 </>
               )}

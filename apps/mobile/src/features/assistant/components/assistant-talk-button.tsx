@@ -11,9 +11,9 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 const LABEL: Record<LineState, string> = {
   off: 'Appuyez et parlez',
   opening: 'Un instant…',
-  listening: 'Elle vous écoute — parlez',
+  listening: 'Elle vous écoute, parlez',
   thinking: 'Elle cherche…',
-  answering: 'Elle répond — coupez-la si besoin',
+  answering: 'Elle répond, coupez-la si besoin',
 }
 
 interface AssistantTalkButtonProps {
@@ -31,8 +31,8 @@ interface AssistantTalkButtonProps {
  *
  * Not push-to-talk: the line opens once and stays open, because a conversation
  * in which one holds a button down is not a conversation. While she talks the
- * button becomes the way to cut her off — the thing one actually wants at that
- * moment — and closing the line is the second, quieter action.
+ * button becomes the way to cut her off, the thing one actually wants at that
+ * moment, and closing the line is the second, quieter action.
  */
 export function AssistantTalkButton({ state, onOpen, onClose, onHush }: AssistantTalkButtonProps) {
   const open = state !== 'off'

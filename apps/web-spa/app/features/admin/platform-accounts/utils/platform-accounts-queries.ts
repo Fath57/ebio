@@ -3,12 +3,13 @@ import {
   walletAdminControllerPlatformTransactions,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
-/** The four eBio wallets: three revenue streams and one cost centre. */
+/** The eBio wallets: three revenue streams, one cost centre, and the terroir export account (011). */
 export const PLATFORM_ACCOUNTS = [
   'SALES_COMMISSION',
   'DELIVERY_COMMISSION',
   'BANNERS',
   'MARKETING',
+  'EXPORT',
 ] as const
 
 export type PlatformAccount = (typeof PLATFORM_ACCOUNTS)[number]
@@ -67,7 +68,7 @@ export interface PlatformDateRange {
 
 /**
  * Turns a period key into the ISO bounds the API expects. Empty strings mean
- * "no bound" — the generated SDK types both params as required.
+ * "no bound", the generated SDK types both params as required.
  */
 export function platformPeriodRange(period: PlatformPeriod): PlatformDateRange {
   const now = new Date()

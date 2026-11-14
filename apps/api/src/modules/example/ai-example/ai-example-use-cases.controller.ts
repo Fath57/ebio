@@ -119,7 +119,7 @@ export class AiExampleUseCasesController {
   }
 
   /**
-   * Use case 3: One REST call, logical units — each unit gets its own trace (split per workflow).
+   * Use case 3: One REST call, logical units, each unit gets its own trace (split per workflow).
    * In the Langfuse UI, we should see X lines (X being the nb of provided prompts)
    * Note that this technique could be used for "workflow" like units, called in a CRON job, etc.
    * The idea is to "detach" the traces from the OTEL main trace
@@ -184,7 +184,7 @@ export class AiExampleUseCasesController {
   }
 
   /**
-   * Use case 4: Simple generation with sessionId — one Langfuse trace per session (across requests).
+   * Use case 4: Simple generation with sessionId, one Langfuse trace per session (across requests).
    * Same sessionId => same traceId (deterministic) => multiple lines in the "tracing" list view, but merged in one session in the "sessions" view on Langfuse UI.
    */
   @TypedRoute.Post('use-case-4-chat-session', generateTextResponseSchema)

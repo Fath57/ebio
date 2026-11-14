@@ -9,7 +9,7 @@ interface SettingsNavProps {
   counts: Readonly<Record<SettingsSectionId, number>>
   /** Null while a search spans every section. */
   activeSection: SettingsSectionId | null
-  /** Called when a section is picked — the page clears its search then. */
+  /** Called when a section is picked, the page clears its search then. */
   onNavigate: () => void
 }
 

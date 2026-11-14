@@ -3,12 +3,12 @@ import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 
 interface ListParamsOptions<F extends string> {
-  /** Column sorted on when the URL says nothing — always descending. */
+  /** Column sorted on when the URL says nothing, always descending. */
   defaultSort: string
   /** URL keys of the page's own filters (`statut`, `role`…). */
   filters?: readonly F[]
   /**
-   * Value a filter takes when the URL leaves it out — a to-do list opens on
+   * Value a filter takes when the URL leaves it out, a to-do list opens on
    * what is waiting. Choosing "all" then writes the key empty (`?statut=`),
    * the only way to say "no filter" when the default is one.
    */
@@ -28,7 +28,7 @@ export interface ListParams<F extends string> {
   setSearch: (value: string) => void
   setPage: (page: number) => void
   setFilter: (key: F, value: string) => void
-  /** Several keys in one history entry — a shop picker sets its id and its name together. */
+  /** Several keys in one history entry, a shop picker sets its id and its name together. */
   setFilters: (changes: Partial<Record<F, string>>) => void
   /** Clears the search and every filter; the sort stays. */
   reset: () => void

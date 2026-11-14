@@ -59,7 +59,7 @@ export class FavoritesService {
     return { items, total: items.length }
   }
 
-  /** Which of these are kept — one request for a whole page of cards. */
+  /** Which of these are kept, one request for a whole page of cards. */
   async pickKept(userId: string, productIds: string[]): Promise<string[]> {
     if (productIds.length === 0) {
       return []

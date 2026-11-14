@@ -28,7 +28,7 @@ export const updateCertificationSchema = createCertificationSchema
   .partial()
   .meta({
     title: 'UpdateCertification',
-    description: 'Update a label or certification — every field optional, the code is immutable',
+    description: 'Update a label or certification, every field optional, the code is immutable',
   })
 
 export const certificationSchema = z.object({

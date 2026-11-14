@@ -38,7 +38,7 @@ interface ZonePickerModalProps {
   onClose: () => void
 }
 
-// Cotonou — where most of the fleet starts
+// Cotonou, where most of the fleet starts
 const DEFAULT_CENTER = { latitude: 6.3703, longitude: 2.3912 }
 const DEFAULT_RADIUS_KM = 10
 const MIN_RADIUS_KM = 2
@@ -293,7 +293,7 @@ export function ZonePickerModal({ visible, initial, onConfirm, onClose }: ZonePi
 
         <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight }]}>
           <Text style={[styles.radiusLabel, { color: semantic.textPrimary }]}>
-            Rayon d'action —
+            Rayon d'action,
             {' '}
             {radiusKm}
             {' '}

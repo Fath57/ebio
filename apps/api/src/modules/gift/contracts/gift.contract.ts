@@ -4,7 +4,7 @@ import { orderStatusEnum } from '../../orders/contracts/order.contract'
 // ─── Public tracking (contracts/diaspora.md §5) ──────────────────────────────
 //
 // Read without an account, from a link sent by SMS: never a price, a code, a
-// phone number or a written address — only what the relative needs to wait
+// phone number or a written address, only what the relative needs to wait
 // at the door.
 
 export const giftTrackingStatusEnum = z.enum(['PAID', 'PREPARING', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'CANCELLED']).meta({

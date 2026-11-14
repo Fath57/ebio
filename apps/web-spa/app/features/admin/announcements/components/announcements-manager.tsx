@@ -63,7 +63,7 @@ function day(value: string): string {
  * Something to read in a list, and in a button's label.
  *
  * A poster-only announcement has no title, and an empty row cannot be talked
- * about — least of all by a screen reader announcing "Éteindre".
+ * about, least of all by a screen reader announcing "Éteindre".
  */
 function label(row: { title: string | null }): string {
   return row.title ?? 'Visuel sans titre'
@@ -85,7 +85,7 @@ function orNull(value: string): string | null {
  *
  * Two things in one place, because they are decided together: the shops' paid
  * requests waiting on a verdict, and what is currently running. Rejecting
- * refunds — it is the banner circuit, and the shop has nothing to chase.
+ * refunds, it is the banner circuit, and the shop has nothing to chase.
  */
 export function AnnouncementsManager() {
   const queryClient = useQueryClient()

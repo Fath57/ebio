@@ -123,7 +123,7 @@ export async function signUpWithEmail(name: string, email: string, password: str
       return { user: data.user ?? null, error: null }
     }
 
-    // Signup may not return a session — auto login
+    // Signup may not return a session, auto login
     const loginResult = await signInWithEmail(email, password)
     return loginResult
   }
@@ -589,7 +589,7 @@ export function notifyAuthChange() {
   hasChecked = false
   getSession().then((session) => {
     cachedUser = session.user
-    // Ties what follows to a person — which is what turns a stream of taps
+    // Ties what follows to a person, which is what turns a stream of taps
     // into "this buyer could not check out twice", and what makes it personal
     // data, so `forget` above matters as much.
     if (session.user) {

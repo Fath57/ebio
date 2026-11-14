@@ -34,7 +34,7 @@ export class SupplierWalletController {
     return this.topupService.initiate(session.user.id, body.amount, 'supplier')
   }
 
-  /** Topups of this user restricted to the shop wallet — pending and failed ones included. */
+  /** Topups of this user restricted to the shop wallet, pending and failed ones included. */
   @Get('topups')
   async listTopups(
     @Session() session: LoggedInBetterAuthSession,

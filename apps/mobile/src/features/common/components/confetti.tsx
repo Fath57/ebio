@@ -23,7 +23,7 @@ const FLIGHT_MS = 1100
 /**
  * Dispersion sans hasard.
  *
- * `Math.random` pendant un rendu est une fonction impure — le compilateur
+ * `Math.random` pendant un rendu est une fonction impure, le compilateur
  * React le refuse, et il a raison : le même rendu doit donner le même
  * résultat. Ce bruit dérive de l'indice, donc il disperse tout autant et se
  * reproduit à l'identique.
@@ -47,7 +47,7 @@ interface Piece {
  * A short burst, for the moment an order is placed.
  *
  * Decorative and nothing else: it takes no touch, says nothing to a screen
- * reader, and stands down entirely when the phone asks for reduced motion —
+ * reader, and stands down entirely when the phone asks for reduced motion,
  * someone who turned that on did not turn it on for everything except us.
  */
 export function Confetti() {
@@ -98,7 +98,7 @@ interface ConfettiPieceProps {
 /**
  * One piece: out, then down.
  *
- * A single shared progress drives them all — sixteen animations would each
+ * A single shared progress drives them all, sixteen animations would each
  * pay their own price, one shared value costs what one animation costs.
  */
 function ConfettiPiece({ piece, progress }: ConfettiPieceProps) {

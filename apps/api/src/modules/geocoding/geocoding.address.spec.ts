@@ -7,7 +7,7 @@ import { readableAddress, withoutPlusCode } from './geocoding.service'
  * Much of Cotonou is addressed that way, and « 4HQ6+2MJ, Cotonou » is of no
  * use to a buyer confirming a delivery or to a courier finding a door. What is
  * checked here is that a readable answer is preferred when there is one, that
- * the code is dropped when there is not, and — the part that would hurt — that
+ * the code is dropped when there is not, and, the part that would hurt, that
  * an ordinary address is never mistaken for a code.
  */
 describe('adresse lisible', () => {

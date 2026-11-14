@@ -37,7 +37,7 @@ export interface WalletOwner {
 /**
  * The only writer of wallet balances. Every movement runs in its own SQL
  * transaction, locks the wallet row (`FOR UPDATE`), writes the append-only
- * ledger line with the resulting balance, then updates the balance itself —
+ * ledger line with the resulting balance, then updates the balance itself,
  * so two concurrent debits can never both spend the same money, and any
  * balance is auditable from its history.
  */
@@ -181,6 +181,8 @@ export class WalletService {
       description: string
       orderId: string | null
       deliveryId: string | null
+      deliveryPurpose: 'STANDARD' | 'EXPORT_COLLECTION' | null
+      shopName: string | null
       createdAt: string
     }>
     total: number
@@ -192,6 +194,21 @@ export class WalletService {
       { wallet: { id: walletId } },
       { orderBy: { createdAt: 'DESC' }, limit, offset: (page - 1) * limit },
     )
+    // One query for the page: which course each courier movement belongs to.
+    const deliveryIds = [...new Set(rows.map(row => row.deliveryId).filter((id): id is string => id != null))]
+    const courses = deliveryIds.length === 0
+      ? new Map<string, { purpose: 'STANDARD' | 'EXPORT_COLLECTION', shopName: string | null }>()
+      : new Map((await this.em.getConnection().execute(
+          `SELECT d.id, d.purpose, s.shop_name
+           FROM deliveries d
+           JOIN orders o ON o.id = d.order_id
+           JOIN suppliers s ON s.id = o.supplier_id
+           WHERE d.id IN (${deliveryIds.map(() => '?').join(', ')})`,
+          deliveryIds,
+        ) as Array<{ id: string, purpose: string, shop_name: string | null }>).map(course => [
+          course.id,
+          { purpose: course.purpose === 'EXPORT_COLLECTION' ? 'EXPORT_COLLECTION' as const : 'STANDARD' as const, shopName: course.shop_name },
+        ]))
     return {
       items: rows.map(row => ({
         id: row.id,
@@ -201,6 +218,8 @@ export class WalletService {
         description: row.description,
         orderId: row.order?.id ?? null,
         deliveryId: row.deliveryId ?? null,
+        deliveryPurpose: row.deliveryId ? courses.get(row.deliveryId)?.purpose ?? null : null,
+        shopName: row.deliveryId ? courses.get(row.deliveryId)?.shopName ?? null : null,
         createdAt: row.createdAt.toISOString(),
       })),
       total,

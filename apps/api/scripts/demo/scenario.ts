@@ -1,6 +1,6 @@
 /**
- * Puts the demo in the state a video starts from, through the real API — the
- * same calls as the apps — so that deliveries, courier dispatch and
+ * Puts the demo in the state a video starts from, through the real API, the
+ * same calls as the apps, so that deliveries, courier dispatch and
  * notifications are the production ones, not hand-made rows.
  *
  *   supplier-order  a buyer orders from Mine d'or délice: the order waits,

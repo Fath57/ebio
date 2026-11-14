@@ -31,7 +31,7 @@ function reasonOf(result: PromiseSettledResult<unknown>): unknown {
 }
 
 /** SC-004: simultaneous payments never spend the same money, nor the same month, twice. */
-describe('portefeuille famille — paiements simultanés (e2e)', { timeout: 30_000 }, () => {
+describe('portefeuille famille, paiements simultanés (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 8 }, {
       imports: [RolesModule, AuditModule, DeliveriesModule, OrdersModule, FamilyWalletModule],

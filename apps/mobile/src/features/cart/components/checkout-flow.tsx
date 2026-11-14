@@ -66,7 +66,7 @@ type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH' | 'FAMILY_WALLET'
 
 // Mirrors the API contract (createCheckoutSchema.deliveryAddress), which
 // asks for ten characters. It said three, so an address between the two
-// passed here and was refused by the server — with a generic failure, since
+// passed here and was refused by the server, with a generic failure, since
 // nothing on this screen knew the real rule.
 const MIN_ADDRESS_LENGTH = 10
 
@@ -122,13 +122,13 @@ function formatKm(value: number): string {
 }
 
 /**
- * Reasons the API genuinely refuses the order — it cannot price the
+ * Reasons the API genuinely refuses the order, it cannot price the
  * en chiffrer la livraison (`deliveryPriceable`, orders.service.ts).
  *
  * `NO_SHOP_POSITION` is not one of them: when the *shop* has no
  * position, the server applies the flat fee and accepts the order.
  * Blocking here forbade the purchase over data missing on the seller's
- * side, which the buyer cannot supply — they kept re-pinning their
+ * side, which the buyer cannot supply, they kept re-pinning their
  * position on the map while the message never changed.
  */
 const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'OUT_OF_RANGE']
@@ -446,7 +446,7 @@ export function CheckoutFlow({
   const [amountDue, setAmountDue] = useState<number | null>(null)
 
   // What was typed survives leaving the screen. Read once, then written on
-  // every change — writing before the read would replace the draft with the
+  // every change, writing before the read would replace the draft with the
   // empty fields of a fresh screen.
   const draftLoadedRef = useRef(false)
   useEffect(() => {
@@ -502,7 +502,7 @@ export function CheckoutFlow({
   //
   // Only this shop's, though. Reading the whole cart back was right when one
   // checkout billed every shop at once; since a basket is ordered shop by
-  // shop it quietly put the other shops' articles into this order — the quote
+  // shop it quietly put the other shops' articles into this order, the quote
   // came back for two shops when one had been tapped.
   const { items: liveItems } = useCart()
   const basketItems = useMemo<OrderSummary['items']>(
@@ -514,7 +514,7 @@ export function CheckoutFlow({
             supplierId: item.supplierId,
             supplierName: item.supplierName,
             ...(item.variantId ? { variantId: item.variantId } : {}),
-            name: item.variantLabel ? `${item.name} — ${item.variantLabel}` : item.name,
+            name: item.variantLabel ? `${item.name}, ${item.variantLabel}` : item.name,
             quantity: item.quantity,
             pricePerUnit: item.pricePerUnit,
             unit: item.unit,
@@ -529,7 +529,7 @@ export function CheckoutFlow({
   // checkout, not renders of it.
   useEffect(() => {
     track('caisse_ouverte', { articles: basketItems.length })
-    // The basket is read once on arrival on purpose — adding it to the
+    // The basket is read once on arrival on purpose, adding it to the
     // dependencies would fire again on every quantity change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -537,8 +537,8 @@ export function CheckoutFlow({
    * The basket as it was on arrival, which is what the rail is built against.
    *
    * It decides which products the suggestions leave out. Recomputing it from
-   * the live basket made a suggestion disappear the instant it was added — it
-   * had just joined the basket, so it excluded itself — and the quantity
+   * the live basket made a suggestion disappear the instant it was added, it
+   * had just joined the basket, so it excluded itself, and the quantity
    * stepper that had appeared on it went with it.
    */
   const [suggestionSeed, setSuggestionSeed] = useState<string[] | null>(null)
@@ -786,7 +786,7 @@ export function CheckoutFlow({
         }
       }
       else if (orderRes.status === 409) {
-        // Duplicate — find the existing order still waiting (placed, or an
+        // Duplicate, find the existing order still waiting (placed, or an
         // online payment that never completed and can be retried).
         const listRes = await apiFetch('/api/orders?view=buyer')
         const orders = listRes.ok ? await listRes.json() : []
@@ -914,8 +914,8 @@ export function CheckoutFlow({
   }, [pendingCheckoutId, providerTransactionId, verifyCart])
 
   /**
-   * The payment page came back. That says nothing yet — INTRAM returns to
-   * the same page on success and on failure — so the server is asked again
+   * The payment page came back. That says nothing yet, INTRAM returns to
+   * the same page on success and on failure, so the server is asked again
    * for a while before concluding.
    */
   const confirmCartPayment = useCallback(async (reference: string) => {
@@ -1275,7 +1275,7 @@ export function CheckoutFlow({
                   {' '}
                   {formatXof(walletBalance ?? 0)}
                   {' '}
-                  — débit immédiat, sans frais
+                  débit immédiat, sans frais
                 </Text>
               </View>
               {effectiveChoice === 'WALLET' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
@@ -1453,7 +1453,7 @@ export function CheckoutFlow({
               publicKey: fedapayPublicKey,
               amount: amountDue ?? orderTotal,
               description: orderSummary.shopNames.length > 1
-                ? `Panier eBio — ${orderSummary.shopNames.length} boutiques`
+                ? `Panier eBio, ${orderSummary.shopNames.length} boutiques`
                 : `Commande eBio - ${orderSummary.shopNames[0] ?? ''}`,
               customer,
               metadata: { payment_id: pendingCheckoutId },

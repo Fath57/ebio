@@ -16,7 +16,7 @@ export interface ContactPickButtonProps {
 const MAX_CHOICES = 3
 
 /**
- * « Choisir dans mes contacts » — fills the relative's name and phone from the
+ * « Choisir dans mes contacts », fills the relative's name and phone from the
  * phone's address book instead of typing them for every order. Hidden on a
  * build that does not carry the contacts module.
  */

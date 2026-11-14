@@ -6,9 +6,9 @@ export const CHECKOUT_DRAFT_KEY = 'ebio_checkout_draft'
 /**
  * What the buyer typed on the checkout screen.
  *
- * The screen held it in its own state only, so going back to the cart — or
+ * The screen held it in its own state only, so going back to the cart, or
  * leaving a payment that failed or is still pending, which also closes the
- * screen — threw the address, the map point and the slot away, and the buyer
+ * screen, threw the address, the map point and the slot away, and the buyer
  * had to type them all again.
  *
  * Always the payer's own address. A relative's name, phone and address
@@ -64,7 +64,7 @@ export async function saveCheckoutDraft(draft: CheckoutDraft): Promise<void> {
 
 /**
  * After an order went through: the place stays for next time, the rest was
- * about this order only — a slot or a promo code from last week has no reason
+ * about this order only, a slot or a promo code from last week has no reason
  * to come back.
  */
 export async function keepCheckoutAddressOnly(): Promise<void> {

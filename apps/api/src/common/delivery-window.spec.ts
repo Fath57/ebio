@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computePickupClockStart, computePickupDeadlines, computeWindowDispatchAt, formatDeliveryWindow, parseDeliverySlot } from './delivery-window'
 
-// 09:25 in Cotonou (UTC+1) on 2026-11-09 — the order that showed the bug.
+// 09:25 in Cotonou (UTC+1) on 2026-11-09, the order that showed the bug.
 const placedAt = new Date('2026-11-09T08:25:56Z')
 
 describe('parseDeliverySlot', () => {

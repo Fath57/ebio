@@ -19,7 +19,7 @@ export interface CheckStatusResult {
   paidAt?: Date
   reference?: string
   providerPaymentMethodId?: string
-  /** Amount FedaPay actually charged — never trust the client's number. */
+  /** Amount FedaPay actually charged, never trust the client's number. */
   amount?: number
 }
 
@@ -37,7 +37,7 @@ export interface PaymentGatewayInterface {
   /**
    * True when the provider hands over a page for us to open.
    *
-   * A provider whose checkout is a widget we embed ourselves answers false —
+   * A provider whose checkout is a widget we embed ourselves answers false,
    * and must, because opening a payment ahead of time would then mint a
    * transaction nobody ever uses, and the widget would open a second one.
    * This is what keeps FedaPay's Checkout.js path exactly as it was should we
@@ -69,7 +69,7 @@ export interface PayoutStatusResult {
 }
 
 /**
- * Sending money out — a courier's earnings, a shop's withdrawal.
+ * Sending money out, a courier's earnings, a shop's withdrawal.
  *
  * Kept apart from `PaymentGatewayInterface` because not every provider can do
  * it: Stripe and PawaPay are only ever asked to take money in. Withdrawals

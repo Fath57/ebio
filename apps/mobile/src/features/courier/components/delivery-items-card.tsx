@@ -13,7 +13,7 @@ interface DeliveryItemsCardProps {
 }
 
 /**
- * What the courier carries, line by line — to check the bag at the shop
+ * What the courier carries, line by line, to check the bag at the shop
  * counter before leaving, and to know in advance whether it fits the bike.
  */
 export function DeliveryItemsCard({ items, itemsCount }: DeliveryItemsCardProps) {

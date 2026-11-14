@@ -93,7 +93,7 @@ export function AdvancedFilters({ fields, values, onChange }: AdvancedFiltersPro
 
 /**
  * A « at least » number. Typing stays local; the list only reloads on Enter
- * or when the field is left — one request per figure, not per digit.
+ * or when the field is left, one request per figure, not per digit.
  */
 function MinimumInput({ field, value, onCommit }: { field: Extract<AdvancedFilterField, { kind: 'min' }>, value: string, onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState(value)

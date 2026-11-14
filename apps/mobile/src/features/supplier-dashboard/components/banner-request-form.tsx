@@ -85,7 +85,7 @@ export function computeMissingTopup(price: number, balance: number): number {
 /**
  * What the shop is buying.
  *
- * A banner and an announcement are requested the same way — artwork, a target,
+ * A banner and an announcement are requested the same way, artwork, a target,
  * a duration taken from a price grid, paid up front from the wallet. Only the
  * wording, the rates and where the request is filed differ, and that is
  * exactly what this object carries.
@@ -475,7 +475,7 @@ export function BannerRequestForm({ onGoBack, onCreated, kind = 'banner' }: Bann
                 {hiddenProducts > 0
                   ? (
                       <Text style={[styles.helper, styles.productEmpty, { color: semantic.textTertiary }]}>
-                        {`${hiddenProducts} autre${hiddenProducts > 1 ? 's' : ''} produit${hiddenProducts > 1 ? 's' : ''} — affinez la recherche`}
+                        {`${hiddenProducts} autre${hiddenProducts > 1 ? 's' : ''} produit${hiddenProducts > 1 ? 's' : ''}, affinez la recherche`}
                       </Text>
                     )
                   : null}

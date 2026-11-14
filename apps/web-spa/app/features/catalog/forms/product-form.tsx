@@ -138,7 +138,7 @@ function buildProductSchema(t: (key: string) => string) {
 const STEPS = ['essentials', 'photos', 'composition', 'extras'] as const
 type Step = typeof STEPS[number]
 
-// Fields to validate per step — essentials first: name, category, price, unit, stock
+// Fields to validate per step, essentials first: name, category, price, unit, stock
 const STEP_FIELDS: Record<Step, (keyof ProductFormData)[]> = {
   essentials: ['name', 'categoryId', 'pricePerUnit', 'unit', 'stock', 'stockAlertThreshold'],
   photos: [],
@@ -789,7 +789,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                           <FormItem className="w-28">
                             <FormLabel className="text-xs">{t('catalog.form.variantPackSize')}</FormLabel>
                             <FormControl>
-                              <Input {...f} value={f.value ?? ''} type="number" min="2" max="1000" placeholder="—" />
+                              <Input {...f} value={f.value ?? ''} type="number" min="2" max="1000" placeholder="-" />
                             </FormControl>
                           </FormItem>
                         )}

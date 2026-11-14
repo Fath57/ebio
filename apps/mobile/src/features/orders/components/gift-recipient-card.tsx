@@ -67,8 +67,8 @@ interface GiftRecipientCardProps {
 }
 
 /**
- * Who the basket goes to, the code the recipient hands to the courier, and —
- * once delivered — the photo taken at the door.
+ * Who the basket goes to, the code the recipient hands to the courier, and,
+ * once delivered, the photo taken at the door.
  */
 export function GiftRecipientCard({ gift, proof, checkoutId, isDelivered, isCancelled }: GiftRecipientCardProps) {
   const { semantic } = useTheme()

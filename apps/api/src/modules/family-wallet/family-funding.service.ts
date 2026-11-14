@@ -34,7 +34,7 @@ export class FamilyFundingService implements OnModuleInit {
     private readonly notifier: FamilyNotifierService,
   ) {}
 
-  /** Whatever settles a top-up — the app, the webhook, the cron — the members hear of it. */
+  /** Whatever settles a top-up, the app, the webhook, the cron, the members hear of it. */
   onModuleInit(): void {
     this.topups.onCredited(topup => this.notifier.onTopupCredited(topup.walletId))
   }

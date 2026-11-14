@@ -91,7 +91,7 @@ export function OpeningHoursEditor({ onSave, onGoBack }: OpeningHoursEditorProps
       if (res.ok) {
         const settings = await res.json()
         // Format API : { monday: { open: 'HH:MM', close: 'HH:MM', closed?: true } }.
-        // On parcourt la semaine canonique — un jour absent vaut « fermé ».
+        // On parcourt la semaine canonique, un jour absent vaut « fermé ».
         const raw = (settings.openingHours ?? {}) as Record<string, ApiDayHours | null>
         const mapped: WeekSchedule = createDefaultSchedule()
         for (const day of DAYS_OF_WEEK) {

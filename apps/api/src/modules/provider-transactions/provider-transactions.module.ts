@@ -5,7 +5,7 @@ import { ProviderTransactionsService } from './provider-transactions.service'
 
 /**
  * Standalone on purpose: wallets and payments both write to the journal, and
- * PaymentsModule already imports WalletModule — living in either one would
+ * PaymentsModule already imports WalletModule, living in either one would
  * close the circle.
  */
 @Module({

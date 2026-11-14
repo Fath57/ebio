@@ -51,7 +51,7 @@ function toWeeks<T>(cells: T[]): T[][] {
 
 /**
  * Two taps pick a span: the first day, then the last. A third tap starts
- * over. Days after today are off — nothing was sold there yet.
+ * over. Days after today are off, nothing was sold there yet.
  */
 export function RangeCalendar({ value, onChange }: RangeCalendarProps) {
   const { semantic } = useTheme()

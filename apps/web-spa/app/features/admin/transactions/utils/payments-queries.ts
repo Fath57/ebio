@@ -12,7 +12,7 @@ export interface PaymentItem {
   buyerName: string
   supplierName: string
   amount: number
-  /** Commission eBio — nulle tant que le séquestre n'est pas libéré. */
+  /** Commission eBio, nulle tant que le séquestre n'est pas libéré. */
   commission: number
   provider: string
   providerReference: string | null
@@ -91,7 +91,7 @@ export function fetchDisputesQueryOptions() {
       })
       if (response.error)
         throw new Error('Failed to fetch disputes')
-      // L'API pagine sous `items` — l'ancien code lisait `data`, d'où une liste
+      // L'API pagine sous `items`, l'ancien code lisait `data`, d'où une liste
       // toujours vide.
       return response.data as { items: DisputeItem[], total: number }
     },

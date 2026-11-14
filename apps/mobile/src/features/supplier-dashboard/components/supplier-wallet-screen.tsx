@@ -156,7 +156,7 @@ function describeReleaseDelays(delays: PendingEarnings['delays']): string {
   return `Les ventes payées en ligne arrivent ${confirmed}, et au plus tard ${formatDelayHours(maximum)} après la livraison.`
 }
 
-/** « dimanche 5 octobre vers 12 h » — the release runs hourly, hence « vers ». */
+/** « dimanche 5 octobre vers 12 h », the release runs hourly, hence « vers ». */
 function formatReleaseMoment(iso: string): string {
   const date = new Date(iso)
   const day = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -222,8 +222,8 @@ interface CashBlockedBannerProps {
 
 /**
  * eBio's cash commissions put the shop past the tolerated debt: buyers can no
- * longer pick cash for it. Earth tones on purpose — a business state, not an
- * error — with the way out right there.
+ * longer pick cash for it. Earth tones on purpose, a business state, not an
+ * error, with the way out right there.
  */
 function CashBlockedBanner({ block, onTopup }: CashBlockedBannerProps) {
   return (
@@ -478,7 +478,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
                       {' '}
                       livré
                       {pending.deliveredCount > 1 ? 's' : ''}
-                      {pending.nextReleaseAt ? ` — prochain versement ${formatReleaseMoment(pending.nextReleaseAt)}` : ''}
+                      {pending.nextReleaseAt ? `, prochain versement ${formatReleaseMoment(pending.nextReleaseAt)}` : ''}
                     </Text>
                   )}
                   {pending.inProgressCount > 0 && (

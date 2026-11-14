@@ -181,8 +181,8 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
   }, [pendingTopupId, providerTransactionId])
 
   /**
-   * The payment page came back. That says nothing yet — INTRAM returns to
-   * the same page on success and on failure — so the server is asked again
+   * The payment page came back. That says nothing yet, INTRAM returns to
+   * the same page on success and on failure, so the server is asked again
    * for a while; it re-checks status and amount before crediting anything.
    */
   const confirmTopup = useCallback(async (reference: string) => {

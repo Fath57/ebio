@@ -12,6 +12,12 @@ export interface OrderPayerView {
   proof?: OrderProof | null
 }
 
+/** What the order's own row does not carry. */
+export interface OrderExtras {
+  /** EXPORT order: when the shop must hand it to eBio (011). */
+  collectBefore?: Date | null
+}
+
 export class OrderMapper {
   /** The frozen foreign-currency amount of the order's checkout; needs `checkout` populated. */
   static displayOf(order: Order): OrderDisplay | null {
@@ -26,7 +32,7 @@ export class OrderMapper {
     }
   }
 
-  static toResponse(order: Order, delivery: OrderDeliverySummary | null = null, payer: OrderPayerView = {}): OrderResponse {
+  static toResponse(order: Order, delivery: OrderDeliverySummary | null = null, payer: OrderPayerView = {}, extras: OrderExtras = {}): OrderResponse {
     return {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -75,6 +81,7 @@ export class OrderMapper {
       gift: payer.gift ?? null,
       display: payer.display ?? null,
       proof: payer.proof ?? null,
+      collectBefore: extras.collectBefore?.toISOString() ?? null,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     }

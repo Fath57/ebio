@@ -73,7 +73,7 @@ export class FamilyNotifierService {
 
   /**
    * A top-up landed on a wallet: if it is a family wallet, each active
-   * member hears what they may now spend — their own figure, never the
+   * member hears what they may now spend, their own figure, never the
    * balance (FR-011). Any other wallet is none of this module's business.
    */
   async onTopupCredited(walletId: string): Promise<void> {
@@ -224,7 +224,7 @@ export class FamilyNotifierService {
   /**
    * A member paid a cart from the family wallet: the payer hears who bought
    * what, where (FR-018). If the payment took the balance under the payer's
-   * threshold, they hear that too — once per crossing: the flag is set here
+   * threshold, they hear that too, once per crossing: the flag is set here
    * atomically and cleared when the balance is back above (top-up, refund).
    */
   async onFamilyPurchase(checkoutId: string): Promise<void> {
@@ -277,7 +277,7 @@ export class FamilyNotifierService {
     })
     if (payer.email) {
       try {
-        await this.email.sendEmail({ to: payer.email, subject: 'Solde bas — portefeuille famille eBio', content: `${body} Rechargez-le depuis l'application eBio pour que vos proches puissent continuer leurs courses.` })
+        await this.email.sendEmail({ to: payer.email, subject: 'Solde bas, portefeuille famille eBio', content: `${body} Rechargez-le depuis l'application eBio pour que vos proches puissent continuer leurs courses.` })
       }
       catch (error) {
         this.logger.error(`E-mail de solde bas du portefeuille ${familyWalletId} non envoyé`, error instanceof Error ? error.stack : String(error))

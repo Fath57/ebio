@@ -1,6 +1,6 @@
 import type { Announcement } from '../features/announcements/hooks/use-announcement'
 import type { AssistantCartLine } from '../features/assistant/assistant'
-// @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
+// @ts-nocheck (React Navigation types incompatible with React 19 types, upstream issue)
 // The two directives above must stay at the top of the file: an import
 // placed before them disables the `@ts-nocheck` and wakes the React
 // de types de React Navigation.
@@ -12,6 +12,7 @@ import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from 
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import Home from 'lucide-react-native/dist/esm/icons/house'
+import Luggage from 'lucide-react-native/dist/esm/icons/luggage'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
@@ -72,6 +73,16 @@ import { RelativeFormScreen } from '../features/relatives/components/relative-fo
 import { RelativesScreen } from '../features/relatives/components/relatives-screen'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
+import { ShipmentScreen } from '../features/terroir/components/shipment-screen'
+import { ShipmentsList } from '../features/terroir/components/shipments-list'
+import { TerroirCartScreen } from '../features/terroir/components/terroir-cart-screen'
+import { TerroirCheckoutScreen } from '../features/terroir/components/terroir-checkout-screen'
+import { TerroirPackScreen } from '../features/terroir/components/terroir-product-screen'
+import { ValiseModeBanner } from '../features/terroir/components/valise-ui'
+import { ValiseWaitlistScreen } from '../features/terroir/components/valise-waitlist-screen'
+import { LiveValiseProvider, useLiveValise } from '../features/terroir/live-valise-context'
+import { useTerroirCart } from '../features/terroir/terroir-cart-context'
+import { useValiseMode } from '../features/terroir/valise-mode-context'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
@@ -84,7 +95,7 @@ import { navigationRef } from './navigation-ref'
  * The strip every screen sits under, below the status bar.
  *
  * `SafeAreaView` alone trusted the inset the system reports, and some Android
- * devices report less than the status bar they actually draw — the title then
+ * devices report less than the status bar they actually draw, the title then
  * sat half under the clock. Taking the larger of the two costs nothing where
  * the inset is right (edge-to-edge makes them equal) and is the only thing
  * that saves the devices where it is not; it is a max, never a sum, so
@@ -129,6 +140,10 @@ function SearchStackScreen() {
       <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
       <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <SearchStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
+      {/* La Valise du pays (011) is a mode of the whole app, not a space of
+        * its own: only the wait for a departure and the packs live here. */}
+      <SearchStack.Screen name="Terroir" component={TerroirWaitlistWrapper} />
+      <SearchStack.Screen name="TerroirPack" component={TerroirPackWrapper} />
       {/* Writing to a shop needs an account: a visitor signs in here and
         * comes straight back to the shop rather than to another tab. */}
       <SearchStack.Screen name="Login" component={LoginWrapper} />
@@ -139,6 +154,8 @@ function SearchStackScreen() {
 }
 
 function SearchHomeWrapper({ navigation }: any) {
+  const { enter } = useValiseMode()
+  const { countries } = useTerroirCart()
   // The green header paints the status-bar area itself (no SafeScreen strip).
   return (
     <View style={{ flex: 1 }}>
@@ -151,6 +168,17 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Notifications')}
         onOpenWallet={() => navigation.navigate('BuyerWallet')}
+        onOpenTerroir={() => {
+          // A country to ship to: the mode turns on, right here on the home.
+          // None yet (loading, or no departure): the waiting screen decides.
+          if (countries && countries.length > 0) {
+            enter()
+            return
+          }
+          navigation.navigate('Terroir')
+        }}
+        onOpenTerroirPack={(packId: string) => navigation.navigate('TerroirPack', { packId })}
+        onRequireLogin={() => navigation.navigate('Login')}
         onOpenAssistant={() => {
           track('assistant_ouvert')
           navigation.navigate('Assistant')
@@ -179,6 +207,77 @@ function SearchHomeWrapper({ navigation }: any) {
   )
 }
 
+function TerroirWaitlistWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ValiseWaitlistScreen
+        onBack={() => navigation.goBack()}
+        onEntered={() => navigation.popToTop()}
+        onRequireLogin={() => navigation.navigate('Login')}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirPackWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <TerroirPackScreen
+        packId={route.params.packId}
+        onBack={() => navigation.goBack()}
+        onOpenCart={() => navigation.navigate('Panier', { screen: 'CartHome' })}
+      />
+    </SafeScreen>
+  )
+}
+
+/** « Ma valise »: the cart tab's root while the Valise mode is on. */
+function ValiseCartWrapper({ navigation }: any) {
+  const { data: session } = useSession()
+  return (
+    <SafeScreen>
+      <TerroirCartScreen
+        onCheckout={() => navigation.navigate(session?.user ? 'TerroirCheckout' : 'Login')}
+        onOpenProduct={(productId: string) => navigation.navigate('ProductDetail', { productId })}
+        onBrowse={() => navigation.navigate('Accueil', { screen: 'SearchHome' })}
+      />
+    </SafeScreen>
+  )
+}
+
+/** The cart tab shows the valise in Valise mode, the local cart otherwise; neither touches the other. */
+function CartHomeSwitch({ navigation, route }: any) {
+  const { active } = useValiseMode()
+  return active
+    ? <ValiseCartWrapper navigation={navigation} route={route} />
+    : <CartHomeWrapper navigation={navigation} route={route} />
+}
+
+function TerroirCheckoutWrapper({ navigation }: any) {
+  const { data: session } = useSession()
+  const customer = {
+    name: session?.user?.name ?? '',
+    email: session?.user?.email ?? null,
+    phone: session?.user?.phone ?? null,
+  }
+  return (
+    <SafeScreen>
+      <TerroirCheckoutScreen
+        customer={customer}
+        onBack={() => navigation.goBack()}
+        onComplete={(shipmentId: string) => {
+          navigation.popToTop()
+          navigation.navigate('Commandes', {
+            screen: 'TerroirShipment',
+            initial: false,
+            params: { shipmentId },
+          })
+        }}
+      />
+    </SafeScreen>
+  )
+}
+
 /**
  * The assistant, and the handover to checkout.
  *
@@ -189,6 +288,7 @@ function SearchHomeWrapper({ navigation }: any) {
  */
 function AssistantWrapper({ navigation }: any) {
   const { addItem } = useCart()
+  const { exit: exitValise } = useValiseMode()
 
   return (
     <SafeScreen>
@@ -205,6 +305,8 @@ function AssistantWrapper({ navigation }: any) {
             unit: line.unit,
             quantity: line.quantity,
           }))
+          // The assistant fills the local cart: show that one, not the valise.
+          exitValise()
           navigation.navigate('Panier', { screen: 'CartHome' })
         }}
       />
@@ -216,6 +318,7 @@ function SearchResultsWrapper({ route, navigation }: any) {
   const params = route.params ?? {}
   return (
     <SafeScreen>
+      <ValiseModeBanner />
       <SearchScreen
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
@@ -249,7 +352,7 @@ function SearchLocationPickerWrapper({ navigation }: any) {
         initialLongitude={longitude}
         onConfirm={(coords) => {
           // The picker says "no name yet" with null, the store only knows
-          // "absent" — they mean the same thing and only one can be stored.
+          // "absent", they mean the same thing and only one can be stored.
           setManualLocation({
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -345,6 +448,8 @@ async function openChatWithCourier(navigation: any, deliveryId: string, peerName
 function SupplierProfileWrapper({ route, navigation }: any) {
   const { supplierId } = route.params
   const { data: session } = useSession()
+  // The local cart's bar has no place while the shop fills the valise.
+  const { active: valise } = useValiseMode()
   return (
     <View style={{ flex: 1 }}>
       <SupplierProfileScreen
@@ -362,7 +467,7 @@ function SupplierProfileWrapper({ route, navigation }: any) {
         }}
         onGoBack={() => navigation.goBack()}
       />
-      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+      {!valise && <CartCtaBar onPress={() => navigation.navigate('Panier')} />}
     </View>
   )
 }
@@ -426,6 +531,7 @@ function freshProductDetail(productId: string | undefined): LoadedProductDetail 
 
 function ProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
+  const { active: valise, country: valiseCountry } = useValiseMode()
   const [loaded, setLoaded] = React.useState<LoadedProductDetail | null>(() => freshProductDetail(productId))
 
   // A banner only carries an id: we fill in the product and its
@@ -436,7 +542,8 @@ function ProductDetailWrapper({ route, navigation }: any) {
     let cancelled = false
     async function load() {
       try {
-        const productRes = await apiFetch(`/api/products/${productId}`)
+        // In Valise mode the detail also says whether the product travels.
+        const productRes = await apiFetch(`/api/products/${productId}${valiseCountry ? `?exportCountry=${valiseCountry}` : ''}`)
         if (!productRes.ok)
           return
         const rawProduct = await productRes.json() as ApiProductDetail
@@ -461,7 +568,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
     return () => {
       cancelled = true
     }
-  }, [productId])
+  }, [productId, valiseCountry])
 
   const product = route.params?.product ?? loaded?.product
   const supplier = route.params?.supplier ?? loaded?.supplier
@@ -486,8 +593,9 @@ function ProductDetailWrapper({ route, navigation }: any) {
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
         onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
         onSeeAllReviews={id => navigation.navigate('ProductReviews', { productId: id, productName: product.name })}
+        onOpenValise={() => navigation.navigate('Panier', { screen: 'CartHome' })}
       />
-      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+      {!valise && <CartCtaBar onPress={() => navigation.navigate('Panier')} />}
     </View>
   )
 }
@@ -547,7 +655,7 @@ const CartStack = createNativeStackNavigator()
 function CartStackScreen() {
   return (
     <CartStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
-      <CartStack.Screen name="CartHome" component={CartHomeWrapper} />
+      <CartStack.Screen name="CartHome" component={CartHomeSwitch} />
       <CartStack.Screen name="Login" component={LoginWrapper} />
       <CartStack.Screen name="Register" component={RegisterWrapper} />
       <CartStack.Screen name="ForgotPassword" component={ForgotPasswordWrapper} />
@@ -556,6 +664,8 @@ function CartStackScreen() {
       {/* Regarder un article de son panier ne doit pas déplacer l'acheteur
         * dans l'onglet Accueil, ni l'y laisser en revenant. */}
       <CartStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
+      {/* « Ma valise » lives in this tab in Valise mode: its checkout too. */}
+      <CartStack.Screen name="TerroirCheckout" component={TerroirCheckoutWrapper} />
     </CartStack.Navigator>
   )
 }
@@ -576,7 +686,7 @@ function CartHomeWrapper({ navigation }: any) {
       return
 
     // One shop, one order. The cart may hold other shops' baskets; they stay
-    // where they are and are ordered on their own — which is what makes a
+    // where they are and are ordered on their own, which is what makes a
     // promo code usable again, and a refund a single shop's business.
     const shopName = groups.find(g => g.supplierId === supplierId)?.supplierName ?? ''
     const orderSummary = {
@@ -587,7 +697,7 @@ function CartHomeWrapper({ navigation }: any) {
         supplierId: i.supplierId,
         supplierName: i.supplierName,
         ...(i.variantId ? { variantId: i.variantId } : {}),
-        name: i.variantLabel ? `${i.name} — ${i.variantLabel}` : i.name,
+        name: i.variantLabel ? `${i.name}, ${i.variantLabel}` : i.name,
         quantity: i.quantity,
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,
@@ -735,6 +845,8 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="RateProducts" component={RateProductsWrapper} />
       <OrdersStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <OrdersStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
+      <OrdersStack.Screen name="TerroirShipments" component={TerroirShipmentsWrapper} />
+      <OrdersStack.Screen name="TerroirShipment" component={TerroirShipmentWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -996,6 +1108,34 @@ function MyOrdersWrapper({ navigation }: any) {
         onRateReceivedProducts={orderId => navigation.navigate('RateProducts', { orderId })}
         // A received basket names no shop: the flow starts at the courier.
         onRateReceivedCourier={(orderId, supplierId) => navigation.navigate('RateOrder', { orderId, supplierId: supplierId ?? '', hasReview: supplierId === null })}
+        onOpenShipment={(shipmentId: string) => navigation.navigate('TerroirShipment', { shipmentId })}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirShipmentsWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ShipmentsList
+        onBack={() => navigation.goBack()}
+        onOpenShipment={(shipmentId: string) => navigation.navigate('TerroirShipment', { shipmentId })}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirShipmentWrapper({ route, navigation }: any) {
+  const { enter } = useValiseMode()
+  return (
+    <SafeScreen>
+      <ShipmentScreen
+        shipmentId={route.params.shipmentId}
+        onBack={() => navigation.goBack()}
+        onReorder={(country: string) => {
+          enter(country)
+          navigation.navigate('Panier', { screen: 'CartHome' })
+        }}
       />
     </SafeScreen>
   )
@@ -1011,6 +1151,8 @@ function OrderTrackingWrapper({ route, navigation }: any) {
         onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
         onRate={(supplierId, hasReview) => navigation.navigate('RateOrder', { supplierId, orderId, hasReview })}
         onTipCourier={supplierId => navigation.navigate('RateOrder', { supplierId, orderId, hasReview: true, tipOnly: true })}
+        // An EXPORT order (old notification): its valise is what to follow.
+        onOpenShipment={(shipmentId: string) => navigation.replace('TerroirShipment', { shipmentId })}
         onBack={() => navigation.goBack()}
       />
     </SafeScreen>
@@ -1061,13 +1203,17 @@ function RateOrderWrapper({ route, navigation }: any) {
 /** L'icône du panier, avec son compteur par-dessus l'icône partagée. */
 function CartTabIcon({ size, color, focused }: { size: number, color: string, focused?: boolean }) {
   const { getItemCount } = useCart()
-  const count = getItemCount()
+  const { itemCount: valiseCount } = useTerroirCart()
+  // In Valise mode the tab is « Ma valise »: it counts the valise.
+  const { active: valise } = useValiseMode()
+  const count = valise ? valiseCount : getItemCount()
 
   return (
     <View>
-      <TabBarIcon Icon={ShoppingBagIcon} size={size} color={color} focused={focused === true} />
+      {/* In Valise mode the tab is a suitcase: the shopping is for the trip. */}
+      <TabBarIcon Icon={valise ? Luggage : ShoppingBagIcon} size={size} color={color} focused={focused === true} />
       {count > 0 && (
-        <View style={badgeStyles.badge}>
+        <View style={[badgeStyles.badge, valise && badgeStyles.badgeValise]}>
           <Text style={badgeStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
         </View>
       )}
@@ -1087,6 +1233,9 @@ const badgeStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+  },
+  badgeValise: {
+    backgroundColor: colors.blue[600],
   },
   badgeText: {
     fontFamily: fonts.sansBd,
@@ -1115,7 +1264,7 @@ const Tab = createBottomTabNavigator()
  *
  * `navigate({ screen: 'ChatHome' })` is not enough. In React Navigation 7 a
  * navigation no longer pops back to a screen already in the stack, and nested
- * params are read only once — the tab bar even puts the old ones back right
+ * params are read only once, the tab bar even puts the old ones back right
  * after our listener. So we target the child stack directly through `target`,
  * the only way for an action to travel down: otherwise it bubbles up.
  */
@@ -1172,14 +1321,18 @@ function LiveOrderFabHost() {
   const place = React.useSyncExternalStore(buyerPlace.subscribe, buyerPlace.get)
   const insets = useSafeAreaInsets()
   const hasBasket = useCart().getItemCount() > 0
+  // In Valise mode the product page has its own footer in that spot.
+  const { active: valise } = useValiseMode()
   return (
     <LiveOrderFab
       hidden={place.tab === 'Commandes'
         || HIDE_TAB_BAR_ROUTES.has(place.screen)
-        || (hasBasket && CART_BAR_ROUTES.has(place.screen))}
+        || (valise && place.screen === 'ProductDetail')
+        || (!valise && hasBasket && CART_BAR_ROUTES.has(place.screen))}
       // Same figure as the tab bar's own height below.
       bottomOffset={64 + insets.bottom}
-      onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
+      onOpenOrder={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
+      onOpenValise={shipmentId => navigationRef.navigate('Commandes', { screen: 'TerroirShipment', initial: false, params: { shipmentId } })}
     />
   )
 }
@@ -1204,13 +1357,16 @@ const HIDE_TAB_BAR_ROUTES = new Set([
 export function AppNavigation() {
   return (
     <LiveOrderProvider>
-      <BuyerTabs />
+      <LiveValiseProvider>
+        <BuyerTabs />
+      </LiveValiseProvider>
     </LiveOrderProvider>
   )
 }
 
 function BuyerTabs() {
   const { semantic } = useTheme()
+  const { active: valise } = useValiseMode()
   const insets = useSafeAreaInsets()
   useNotifications()
   usePendingReferralClaim()
@@ -1223,7 +1379,9 @@ function BuyerTabs() {
   const { count: chatUnread } = useChatUnreadCount()
   // An order that is moving: the notice says it on arrival, the tab's dot
   // reminds afterwards without taking any room.
-  const { order: liveOrder } = useLiveOrder()
+  const { order: liveOrderInProgress } = useLiveOrder()
+  const { valises: liveValises } = useLiveValise()
+  const liveOrder = liveOrderInProgress ?? liveValises[0] ?? null
   // Where the buyer is, read on every state change: the notice is mounted
   // outside the navigator, so it cannot read the route through a hook. Kept in
   // a store rather than in this component's state: a state here re-rendered
@@ -1335,6 +1493,7 @@ function BuyerTabs() {
         <Tab.Screen
           name="Panier"
           component={CartStackScreen}
+          options={{ tabBarLabel: valise ? 'Ma valise' : 'Panier' }}
           listeners={({ navigation }) => ({
             tabPress: () => popTabStackToTop(navigation, 'Panier'),
           })}
@@ -1370,7 +1529,7 @@ function BuyerTabs() {
       </Tab.Navigator>
 
       {/* The announcement of the day, mounted above the navigator so it
-        * survives a tab change — closing it is a gesture, not a side effect. */}
+        * survives a tab change, closing it is a gesture, not a side effect. */}
       {/* Le réseau tombe souvent : l'acheteur doit l'apprendre du bandeau,
         * pas d'une liste qui ne se remplit jamais. Monté au-dessus du
         * navigateur, donc visible quel que soit l'onglet. */}
@@ -1386,7 +1545,7 @@ function BuyerTabs() {
 
       {/* On demande à partir du premier panier : la personne a montré son
         * intention, la question a du sens, et elle n'a pas eu besoin de
-        * commander — ceux qui ne l'ont jamais fait sont justement ceux qu'on
+        * commander, ceux qui ne l'ont jamais fait sont justement ceux qu'on
         * veut pouvoir rappeler. */}
       <PushConsentSheet when={hasBasket} />
     </NavigationContainer>

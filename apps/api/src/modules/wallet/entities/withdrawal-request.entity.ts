@@ -11,11 +11,11 @@ export enum WithdrawalStatus {
   /** Admin approved; the FedaPay payout is on its way. */
   PROCESSING = 'PROCESSING',
   PAID = 'PAID',
-  /** Payout failed after approval — the wallet was re-credited. */
+  /** Payout failed after approval, the wallet was re-credited. */
   FAILED = 'FAILED',
-  /** Admin refused — the wallet was re-credited. */
+  /** Admin refused, the wallet was re-credited. */
   REJECTED = 'REJECTED',
-  /** Owner cancelled while still PENDING — the wallet was re-credited. */
+  /** Owner cancelled while still PENDING, the wallet was re-credited. */
   CANCELLED = 'CANCELLED',
 }
 

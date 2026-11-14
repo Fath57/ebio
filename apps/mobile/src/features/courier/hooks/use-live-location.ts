@@ -35,7 +35,7 @@ export function useLiveLocation(active: boolean) {
               longitude: location.coords.longitude,
             }),
           }).catch(() => {
-            // Offline blips are fine — the next fix will go through
+            // Offline blips are fine, the next fix will go through
           })
         },
       )

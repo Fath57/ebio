@@ -15,9 +15,9 @@ const SEARCH_DEBOUNCE_MS = 300
 
 export interface ActiveFilter {
   key: string
-  /** What is filtered — « Statut ». */
+  /** What is filtered, « Statut ». */
   group: string
-  /** On what — « Litige ». */
+  /** On what, « Litige ». */
   value: string
   onRemove: () => void
 }

@@ -5,7 +5,7 @@ import { OrdersService } from '../orders/orders.service'
 import { CompensationService } from '../payments/compensation.service'
 import { GiftNotifierService } from './gift-notifier.service'
 
-/** Why the hand-over failed, as told to the payer — the relative is the one who was not there. */
+/** Why the hand-over failed, as told to the payer, the relative is the one who was not there. */
 const PAYER_REASON_LABELS: Record<string, string> = {
   CUSTOMER_ABSENT: 'votre proche était absent',
   ADDRESS_NOT_FOUND: 'adresse introuvable',
@@ -22,7 +22,7 @@ export function giftFailReasonLabel(reason: string | null | undefined, comment?:
  * A cart for a relative that could not be handed over (research §5).
  *
  * The card cannot be partly refunded, so the payer's eBio wallet gets the
- * order back minus its delivery fee — the courier made the trip and is paid
+ * order back minus its delivery fee, the courier made the trip and is paid
  * for it by the caller, as for a delivered run. The order is cancelled, the
  * payer told why, and the relative told the cart is not coming.
  *
@@ -58,13 +58,13 @@ export class GiftFailureService {
     // refund being keyed on the order, the first one written wins.
     const result = await this.compensation.compensateOrder(
       order.id,
-      `remise impossible — ${reasonLabel}`,
+      `remise impossible, ${reasonLabel}`,
       { withholdDeliveryFee: true },
     )
 
     try {
       // Cancelling also tells the relative (all orders of the checkout
-      // cancelled, announcement sent) — see OrdersService.onOrderCancelled.
+      // cancelled, announcement sent), see OrdersService.onOrderCancelled.
       await this.ordersService.applyStatusFromDelivery(order.id, OrderStatus.CANCELLED)
     }
     catch (error) {

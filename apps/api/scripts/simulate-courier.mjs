@@ -99,7 +99,7 @@ async function tick() {
   console.log(`${new Date().toLocaleTimeString('fr-FR')} ${label} · ${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} · reste ${Math.round(metersBetween(position, target))} m`)
 }
 
-console.log(`Simulation du livreur ${email} (${courierId}) toutes les ${tickMs} ms — Ctrl+C pour arrêter`)
+console.log(`Simulation du livreur ${email} (${courierId}) toutes les ${tickMs} ms, Ctrl+C pour arrêter`)
 await tick()
 setInterval(() => {
   tick().catch(err => console.error(err.message))

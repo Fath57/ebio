@@ -49,7 +49,7 @@ export class Migration20260829100000 extends Migration {
     this.addSql(`ALTER TABLE "withdrawal_requests" DROP CONSTRAINT IF EXISTS "withdrawal_requests_single_owner";`)
     this.addSql(`ALTER TABLE "withdrawal_requests" ADD CONSTRAINT "withdrawal_requests_single_owner"
       CHECK (num_nonnulls("supplier_id", "courier_profile_id") = 1);`)
-    // One active request per courier — the partial unique index is the
+    // One active request per courier, the partial unique index is the
     // arbiter, mirroring withdrawal_requests_one_active_idx for suppliers.
     this.addSql(`CREATE UNIQUE INDEX IF NOT EXISTS "withdrawal_requests_one_active_courier_idx"
       ON "withdrawal_requests" ("courier_profile_id")

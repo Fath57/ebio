@@ -15,7 +15,7 @@ import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOffer, DeliveryOfferResponse } from './entities/delivery-offer.entity'
 import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
-import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
+import { Delivery, DeliveryPurpose, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 const MINUTE_MS = 60 * 1000
@@ -133,13 +133,13 @@ export class DispatchService {
    * target's current radius, or whose declared zone circle reaches it.
    *
    * Without a pickup point, **nobody**. It used to fall back to every
-   * available courier, distance-free — which is how one phantom run sent 81
+   * available courier, distance-free, which is how one phantom run sent 81
    * offers to couriers who could never have taken it. Notifying someone four
    * hundred kilometres away is worse than notifying no one: it teaches them
    * to ignore the notification that matters.
    *
-   * It is also a data defect worth seeing. A shop without coordinates — there
-   * are four — would silently have had its orders blasted to the whole
+   * It is also a data defect worth seeing. A shop without coordinates, there
+   * are four, would silently have had its orders blasted to the whole
    * country instead of being fixed.
    */
   async findEligibleFor(target: DispatchTarget): Promise<EligibleCourier[]> {
@@ -175,7 +175,7 @@ export class DispatchService {
 
     this.logger.error(
       `Diffusion refusée : ${target.kind.toLowerCase()} ${target.id} n'a pas de point de retrait. `
-      + `La boutique n'a probablement pas de coordonnées — à corriger, la course reste attribuable à la main.`,
+      + `La boutique n'a probablement pas de coordonnées, à corriger, la course reste attribuable à la main.`,
     )
     return []
   }
@@ -373,7 +373,9 @@ export class DispatchService {
         user,
         type: NotificationType.DELIVERY_OFFER,
         title: 'Course proposée en priorité',
-        body: `Retrait chez ${delivery.order.supplier.shopName} — répondez dans les ${formatWindow(timeoutS)}`,
+        body: delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+          ? `Retrait chez ${delivery.order.supplier.shopName} pour le point eBio, répondez dans les ${formatWindow(timeoutS)}`
+          : `Retrait chez ${delivery.order.supplier.shopName}, répondez dans les ${formatWindow(timeoutS)}`,
         data: { deliveryId: delivery.id, orderId: delivery.order.id, expiresAt: expiresAt.toISOString(), targeted: true },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -386,7 +388,7 @@ export class DispatchService {
    *
    * A run is only dispatched once **every** one of its shops has prepared.
    * Leaving earlier means sending the courier to wait in front of the second
-   * one — and it is them, not the platform, who would pay for that wait.
+   * one, and it is them, not the platform, who would pay for that wait.
    */
   async startRunDispatch(runId: string): Promise<void> {
     const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'] })
@@ -396,7 +398,7 @@ export class DispatchService {
     if (!this.isRunReady(run)) {
       return
     }
-    // Provisional order first — without it the first pickup point is undefined
+    // Provisional order first, without it the first pickup point is undefined
     // and the search would start from an arbitrary shop.
     await this.applyProvisionalPickupOrder(run)
     await this.refreshRunPickupPoint(run)
@@ -411,7 +413,7 @@ export class DispatchService {
 
   /**
    * Has every shop of the run handed its parcel over to the search? A run
-   * still missing a delivery — the order is not ready — cannot be dispatched.
+   * still missing a delivery, the order is not ready, cannot be dispatched.
    */
   private isRunReady(run: DeliveryRun): boolean {
     const deliveries = run.deliveries.getItems()
@@ -504,7 +506,7 @@ export class DispatchService {
         user,
         type: NotificationType.DELIVERY_OFFER,
         title: 'Tournée proposée en priorité',
-        body: `${this.runLabel(run)} — répondez dans les ${formatWindow(timeoutS)}`,
+        body: `${this.runLabel(run)}, répondez dans les ${formatWindow(timeoutS)}`,
         data: { deliveryRunId: run.id, expiresAt: expiresAt.toISOString(), targeted: true },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -592,7 +594,7 @@ export class DispatchService {
       user,
       type: NotificationType.DELIVERY_OFFER,
       title: 'Nouvelle tournée disponible',
-      body: `${this.runLabel(run)} — ${run.courierEarning.toLocaleString('fr-FR')} FCFA`,
+      body: `${this.runLabel(run)}, ${run.courierEarning.toLocaleString('fr-FR')} FCFA`,
       data: { deliveryRunId: run.id },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })))
@@ -608,7 +610,7 @@ export class DispatchService {
       status: DeliveryRunStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.TARGETED,
       // A run is born TARGETED with no open offer, so without this every
-      // brand-new run matched — including one whose shops had not prepared
+      // brand-new run matched, including one whose shops had not prepared
       // and one carrying no delivery at all. It was then pushed to broadcast
       // behind `startRunDispatch`'s back, which is the only place setting
       // `dispatchStartedAt`; the escalation that ends a search reads that
@@ -629,14 +631,14 @@ export class DispatchService {
   }
 
   /**
-   * Run unclaimed for 10 min: widen the radius and push again — until the cap.
+   * Run unclaimed for 10 min: widen the radius and push again, until the cap.
    *
    * `$lt: RADIUS_CAP_KM` is what ends the search. Without it a run that had
    * reached the cap was pushed again every ten minutes to the same couriers,
    * for ever: a single unclaimed run sent 81 notifications in one day. The
    * last widening still gets its broadcast, in the pass that reaches the cap;
    * afterwards the run stays visible in the couriers' list and the back-office
-   * can still assign it by hand — it simply stops ringing.
+   * can still assign it by hand, it simply stops ringing.
    */
   async rebroadcastStaleRuns(): Promise<void> {
     const cutoff = new Date(Date.now() - TEN_MINUTES_MS)
@@ -676,7 +678,7 @@ export class DispatchService {
    * What becomes of a run nobody takes, in three stages.
    *
    * 15 minutes: the back-office is alerted and may assign a courier by hand.
-   * The dispatch keeps running meanwhile — the alert interrupts nothing.
+   * The dispatch keeps running meanwhile, the alert interrupts nothing.
    *
    * 30 minutes: the run **ungroups**. Its deliveries leave one by one, because
    * making the buyer wait while the goods sit ready at shops that have prepared
@@ -684,7 +686,7 @@ export class DispatchService {
    * makes no sense, they switch to two couriers rather than none.
    *
    * The decision only goes back to the buyer if the separate deliveries find
-   * nobody either — that is FR-022c, and it is the last resort.
+   * nobody either, that is FR-022c, and it is the last resort.
    */
   async escalateStaleRuns(): Promise<void> {
     const now = Date.now()
@@ -702,7 +704,7 @@ export class DispatchService {
         run.escalatedAt = new Date()
         run.status = DeliveryRunStatus.ESCALATED
         await this.em.flush()
-        this.logger.warn(`Run ${run.id} unserved after 15 min — escalated to the back-office`)
+        this.logger.warn(`Run ${run.id} unserved after 15 min, escalated to the back-office`)
       }
     }
   }
@@ -762,7 +764,7 @@ export class DispatchService {
         user: buyer,
         type: NotificationType.DELIVERY_REASSIGNED,
         title: 'Livraison en plusieurs fois',
-        body: `Aucun livreur n'a pu prendre vos ${run.shopCount} boutiques ensemble. Chaque commande part séparément — vous serez livré en plusieurs fois.`,
+        body: `Aucun livreur n'a pu prendre vos ${run.shopCount} boutiques ensemble. Chaque commande part séparément, vous serez livré en plusieurs fois.`,
         data: { deliveryRunId: run.id },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -815,7 +817,7 @@ export class DispatchService {
           channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
         })
       }
-      this.logger.warn(`Run ${run.id} still unserved after ungrouping — buyer asked to decide`)
+      this.logger.warn(`Run ${run.id} still unserved after ungrouping, buyer asked to decide`)
     }
   }
 
@@ -925,7 +927,9 @@ export class DispatchService {
       user,
       type: NotificationType.DELIVERY_OFFER,
       title: 'Nouvelle course disponible',
-      body: `Retrait chez ${delivery.order.supplier.shopName} — ${delivery.pickupAddress}`,
+      body: delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+        ? `Retrait chez ${delivery.order.supplier.shopName}, à déposer au point eBio`
+        : `Retrait chez ${delivery.order.supplier.shopName}, ${delivery.pickupAddress}`,
       data: { deliveryId: delivery.id, orderId: delivery.order.id },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })))
@@ -941,7 +945,7 @@ export class DispatchService {
     return users.length
   }
 
-  /** Cron wrapper — the request-context decorator needs a real EntityManager. */
+  /** Cron wrapper, the request-context decorator needs a real EntityManager. */
   @Cron('*/2 * * * *')
   @SingleInstance()
   @EnsureRequestContext()
@@ -958,7 +962,7 @@ export class DispatchService {
   }
 
   /**
-   * Unclaimed after 10 min: widen the radius and push again — until the cap.
+   * Unclaimed after 10 min: widen the radius and push again, until the cap.
    *
    * A lone delivery has no escalation to end it, so the cap is the only stop:
    * past it, it stays offered in the list without notifying anyone again.

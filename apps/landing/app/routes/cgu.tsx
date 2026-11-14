@@ -96,6 +96,19 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
         famille, ou sur votre portefeuille eBio s’il a été fermé.
       </p>
 
+      <p>
+        Depuis l’un des pays desservis, vous pouvez commander des produits du
+        terroir béninois. eBio les collecte auprès des boutiques, les emballe
+        et les confie à une agence d’envoi partenaire, pour le départ que vous
+        choisissez. Le prix du transport est calculé au poids, droits et taxes
+        à l’import compris : vous ne payez rien de plus au retrait. Le délai
+        d’arrivée est une estimation de l’agence. Si votre colis pèse nettement
+        plus que prévu, nous vous proposons de régler le complément ou de
+        retirer un produit avant l’envoi. Un colis perdu ou abîmé est remboursé
+        sans retour ; l’assurance facultative couvre en plus l’intégralité des
+        frais. Les produits frais ou d’origine animale ne sont pas expédiés.
+      </p>
+
       <h2>7. Avis et contenus</h2>
       <p>
         Les avis doivent refléter une expérience réelle d’achat. Sont interdits

@@ -14,7 +14,7 @@ export interface ProductUnit {
   shortLabel: string
   isActive: boolean
   sortOrder: number
-  /** Products currently priced in this unit — a unit in use cannot be deleted. */
+  /** Products currently priced in this unit, a unit in use cannot be deleted. */
   productCount: number
 }
 
@@ -99,7 +99,7 @@ export const deleteProductUnitMutationOptions = {
 }
 
 /**
- * The API explains refusals in French — a duplicate code, a unit still in use.
+ * The API explains refusals in French, a duplicate code, a unit still in use.
  * Dropping that message would leave the admin with a silent failure.
  */
 function readError(error: unknown): string {

@@ -31,7 +31,7 @@ interface ProductReviewsSectionProps {
 /** How many reviews the section shows before handing over to the full list. */
 const PREVIEW_COUNT = 3
 
-/** French decimal: 4,6 — never 4.6. */
+/** French decimal: 4,6, never 4.6. */
 function formatAverage(value: number): string {
   return value.toFixed(1).replace('.', ',')
 }
@@ -105,7 +105,7 @@ export function ProductReviewsSection({ productId, onSeeAll }: ProductReviewsSec
           {/* Below three reviews the average stays hidden, as for shops. */}
           {summary.average !== null
             ? <Text style={[styles.average, { color: semantic.textPrimary }]}>{formatAverage(summary.average)}</Text>
-            : <Text style={[styles.average, { color: semantic.textTertiary }]}>—</Text>}
+            : <Text style={[styles.average, { color: semantic.textTertiary }]}>-</Text>}
           <StarRating value={summary.average ?? 0} size={14} />
           <Text style={[styles.count, { color: semantic.textSecondary }]}>
             {summary.count > 1 ? `${summary.count} avis` : '1 avis'}
@@ -164,12 +164,12 @@ export function ProductReviewsSection({ productId, onSeeAll }: ProductReviewsSec
 
 /**
  * The compact line that sits next to the price. Rendered only once the
- * average is published — a lone enthusiastic review must not pass for one.
+ * average is published, a lone enthusiastic review must not pass for one.
  */
 /**
  * The rating shown beside the price.
  *
- * With `onPress` it becomes a way down to the reviews themselves — which is
+ * With `onPress` it becomes a way down to the reviews themselves, which is
  * what someone reading "4,2 (18 avis)" is reaching for. Without it, it stays
  * what it was: a line of text.
  */

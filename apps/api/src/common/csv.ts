@@ -4,7 +4,7 @@
  * - `;` separates columns: a French Excel reads `,` as the decimal mark.
  * - A UTF-8 byte-order mark leads the file: without it Excel decodes it as
  *   Windows-1252 and every « é » comes out as « Ã© ».
- * - A field holding `;`, a quote or a line break is quoted, quotes doubled —
+ * - A field holding `;`, a quote or a line break is quoted, quotes doubled,
  *   otherwise a shop named « Chez Ami; Fils » shifts every column after it.
  * - Lines end in CRLF, as RFC 4180 asks.
  */

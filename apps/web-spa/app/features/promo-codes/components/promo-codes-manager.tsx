@@ -183,7 +183,7 @@ export function PromoCodesManager({ adapter }: { adapter: PromoAdapter }) {
                       {[
                         promo.minOrderAmount > 0 ? t('promoCodes.minShort', { amount: promo.minOrderAmount.toLocaleString('fr-FR') }) : null,
                         promo.expiresAt ? t('promoCodes.untilShort', { date: new Date(promo.expiresAt).toLocaleDateString(i18n.language) }) : null,
-                      ].filter(Boolean).join(' · ') || '—'}
+                      ].filter(Boolean).join(' · ') || '-'}
                     </TableCell>
                     <TableCell className="text-right">
                       {promo.useCount}

@@ -14,7 +14,7 @@ import { DeliveriesService } from './deliveries.service'
  * The run on the courier's side: one offer, one decision.
  *
  * It cannot be accepted piecemeal (FR-015). The deliveries it holds keep their
- * own endpoints for pickup and handover — the status stays per order, which is
+ * own endpoints for pickup and handover, the status stays per order, which is
  * what leaves the supplier app untouched.
  */
 @Controller('runs')

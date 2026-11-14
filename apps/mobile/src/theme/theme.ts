@@ -1,4 +1,4 @@
-// theme.ts — Source unique de vérité pour les tokens eBio (React Native)
+// theme.ts, Source unique de vérité pour les tokens eBio (React Native)
 export const colors = {
   green: {
     50: '#e8f5ec',
@@ -111,8 +111,8 @@ export const lightTheme = {
  *
  * Android renders `elevation` far heavier than the iOS shadow of the same
  * opacity: a scale built for iOS turned every surface into a slab here. What
- * separates content is, in order: whitespace, a hairline, then — only for
- * something that genuinely floats over the page — a shadow.
+ * separates content is, in order: whitespace, a hairline, then, only for
+ * something that genuinely floats over the page, a shadow.
  *
  * `none` is the default for a surface that merely groups; reach for `md` or
  * `lg` only when the element overlaps what it covers.

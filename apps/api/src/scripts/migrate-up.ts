@@ -5,8 +5,8 @@ import { createMikroOrmOptions } from '../config/mikro-orm.config'
 /**
  * Applies one named migration, in production.
  *
- * The `mikro-orm` CLI discovers no entity in the deployed image — it looks
- * for TypeScript sources that are not there — and every migration ended in
+ * The `mikro-orm` CLI discovers no entity in the deployed image, it looks
+ * for TypeScript sources that are not there, and every migration ended in
  * fiddling on the server. This script starts from the compiled config, the
  * one the API itself uses, so it has nothing to discover.
  *
@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   const logger = new Logger('migrate-up')
   const name = process.argv[2]
   if (!name) {
-    logger.error('Nom de migration attendu — ex. Migration20260928020000')
+    logger.error('Nom de migration attendu, ex. Migration20260928020000')
     process.exitCode = 1
     return
   }
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
     const migrator = orm.getMigrator()
     const applied = await migrator.getExecutedMigrations()
     if (applied.some(item => item.name.startsWith(name))) {
-      logger.log(`${name} est déjà appliquée — rien à faire`)
+      logger.log(`${name} est déjà appliquée, rien à faire`)
       return
     }
 

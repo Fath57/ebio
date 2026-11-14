@@ -38,7 +38,7 @@ function refusalText(option: FamilyWalletOption, productNames: Map<string, strin
 
 /**
  * One payment option per family wallet the buyer belongs to: « Portefeuille
- * famille (Awa) — X FCFA disponibles », greyed with the reason when it cannot
+ * famille (Awa), X FCFA disponibles », greyed with the reason when it cannot
  * pay the whole basket.
  */
 export function FamilyWalletPaymentOptions({ options, productNames, selectedMemberId, onSelect }: FamilyWalletPaymentOptionsProps) {
@@ -51,7 +51,7 @@ export function FamilyWalletPaymentOptions({ options, productNames, selectedMemb
           ? `Portefeuille famille (${option.payerFirstName})`
           : 'Portefeuille famille'
         const hint = option.usable
-          ? `${formatXof(option.spendable)} disponibles — débit immédiat, sans frais`
+          ? `${formatXof(option.spendable)} disponibles, débit immédiat, sans frais`
           : refusalText(option, productNames)
         return (
           <TouchableOpacity

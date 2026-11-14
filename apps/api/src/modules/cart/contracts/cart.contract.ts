@@ -4,7 +4,7 @@ import { z } from 'zod'
  * A basket as the app holds it.
  *
  * Sent whole rather than as a list of changes: a basket is small, and the
- * alternative is reconciling two histories that can disagree — for something
+ * alternative is reconciling two histories that can disagree, for something
  * nobody would thank us for getting subtly right.
  */
 export const cartSyncSchema = z.object({

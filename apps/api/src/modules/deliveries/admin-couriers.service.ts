@@ -143,7 +143,7 @@ export class AdminCouriersService {
 
   /**
    * Suspension stops new offers at once and releases claims that have not been
-   * picked up. A courier already carrying a package keeps their active run —
+   * picked up. A courier already carrying a package keeps their active run,
    * pulling the delivery back would strand the goods.
    */
   async suspend(id: string, adminId: string): Promise<CourierProfile> {

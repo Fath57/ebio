@@ -4,7 +4,7 @@ import { Migration } from '@mikro-orm/migrations'
  * The permanent support thread.
  *
  * The chat only knew two counterparties: a shop and a courier. A buyer who
- * opened it with neither had nobody to talk to. SUPPORT is eBio itself —
+ * opened it with neither had nobody to talk to. SUPPORT is eBio itself,
  * one thread per buyer, answered by whoever is on duty in the back-office.
  *
  * It carries no supplier and no courier, which the existing CHECK forbade;

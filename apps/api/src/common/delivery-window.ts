@@ -33,7 +33,7 @@ interface ClockTime {
 }
 
 /**
- * Reads the format the app wrote for years — « Aujourd'hui entre 14h00 et
+ * Reads the format the app wrote for years, « Aujourd'hui entre 14h00 et
  * 16h00 », « Demain matin entre 8h et 12h ». Anything else yields null, which
  * means « as soon as ready »: guessing a time would start the search at the
  * wrong moment without anyone noticing.

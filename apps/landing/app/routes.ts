@@ -7,6 +7,7 @@ export default [
   route('produit/:id', 'routes/produit.tsx'),
   route('parrainage/:code', 'routes/parrainage.tsx'),
   route('suivi/:token', 'routes/suivi.tsx'),
+  route('colis/:token', 'routes/colis.tsx'),
   route('cgu', 'routes/cgu.tsx'),
   route('confidentialite', 'routes/confidentialite.tsx'),
   route('suppression-donnees', 'routes/suppression-donnees.tsx'),

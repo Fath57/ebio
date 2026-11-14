@@ -47,6 +47,7 @@ import { SearchModule } from './modules/search/search.module'
 import { PlatformSettingsModule } from './modules/settings/platform-settings.module'
 import { StaffInboxModule } from './modules/staff-inbox/staff-inbox.module'
 import { SuppliersModule } from './modules/suppliers/suppliers.module'
+import { TerroirModule } from './modules/terroir/terroir.module'
 import { TrainingModule } from './modules/training/training.module'
 import { UsersModule } from './modules/users/users.module'
 import { WalletModule } from './modules/wallet/wallet.module'
@@ -165,6 +166,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     GiftModule,
     RelativesModule,
     FamilyWalletModule,
+    TerroirModule,
     TrainingModule,
     AdminModule,
     BusinessCardsModule,

@@ -10,7 +10,7 @@
  * est acceptée pour les journées coupées : `{ monday: [{...}, {...}] }`.
  */
 
-/** Jours dans l'ordre de `Date.getDay()` — dimanche = 0. */
+/** Jours dans l'ordre de `Date.getDay()`, dimanche = 0. */
 const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
 /**

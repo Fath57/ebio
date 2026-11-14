@@ -179,8 +179,8 @@ export class PromoCodesService {
 
   /**
    * Reserves one use for an order being created. check() answered on what it
-   * saw; two orders racing on the last slot — or the same buyer twice at once
-   * — can both pass it. The row lock settles it: redemptions of one code run
+   * saw; two orders racing on the last slot, or the same buyer twice at once
+   * can both pass it. The row lock settles it: redemptions of one code run
    * one after the other, and each counts the uses already committed. It joins
    * the checkout's transaction, so a rolled-back checkout gives the use back.
    */

@@ -213,7 +213,7 @@ function CropStage({ uri, imageWidth, imageHeight, ratio, isWholeImage, onConfir
   // La scène est mesurée, jamais devinée : calculer le cadre depuis
   // `Dimensions` donnait une hauteur différente de celle réellement occupée
   // (barre système, modale plein écran), et le cadre dessiné ne tombait alors
-  // plus au même endroit que le rectangle envoyé à l'API — on recadrait autre
+  // plus au même endroit que le rectangle envoyé à l'API, on recadrait autre
   // chose que ce qu'on voyait.
   const [stage, setStage] = useState<{ width: number, height: number } | null>(null)
 

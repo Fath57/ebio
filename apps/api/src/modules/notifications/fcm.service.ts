@@ -18,7 +18,7 @@ export interface PushOptions {
   /**
    * A picture shown in the tray, for the messages that are worth one.
    *
-   * It must be reachable without credentials — the phone fetches it itself,
+   * It must be reachable without credentials, the phone fetches it itself,
    * and a link it cannot open simply yields a notification without a picture
    * rather than no notification at all.
    */
@@ -37,7 +37,7 @@ export class FcmService implements OnModuleInit {
 
   onModuleInit() {
     if (!config.fcm.projectId || !config.fcm.clientEmail || !config.fcm.privateKey) {
-      this.logger.warn('Firebase credentials not configured — push notifications disabled')
+      this.logger.warn('Firebase credentials not configured, push notifications disabled')
       return
     }
 
@@ -78,7 +78,7 @@ export class FcmService implements OnModuleInit {
     }
 
     if (!this.initialized) {
-      this.logger.warn('FCM not initialized — skipping push')
+      this.logger.warn('FCM not initialized, skipping push')
       return false
     }
 

@@ -25,7 +25,7 @@ export class DeliveryOffer {
   id!: string
 
   /**
-   * The offered object: a lone delivery, or a run. Never both —
+   * The offered object: a lone delivery, or a run. Never both,
    * a database constraint guarantees it, because two targets for one offer
    * would leave two possible answers for a single refusal.
    */

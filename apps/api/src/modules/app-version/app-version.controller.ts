@@ -22,7 +22,7 @@ const STORE_URLS: Record<AppVariant, string> = {
  *
  * Over-the-air updates carry JavaScript and nothing else. The day a release
  * needs a native module, or the API stops accepting what an old build sends,
- * only the store can deliver it — and the app has to be told, because it
+ * only the store can deliver it, and the app has to be told, because it
  * cannot find out on its own.
  */
 @Controller('app-version')

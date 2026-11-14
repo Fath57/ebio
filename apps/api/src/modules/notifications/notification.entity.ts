@@ -74,6 +74,18 @@ export enum NotificationType {
   FAMILY_WALLET_MEMBER_PENDING = 'FAMILY_WALLET_MEMBER_PENDING',
   /** A member's access changed: added, suspended, resumed, removed, closed. */
   FAMILY_WALLET_STATUS = 'FAMILY_WALLET_STATUS',
+  /** A terroir parcel moved a step, or eBio left a message on it. */
+  EXPORT_SHIPMENT_UPDATE = 'EXPORT_SHIPMENT_UPDATE',
+  /** A departure opened towards a country the buyer asked to be told about. */
+  EXPORT_DEPARTURE_OPEN = 'EXPORT_DEPARTURE_OPEN',
+  /** 48 h left before the deadline of the departure an unpaid preview picked. */
+  EXPORT_DEADLINE_REMINDER = 'EXPORT_DEADLINE_REMINDER',
+  /** The parcel weighs more than estimated, beyond the tolerance. */
+  EXPORT_WEIGHT_SUPPLEMENT = 'EXPORT_WEIGHT_SUPPLEMENT',
+  /** eBio approved or refused a shop's product or pack for export. */
+  EXPORT_PRODUCT_REVIEWED = 'EXPORT_PRODUCT_REVIEWED',
+  /** A departure reached 80 % of its capacity; told to the team. */
+  EXPORT_DEPARTURE_FILL = 'EXPORT_DEPARTURE_FILL',
 }
 
 export enum NotificationChannel {

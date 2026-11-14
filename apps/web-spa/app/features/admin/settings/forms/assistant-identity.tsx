@@ -27,7 +27,7 @@ interface AssistantIdentityProps {
  * reached for in a hurry when she misbehaves, whereas a name is typed one
  * letter at a time and saving each keystroke would rename her six times.
  *
- * An empty portrait is not a missing setting — it is the portrait shipped with
+ * An empty portrait is not a missing setting, it is the portrait shipped with
  * the app, which is what she has always worn.
  */
 export function AssistantIdentity({ name, avatarUrl, voiceSpeed, onSave, isPending }: AssistantIdentityProps) {

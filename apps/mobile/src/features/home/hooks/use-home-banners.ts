@@ -29,7 +29,7 @@ export function useHomeBanners(): { banners: HomeBanner[], loading: boolean } {
       }
     }
     catch {
-      // Repli silencieux — voir le commentaire ci-dessus.
+      // Repli silencieux, voir le commentaire ci-dessus.
     }
     finally {
       setLoading(false)

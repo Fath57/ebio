@@ -14,7 +14,9 @@ import { ScalePressable } from '../../../utils/animations'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { promotionChipLabels } from '../../catalog/promotions'
-import { useMoney } from '../../common/hooks/use-money'
+import { ExportChip } from '../../terroir/components/valise-ui'
+import { useProductExportability } from '../../terroir/exportability'
+import { useShoppingMoney } from '../../terroir/hooks/use-shopping-money'
 
 interface SearchResultCardProps {
   item: SearchResult
@@ -43,8 +45,10 @@ export function formatDistance(meters: number): string {
 
 export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResultCardProps) {
   const { semantic } = useTheme()
-  const { formatMoney } = useMoney()
+  const formatMoney = useShoppingMoney()
   const { supplier, product } = item
+  // Valise mode: whether this product travels; null while the mode is off.
+  const exportability = useProductExportability(product.id)
   const isGrid = variant === 'grid'
   const hasPromo = product.promotionalPrice !== null
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
@@ -150,6 +154,12 @@ export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResu
             <Text style={[styles.metaText, { color: semantic.textSecondary }]}>Sur contact</Text>
           )}
         </View>
+
+        {exportability && (
+          <View style={styles.exportRow}>
+            <ExportChip item={exportability} />
+          </View>
+        )}
 
         {(isValidated || chipLabels.length > 0 || (!isGrid && supplier.badges.includes('TOP_SELLER'))) && (
           <View style={styles.badgeRow}>
@@ -298,6 +308,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
+  },
+  exportRow: {
+    marginTop: spacing[1],
   },
   badgeRow: {
     flexDirection: 'row',

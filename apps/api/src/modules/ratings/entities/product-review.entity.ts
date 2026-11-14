@@ -11,7 +11,7 @@ import { Product } from '../../products/entities/product.entity'
  * only thing that proves who bought what, on which delivery. Making it unique
  * turns "one review per purchase" into a database constraint instead of a
  * check the code can forget. The same product ordered twice therefore earns
- * two reviews, one per delivery — deliberate for fresh produce, whose quality
+ * two reviews, one per delivery, deliberate for fresh produce, whose quality
  * varies from one crate to the next.
  */
 @Entity({ tableName: 'product_reviews' })

@@ -12,7 +12,7 @@ import { CartItem } from './cart-item.entity'
  * at when someone called.
  *
  * One row per buyer, replaced whole on each sync. A basket has no history
- * worth keeping — only its current state and when it last moved.
+ * worth keeping, only its current state and when it last moved.
  */
 @Entity({ tableName: 'carts' })
 export class Cart {

@@ -14,7 +14,7 @@ import { config } from '../../config/env.config'
  * It is verified against a real cookie rather than read off documentation.
  *
  * This ties us to an internal format. The day Better Auth changes it, every
- * hand-made session stops resolving at once — which is at least loud.
+ * hand-made session stops resolving at once, which is at least loud.
  */
 export function signSessionToken(token: string): string {
   const signature = createHmac('sha256', config.betterAuth.secret).update(token).digest('base64')

@@ -23,7 +23,7 @@ export interface PaymentWebViewProps {
   /** A page we build ourselves, for a provider that only offers a widget. */
   html?: string | null
   /**
-   * The reference the server already holds. It is what gets confirmed — the
+   * The reference the server already holds. It is what gets confirmed, the
    * page's word on which transaction was paid is never taken.
    */
   transactionId?: string | null
@@ -40,7 +40,7 @@ export interface PaymentWebViewProps {
    * Asks our server where the payment stands.
    *
    * This is the signal that actually holds. A hosted page may not redirect
-   * at all — INTRAM's ends on its own receipt — and then the return URL
+   * at all, INTRAM's ends on its own receipt, and then the return URL
    * never fires. Our server can always ask the provider, so it is asked.
    *
    * The three answers matter: `pending` means keep waiting, `settled` closes
@@ -54,7 +54,7 @@ export interface PaymentWebViewProps {
 /**
  * The one screen that shows a payment, wherever a payment is taken.
  *
- * Four places used to carry their own copy — the cart and three wallets — and
+ * Four places used to carry their own copy, the cart and three wallets, and
  * each had to be taught separately what a provider's answer looks like. They
  * now differ only in where they confirm.
  *
@@ -87,7 +87,7 @@ export function PaymentWebView({
   }, [settled, onSettled])
 
   // Polls while the screen is open. Stops as soon as it settles, and never
-  // outlives the screen — an interval left running would confirm a payment
+  // outlives the screen, an interval left running would confirm a payment
   // the buyer has already walked away from.
   const pollRef = useRef(pollStatus)
   pollRef.current = pollStatus

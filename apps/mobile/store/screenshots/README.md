@@ -1,4 +1,4 @@
-# Captures d'écran store — eBio
+# Captures d'écran store, eBio
 
 Captures PNG **1080 × 1920** (9:16), prises sur émulateur Android (API 35), barre de statut en mode démo (9:00, batterie pleine, Wi-Fi).
 

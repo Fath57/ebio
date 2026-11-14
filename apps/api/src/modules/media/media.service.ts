@@ -39,7 +39,7 @@ const THUMB_WEBP_QUALITY = 70
  * Where an object is filed in the bucket.
  *
  * The prefix is not decoration: the bucket grants public read on a named list
- * of them, so an image filed outside that list is stored and then unreadable —
+ * of them, so an image filed outside that list is stored and then unreadable,
  * which looks like a broken upload and is not one.
  *
  * The context is the prefix by default. An override belongs here when a new
@@ -365,7 +365,7 @@ export class MediaService {
    *
    * Server-side image work starts from a URL the client already holds, and a
    * URL is the one thing a client can forge. Resolving it against our own
-   * rows means the server only ever fetches objects it put there itself —
+   * rows means the server only ever fetches objects it put there itself,
    * anything else simply does not resolve, and no request leaves the bucket.
    */
   async findByPublicUrl(url: string): Promise<Media | null> {
@@ -390,7 +390,7 @@ export class MediaService {
    * Store an image the server produced itself.
    *
    * Goes through the same optimisation and thumbnailing as an upload, so a
-   * retouched photo is served exactly like any other — and lands as its own
+   * retouched photo is served exactly like any other, and lands as its own
    * row, because the original has to remain reachable when the shop changes
    * its mind.
    */

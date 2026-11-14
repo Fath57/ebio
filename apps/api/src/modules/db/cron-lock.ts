@@ -7,7 +7,7 @@ const logger = new Logger('CronLock')
 /** Set once the database is up; until then (unit tests) a job runs unguarded. */
 let knex: Knex | null = null
 
-/** Hands the lock its connection — the registrar at boot, a test with a fake. */
+/** Hands the lock its connection, the registrar at boot, a test with a fake. */
 export function setCronLockConnection(connection: Knex | null): void {
   knex = connection
 }
@@ -23,7 +23,7 @@ export function cronLockName(job: string): string {
  *
  * The lock is transaction-scoped (`pg_try_advisory_xact_lock`): it lives on
  * the connection of a transaction opened for it, so pooling can never hand
- * it to another query, and it vanishes with the transaction — even when the
+ * it to another query, and it vanishes with the transaction, even when the
  * process dies mid-job, Postgres frees it with the connection. The job's own
  * queries go through their usual connections.
  *
@@ -55,7 +55,7 @@ export async function runExclusively(job: string, run: () => Promise<void>): Pro
  * Makes a scheduled job run on one instance at a time.
  *
  * Every instance of the API carries the same `@Cron` jobs. Two of them alive
- * at once — a container a failed deploy left running, say — and each job runs
+ * at once, a container a failed deploy left running, say, and each job runs
  * twice: an order refunded twice, an escrow released twice, a payout sent
  * twice. With this decorator the second instance finds the lock taken and
  * skips its turn; so does a run that would overlap the previous, still busy one.

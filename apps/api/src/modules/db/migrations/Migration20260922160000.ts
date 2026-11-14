@@ -6,7 +6,7 @@ import { Migration } from '@mikro-orm/migrations'
  * `products` only ever mirrored the end of a promotion, so a price cut created
  * for next week applied the same evening: the promo price showed on the card,
  * on the detail and in the "En promotion" section. The start joins the end,
- * and a null start keeps the old meaning — applies at once — which is what the
+ * and a null start keeps the old meaning, applies at once, which is what the
  * legacy `setPromotion` path writes and what every existing row means.
  */
 export class Migration20260922160000 extends Migration {

@@ -13,7 +13,7 @@ export interface StockDraw {
 
 /**
  * The one rule every stock movement follows:
- * - a pack (`packSize`) takes `quantity × packSize` units from the product —
+ * - a pack (`packSize`) takes `quantity × packSize` units from the product,
  *   a « Pack de 6 » is six bottles off the same shelf;
  * - any other variant (size, flavour) has a stock of its own;
  * - a plain line takes from the product.

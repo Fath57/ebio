@@ -3,7 +3,7 @@ import { CheckoutStatus } from './entities/checkout.entity'
 
 /**
  * Compensation touches money: what is checked here is that it never
- * credits twice, and that it returns what is owed — the order's
+ * credits twice, and that it returns what is owed, the order's
  * amount, plus the fee difference of a shortened run.
  */
 function buildService(options: { alreadyRefunded?: boolean } = {}) {

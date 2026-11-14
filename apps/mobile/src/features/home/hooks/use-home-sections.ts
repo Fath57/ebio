@@ -30,8 +30,8 @@ export interface HomeSection {
 /**
  * The home sections, in the order the back-office arranged them.
  *
- * They used to be hard-coded here — "Près de vous", "Validé eBio", "En
- * promotion" — and each fired its own search. Three round trips for three
+ * They used to be hard-coded here, "Près de vous", "Validé eBio", "En
+ * promotion", and each fired its own search. Three round trips for three
  * frozen rails; now it is one, and rails can be renamed, reordered and added
  * without touching the app.
  *

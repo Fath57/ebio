@@ -19,7 +19,7 @@ const SECRET_KEY = 'ebio_biometric_secret'
  * A plain marker saying a secret exists.
  *
  * The secret itself is locked behind the fingerprint, so merely asking whether
- * it is there would raise a prompt — on the login screen, before anyone had
+ * it is there would raise a prompt, on the login screen, before anyone had
  * asked for anything. This flag answers that question without touching it.
  */
 const HAS_SECRET_KEY = 'ebio_biometric_on'
@@ -27,8 +27,8 @@ const HAS_SECRET_KEY = 'ebio_biometric_on'
 /**
  * Locked by the system, not by us.
  *
- * The keystore asks for the fingerprint itself when the secret is read, and —
- * the reason for doing it this way — Android destroys the entry when the
+ * The keystore asks for the fingerprint itself when the secret is read, and,
+ * the reason for doing it this way, Android destroys the entry when the
  * enrolled fingerprints change. A finger added to the phone after the fact
  * therefore opens nothing.
  */
@@ -58,7 +58,7 @@ function deviceLabel(): string {
  * This phone's identifier, drawn once and kept.
  *
  * Not the hardware id: an app-scoped identifier is enough to tell devices
- * apart, and reinstalling the app starts a fresh one — which is correct, since
+ * apart, and reinstalling the app starts a fresh one, which is correct, since
  * the keystore went with it.
  */
 async function deviceId(): Promise<string> {
@@ -80,7 +80,7 @@ async function promptFingerprint(message: string): Promise<boolean> {
   return result.success
 }
 
-/** Whether a secret is held here — cheap enough to ask before showing a button. */
+/** Whether a secret is held here, cheap enough to ask before showing a button. */
 export async function hasBiometricSecret(): Promise<boolean> {
   return (await SecureStore.getItemAsync(HAS_SECRET_KEY)) === '1'
 }
@@ -123,7 +123,7 @@ export async function signInWithBiometrics(): Promise<{ ok: boolean, error: stri
     })
 
     if (!res.ok) {
-      // The server refuses a device it no longer trusts — revoked from another
+      // The server refuses a device it no longer trusts, revoked from another
       // phone, most often. Keeping the secret would offer a button that can
       // only fail.
       await forgetSecret()
@@ -179,7 +179,7 @@ export function useBiometricAuth() {
         // absence looks the same whatever the reason: no sensor, no
         // fingerprint recorded on the phone, or a build without the native
         // half. Three different things to do about it.
-        console.warn(`[empreinte] masquée — capteur ${compatible ? 'présent' : 'absent'}, empreinte ${enrolled ? 'enrôlée' : 'non enrôlée'}`)
+        console.warn(`[empreinte] masquée, capteur ${compatible ? 'présent' : 'absent'}, empreinte ${enrolled ? 'enrôlée' : 'non enrôlée'}`)
       }
     }
     catch (caught) {
@@ -196,7 +196,7 @@ export function useBiometricAuth() {
     // Asked again whenever the app comes back to the front.
     //
     // Recording a fingerprint means leaving for the phone's settings and
-    // coming back — and the answer was only ever asked for once, at mount. So
+    // coming back, and the answer was only ever asked for once, at mount. So
     // one did exactly what the switch requires and the switch still was not
     // there, which reads as the feature being broken.
     const watch = AppState.addEventListener('change', (state) => {

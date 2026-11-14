@@ -12,7 +12,7 @@ import { useStoreUpdate } from '../hooks/use-store-update'
  *
  * Two levels, and the difference is not decoration. A suggestion is a band
  * that can be dismissed; a requirement covers the screen, because the release
- * it names is one where going on would fail anyway — an API that no longer
+ * it names is one where going on would fail anyway, an API that no longer
  * accepts what this build sends, a payment flow that changed.
  */
 export function StoreUpdateGate() {

@@ -4,8 +4,20 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
+import { exportProfileResponseSchema, exportProfileStatusEnum, terroirExportabilitySchema } from '../../terroir/contracts/terroir.contract'
 import { ALLERGEN_CODES } from '../composition.constants'
 import { certificationCodeSchema } from './certification.contract'
+
+/**
+ * The owner's view of a product's export profile (011): status computed from
+ * the export criteria, each criterion met or not; absent for anyone else.
+ */
+export const productExportProfileSchema = exportProfileResponseSchema.meta({
+  title: 'ProductExportProfile',
+  description: 'Profil d\'export du produit, vu par sa boutique : statut, critères, motif de retrait',
+})
+
+export type ProductExportProfile = z.infer<typeof productExportProfileSchema>
 
 /**
  * Free-form code rather than an enum: the list of units is managed from the
@@ -56,7 +68,7 @@ export const nutritionBasisEnum = z.enum(['100g', '100ml']).meta({
   description: 'Reference quantity the nutritional values are given for',
 })
 
-/** Per 100 g / 100 ml — grams are bounded by the reference quantity itself. */
+/** Per 100 g / 100 ml, grams are bounded by the reference quantity itself. */
 const gramsPer100 = z.number().min(0).max(100)
 
 export const nutritionalValuesSchema = z.object({
@@ -113,7 +125,7 @@ export const updateProductSchema = createProductSchema.partial().extend({
   photos: z.array(z.string()).max(10).optional(),
 }).meta({
   title: 'UpdateProduct',
-  description: 'Update product — all fields optional',
+  description: 'Update product, all fields optional',
 })
 
 export const stockUpdateSchema = z.object({
@@ -173,7 +185,7 @@ export const promotionSchema = z.object({
 const variantResponseSchema = z.object({
   id: z.string().uuid(),
   label: z.string(),
-  /** Price of one unit of this format — of one whole pack for a pack. */
+  /** Price of one unit of this format, of one whole pack for a pack. */
   pricePerUnit: z.number(),
   /** Sellable quantity of this format: whole packs out of the product's stock for a pack. */
   stock: z.number(),
@@ -216,6 +228,10 @@ export const productResponseSchema = z.object({
   conservation: z.string().nullable(),
   nutritionalValues: nutritionalValuesSchema.nullable(),
   variants: z.array(variantResponseSchema),
+  /** Owner only: the export request, null when never asked. */
+  exportProfile: productExportProfileSchema.nullable().optional(),
+  /** « Mode Valise »: with `?exportCountry=FR`, whether it can go in the suitcase; null otherwise. */
+  exportability: terroirExportabilitySchema.nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
@@ -241,6 +257,8 @@ export const productSummarySchema = z.object({
   promotionalPrice: z.number().nullable(),
   /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
   promotionTypes: z.array(promotionTypeEnum),
+  /** Owner's list only: export status (EXPORTABLE, INCOMPLETE, WITHDRAWN), null without a profile (011). */
+  exportStatus: exportProfileStatusEnum.nullable().optional(),
 }).meta({
   title: 'ProductSummary',
   description: 'Minimal product info for lists',

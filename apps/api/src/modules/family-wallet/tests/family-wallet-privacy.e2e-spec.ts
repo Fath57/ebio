@@ -100,7 +100,7 @@ async function arrange(app: INestApplication, em: EntityManager) {
  * said; a member sees what they may spend and their own purchases, never
  * the balance nor the others' (FR-025, FR-027).
  */
-describe('portefeuille famille — vie privée de l\'historique (e2e)', () => {
+describe('portefeuille famille, vie privée de l\'historique (e2e)', () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, FamilyWalletModule],

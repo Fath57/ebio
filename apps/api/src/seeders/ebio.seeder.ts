@@ -43,7 +43,7 @@ export class EbioSeeder extends Seeder {
     await em.flush()
     console.info(`Seeded ${categoriesData.length} product categories`)
 
-    // ===== COMMISSION RATES (raw SQL — no entity) =====
+    // ===== COMMISSION RATES (raw SQL, no entity) =====
     const db = em.getConnection()
     await db.execute(`CREATE TABLE IF NOT EXISTS commission_rates (
       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

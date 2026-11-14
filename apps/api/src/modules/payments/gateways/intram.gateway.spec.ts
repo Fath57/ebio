@@ -220,7 +220,7 @@ describe('intramGateway', () => {
   })
 })
 
-describe('intramGateway — lecture du statut par l\'ancienne API', () => {
+describe('intramGateway, lecture du statut par l\'ancienne API', () => {
   const intram = config.payments.intram
   const saved = { ...intram }
 

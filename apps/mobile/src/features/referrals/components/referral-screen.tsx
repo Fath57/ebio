@@ -30,8 +30,8 @@ function money(value: number): string {
 /**
  * Referrals, from the buyer's side.
  *
- * Their code, what it pays, and where they stand. The rule is spelled out —
- * "when they receive their first order" — because a sponsor expecting a
+ * Their code, what it pays, and where they stand. The rule is spelled out,
+ * "when they receive their first order", because a sponsor expecting a
  * payout the day their referee signs up feels cheated.
  */
 interface ReferralScreenProps {

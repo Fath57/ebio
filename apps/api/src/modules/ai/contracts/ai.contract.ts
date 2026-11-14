@@ -28,7 +28,7 @@ export const aiGenerateOptionsSchema = z.object({
   }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   /**
-   * Passed straight to the provider, keyed by provider name — for instance
+   * Passed straight to the provider, keyed by provider name, for instance
    * `{ openai: { reasoningEffort: 'low' } }`. A reasoning model left at its
    * default spends twenty seconds on a two-sentence answer, and there was no
    * way to say otherwise from here.

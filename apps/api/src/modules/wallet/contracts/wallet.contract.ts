@@ -28,6 +28,11 @@ export const walletTransactionSchema = z.object({
     'FAMILY_TRANSFER_IN',
     'FAMILY_CLOSURE_OUT',
     'FAMILY_CLOSURE_IN',
+    'EXPORT_SHIPPING_INCOME',
+    'EXPORT_INSURANCE_INCOME',
+    'EXPORT_LOSS',
+    'EXPORT_PACK_COMPENSATION',
+    'EXPORT_COLLECTION_COST',
   ]),
   amount: z.number(),
   balanceAfter: z.number(),
@@ -35,6 +40,10 @@ export const walletTransactionSchema = z.object({
   orderId: z.string().uuid().nullable(),
   /** Set on courier movements (DELIVERY_EARNING / DELIVERY_COMMISSION). */
   deliveryId: z.string().uuid().nullable(),
+  /** The course behind a courier movement: a buyer delivery or an eBio collection (Valise du pays). */
+  deliveryPurpose: z.enum(['STANDARD', 'EXPORT_COLLECTION']).nullable(),
+  /** The shop the course started from, when the movement is tied to a course. */
+  shopName: z.string().nullable(),
   createdAt: z.string().datetime(),
 }).meta({
   title: 'WalletTransaction',

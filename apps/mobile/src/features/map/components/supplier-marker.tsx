@@ -18,8 +18,8 @@ const WIDTH_SELECTED = 40
 
 /**
  * Marqueur fournisseur : goutte pleine à contour blanc, pastille centrale
- * blanche, coche verte pour les fournisseurs validés. Toujours vert — la
- * marque — l'ouverture se lit dans la fiche ; la taille porte la sélection.
+ * blanche, coche verte pour les fournisseurs validés. Toujours vert, la
+ * marque, l'ouverture se lit dans la fiche ; la taille porte la sélection.
  */
 export function SupplierMarker({ isValidated, isSelected = false }: SupplierMarkerProps) {
   const width = isSelected ? WIDTH_SELECTED : WIDTH_DEFAULT

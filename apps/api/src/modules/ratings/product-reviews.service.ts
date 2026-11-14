@@ -11,7 +11,7 @@ import { Product } from '../products/entities/product.entity'
 import { ProductReview } from './entities/product-review.entity'
 import { FraudDetectionService } from './fraud-detection.service'
 
-/** Below this, the average stays hidden — the rule shops already follow. */
+/** Below this, the average stays hidden, the rule shops already follow. */
 const MIN_REVIEWS_FOR_AVERAGE = 3
 
 /** Recent reviews weigh double, as they do for shops. */
@@ -27,7 +27,7 @@ export class ProductReviewsService {
   /**
    * What the rating step offers: the lines of a delivered order, carrying the
    * review already left on each. An order that is not delivered yields an
-   * empty list rather than an error — the step is then skipped, not broken.
+   * empty list rather than an error, the step is then skipped, not broken.
    */
   async listRateableItems(orderId: string, buyerId: string): Promise<RateableProductsResponse> {
     const order = await this.em.findOne(Order, { id: orderId }, { populate: ['buyer'] })
@@ -142,7 +142,7 @@ export class ProductReviewsService {
    * The product page's reading path: a summary over every visible review, and
    * one page of them.
    *
-   * The distribution is computed over the whole set, not the page — five bars
+   * The distribution is computed over the whole set, not the page, five bars
    * describing twenty reviews out of two hundred would describe nothing. The
    * average is read from the product's own column rather than recomputed, so
    * the figure shown next to the price and the one shown in the section can
@@ -291,7 +291,7 @@ export class ProductReviewsService {
 
   /**
    * Hides or restores a review, and settles the reports that asked for it.
-   * The product's average is recomputed either way — a hidden review must
+   * The product's average is recomputed either way, a hidden review must
    * leave the figure, and a restored one must return to it.
    */
   async setVisibility(reviewId: string, hidden: boolean, adminId: string): Promise<{ hidden: boolean }> {
@@ -336,7 +336,7 @@ export class ProductReviewsService {
    *
    * Same weighting as `RatingsService.recalculateRating`, minus the four
    * criteria: the rating is already a single number. Hence the `::numeric`
-   * cast — the shop version divides by `4.0` and gets its float for free,
+   * cast, the shop version divides by `4.0` and gets its float for free,
    * whereas summing smallints over integers here would divide as integers
    * and turn an average of 4.2 into 4. The average stays null
    * below the threshold, which drops the product to the end of a `NULLS LAST`

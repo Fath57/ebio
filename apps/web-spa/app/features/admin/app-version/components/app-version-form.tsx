@@ -33,7 +33,7 @@ const SHAPE = /^\d+\.\d+\.\d+$/
 /**
  * What each app is told to be on.
  *
- * Two numbers, and the difference matters. The latest one is offered — a band
+ * Two numbers, and the difference matters. The latest one is offered, a band
  * that can be dismissed. The minimum blocks the app outright, so it is raised
  * only for a release that must not be skipped: an API that stopped accepting
  * what older builds send, a payment flow that changed.
@@ -121,7 +121,7 @@ export function AppVersionForm() {
         <strong>bloque</strong>
         {' '}
         l'application tant qu'elle n'est pas
-        installée — à ne relever que pour une version qu'on ne peut pas sauter.
+        installée, à ne relever que pour une version qu'on ne peut pas sauter.
       </p>
 
       <Button size="sm" disabled={isPending || malformed} onClick={() => save()}>

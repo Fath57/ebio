@@ -83,7 +83,7 @@ export class CourierFeedbackService {
     const walletBalance = await this.walletService.debit(buyerWallet.id, {
       type: WalletTransactionType.TIP_PAYMENT,
       amount,
-      description: `Pourboire au livreur — commande #${order.orderNumber}`,
+      description: `Pourboire au livreur, commande #${order.orderNumber}`,
       orderId: order.id,
       deliveryId: delivery.id,
     })
@@ -92,7 +92,7 @@ export class CourierFeedbackService {
       await this.walletService.credit(courierWallet.id, {
         type: WalletTransactionType.TIP_EARNING,
         amount,
-        description: `Pourboire reçu — commande #${order.orderNumber}`,
+        description: `Pourboire reçu, commande #${order.orderNumber}`,
         orderId: order.id,
         deliveryId: delivery.id,
       })
@@ -102,7 +102,7 @@ export class CourierFeedbackService {
       await this.walletService.credit(buyerWallet.id, {
         type: WalletTransactionType.REFUND,
         amount,
-        description: `Remboursement du pourboire — commande #${order.orderNumber}`,
+        description: `Remboursement du pourboire, commande #${order.orderNumber}`,
         orderId: order.id,
         deliveryId: delivery.id,
       })
@@ -139,7 +139,7 @@ export class CourierFeedbackService {
 
   /**
    * Only the buyer of a delivered run handled by a platform courier may give
-   * feedback — or, for a rating, the relative the cart was sent to. A tip
+   * feedback, or, for a rating, the relative the cart was sent to. A tip
    * stays the payer's: it moves money out of their wallet.
    */
   private async loadDeliveredForBuyer(deliveryId: string, buyerUserId: string, options: { allowRecipient?: boolean } = {}): Promise<Delivery> {

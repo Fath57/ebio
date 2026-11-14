@@ -10,7 +10,7 @@ import { ValidationStatus } from '../suppliers/supplier.entity'
 import { DispatchService } from './dispatch.service'
 import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
-import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
+import { Delivery, DeliveryPurpose, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 /** A live GPS fix older than this falls back to the declared zone centre. */
 const FRESH_LOCATION_HOURS = 12
@@ -296,20 +296,23 @@ export class AdminDeliveriesService {
         user: courier.user,
         type: NotificationType.DELIVERY_ASSIGNED,
         title: 'Course attribuée par eBio',
-        body: `${orderNumber} — retrait chez ${order.supplier.shopName}, ${delivery.pickupAddress}${note ? `. ${note}` : ''}`,
+        body: `${orderNumber}, retrait chez ${order.supplier.shopName}, ${delivery.pickupAddress}${note ? `. ${note}` : ''}`,
         data: { deliveryId: delivery.id, orderId: order.id, assignedByAdmin: 'true' },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
         apps: ['courier'],
       }),
-      this.notificationsService.send({
+    ]
+    // A collection goes to the eBio hub: the buyer abroad follows the parcel instead (011).
+    if (delivery.purpose !== DeliveryPurpose.EXPORT_COLLECTION) {
+      sends.push(this.notificationsService.send({
         user: order.buyer,
         type: NotificationType.DELIVERY_ASSIGNED,
         title: 'Livreur en route',
         body: `${courier.fullName} livrera votre commande ${orderNumber}`,
         data: { deliveryId: delivery.id, orderId: order.id },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
-      }),
-    ]
+      }))
+    }
 
     const supplierUser = await this.resolveSupplierUser(order)
     if (supplierUser) {

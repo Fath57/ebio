@@ -8,7 +8,7 @@ import { Payment } from '../payment.entity'
 /**
  * A checkout: the buyer pays once for a cart that may span several shops.
  *
- * The checkout only carries what is genuinely common to the orders — the
+ * The checkout only carries what is genuinely common to the orders, the
  * provider's transaction, the payment method, the address, the collected
  * total. Each `Payment` still owns a `@OneToOne(Order)`, so that escrow keeps
  * releasing funds order by order: a shop is paid at its own pace, not the
@@ -27,6 +27,8 @@ export enum CheckoutStatus {
 export enum CheckoutDeliveryMode {
   DELIVERY = 'DELIVERY',
   ON_SITE = 'ON_SITE',
+  /** A terroir parcel (011): the orders of several shops, shipped abroad. */
+  EXPORT = 'EXPORT',
 }
 
 @Entity({ tableName: 'checkouts' })

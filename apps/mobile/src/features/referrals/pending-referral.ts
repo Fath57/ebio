@@ -18,7 +18,7 @@ export function normalizeReferralCode(raw: string | null | undefined): string | 
 /**
  * A sponsor's code waiting for an account to land on. It comes from the sign-up
  * field, a shared `/parrainage/CODE` link, or the Play Store install itself, and
- * is claimed as soon as someone is signed in — whichever way they signed up.
+ * is claimed as soon as someone is signed in, whichever way they signed up.
  */
 export async function getPendingReferralCode(): Promise<string | null> {
   try {
@@ -53,7 +53,7 @@ export async function clearPendingReferralCode(): Promise<void> {
 /**
  * Android only: the Play Store hands over the `referrer` of the link that led
  * to the install (`…/details?id=com.ebio.mobile&referrer=ebio_ref%3DABC234`).
- * Read once per install — an older code must not come back after a sign-out.
+ * Read once per install, an older code must not come back after a sign-out.
  * A link-provided code already waiting wins over it.
  */
 export async function captureInstallReferrer(): Promise<void> {

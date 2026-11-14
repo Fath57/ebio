@@ -15,7 +15,7 @@ export const PENDING_REMINDER_DAYS = 30
 /**
  * Once a day: the members still pending 30 days after being added are
  * pointed out to their payer, who may resend the invitation or remove them.
- * Once per member — `pending_reminded_at` is set before the next run.
+ * Once per member, `pending_reminded_at` is set before the next run.
  */
 @Injectable()
 export class FamilyPendingScheduler {

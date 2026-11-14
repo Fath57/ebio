@@ -15,7 +15,7 @@ const parameters = z.object({
  * **Seule source d'un montant prononcé.** Promotions, frais de livraison,
  * regroupement multi-boutiques : tout cela vit dans le passage en caisse et
  * change sans prévenir. Un total que l'assistant additionnerait lui-même
- * serait juste un jour et faux le lendemain — et il engagerait eBio sur un
+ * serait juste un jour et faux le lendemain, et il engagerait eBio sur un
  * prix que personne n'a calculé.
  */
 export function estimateOrderTool(em: EntityManager, checkout: CheckoutService) {
@@ -41,7 +41,7 @@ export function estimateOrderTool(em: EntityManager, checkout: CheckoutService) 
 
       // Un total juste peut habiller une phrase fausse : sans adresse, les
       // frais ne sont pas calculés, et « livraison comprise » se dit tout
-      // seul. L'outil énonce donc ce qu'il ne faut pas prétendre — l'ancrage
+      // seul. L'outil énonce donc ce qu'il ne faut pas prétendre, l'ancrage
       // par les nombres ne rattrape pas une affirmation autour du nombre.
       const livraisonConnue = preview.deliveryFee !== null
 
@@ -55,7 +55,7 @@ export function estimateOrderTool(em: EntityManager, checkout: CheckoutService) 
           ? {}
           : {
               avertissement: 'Les frais de livraison ne sont pas encore calculés : l\'adresse n\'est pas connue. '
-                + 'Ce total ne couvre que les articles — ne dites pas « livraison comprise ».',
+                + 'Ce total ne couvre que les articles, ne dites pas « livraison comprise ».',
             }),
       }
     },

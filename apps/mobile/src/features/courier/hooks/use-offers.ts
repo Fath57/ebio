@@ -12,7 +12,7 @@ export interface AcceptResult {
   debtMessage: string | null
   /** Server `message` of a 409 (e.g. run held by another courier), null otherwise. */
   message: string | null
-  /** The delivery now ours, as the server returned it — shown at once, no second fetch. */
+  /** The delivery now ours, as the server returned it, shown at once, no second fetch. */
   delivery: Delivery | null
 }
 
@@ -40,7 +40,7 @@ interface ForbiddenBody {
 
 /**
  * Why the server refused (403). Each cause has its own answer: going online,
- * topping up the wallet, or calling support — telling a courier whose account
+ * topping up the wallet, or calling support, telling a courier whose account
  * lacks the rights to « go online » sent them chasing the wrong fix.
  */
 export type ForbiddenReason = 'UNAVAILABLE' | 'DEBT' | 'NOT_ALLOWED'

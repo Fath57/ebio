@@ -13,8 +13,8 @@ const PROOF_PHOTO_TTL_SECONDS = 3600
 
 /**
  * What only the payer reads on their order: the relative, the code, the
- * resends left, the frozen currency and the hand-over photo. Anyone else —
- * the shop, a courier — gets none of it.
+ * resends left, the frozen currency and the hand-over photo. Anyone else,
+ * the shop, a courier, gets none of it.
  */
 @Injectable()
 export class GiftViewService {

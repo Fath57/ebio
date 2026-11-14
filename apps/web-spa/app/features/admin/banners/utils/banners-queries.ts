@@ -16,7 +16,7 @@ export interface Banner {
   targetType: BannerTargetType
   targetId: string | null
   targetUrl: string | null
-  /** Nom de la cible, résolu par l'API — `null` si elle a été supprimée. */
+  /** Nom de la cible, résolu par l'API, `null` si elle a été supprimée. */
   targetLabel: string | null
   isActive: boolean
   position: number

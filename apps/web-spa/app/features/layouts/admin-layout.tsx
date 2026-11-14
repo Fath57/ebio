@@ -45,6 +45,13 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/equipe', action: 'manage', subject: 'Staff' },
   { prefix: '/admin/site', action: 'manage', subject: 'LandingContent' },
   { prefix: '/admin/parametres', action: 'read', subject: 'Settings' },
+  { prefix: '/admin/terroir/controle', action: 'read', subject: 'Product' },
+  { prefix: '/admin/terroir/validation', action: 'read', subject: 'Product' },
+  { prefix: '/admin/terroir/packs', action: 'read', subject: 'Product' },
+  { prefix: '/admin/terroir/pays', action: 'read', subject: 'Delivery' },
+  { prefix: '/admin/terroir/agences', action: 'read', subject: 'Delivery' },
+  { prefix: '/admin/terroir/departs', action: 'read', subject: 'Delivery' },
+  { prefix: '/admin/terroir/colis', action: 'read', subject: 'Delivery' },
 ]
 
 function matchesPrefix(pathname: string, prefix: string) {

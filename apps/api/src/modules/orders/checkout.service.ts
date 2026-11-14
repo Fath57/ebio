@@ -157,7 +157,7 @@ export class CheckoutService {
    */
   private assertSingleShop(baskets: SupplierBasket[]): void {
     if (baskets.length > 1) {
-      this.logger.warn(`Panier mêlant ${baskets.length} boutiques — version d'application antérieure`)
+      this.logger.warn(`Panier mêlant ${baskets.length} boutiques, version d'application antérieure`)
       throw new BadRequestException(
         'Commandez une boutique à la fois. Mettez à jour l\'application pour retrouver vos paniers par boutique.',
       )
@@ -213,7 +213,7 @@ export class CheckoutService {
       })
     }
 
-    // The cart may split into several runs — two shops per run, and no more
+    // The cart may split into several runs, two shops per run, and no more
     // than the admitted gap between their pickup points. The buyer only sees a
     // total: the split is the platform's business.
     const quote = await this.deliveryPricing.quoteCart({
@@ -266,7 +266,7 @@ export class CheckoutService {
    *
    * The app showed "Fermé" on the shop page and still let the order through
    * without a word: it slept until morning while the buyer waited for it. It
-   * is still accepted — an evening order is a real order — but it is now
+   * is still accepted, an evening order is a real order, but it is now
    * announced for what it is.
    */
   private closedShop(baskets: SupplierBasket[]): { shopName: string, opensAt: string | null } | null {
@@ -476,7 +476,7 @@ export class CheckoutService {
     // e-mail now that the orders are committed and readable.
     if (data.paymentMethod !== 'FEDAPAY') {
       for (const order of createdOrders)
-        void this.orderEmails.sendOrderPlaced(order.id)
+        await this.ordersService.notifyOrderPlaced(order.id)
     }
 
     // The payer hears what their relative bought, and of a balance running low.

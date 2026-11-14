@@ -1,6 +1,8 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
+import BookOpen from 'lucide-react-native/dist/esm/icons/book-open'
 import FileSpreadsheet from 'lucide-react-native/dist/esm/icons/file-spreadsheet'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
@@ -53,9 +55,13 @@ interface DashboardScreenProps {
   onNavigateToSalesStatement: () => void
   onNavigateToMessages: () => void
   onNavigateToNotifications?: () => void
+  /** « Packs terroir »; omitted while the terroir export module is off. */
+  onNavigateToExportPacks?: () => void
+  /** « Vendre à l’étranger : le guide »; absent while the export is switched off. */
+  onNavigateToExportGuide?: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications, onNavigateToExportPacks, onNavigateToExportGuide }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -138,13 +144,13 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         >
           <TriangleAlert size={18} color={colors.coral[600]} />
           <Text style={[styles.errorBannerText, { color: colors.coral[600] }]}>
-            Impossible de charger — Réessayer
+            Impossible de charger, Réessayer
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Sans coordonnées, la diffusion refuse la course faute de savoir d'où
-          elle part. Le bandeau dit la conséquence — pas de livreur — avant de
+          elle part. Le bandeau dit la conséquence, pas de livreur, avant de
           dire le remède, parce que c'est la conséquence qui fait agir. */}
       {data?.hasLocation === false && (
         <TouchableOpacity
@@ -245,7 +251,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         >
           <Star size={20} color={colors.earth[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
-            {data?.averageRating != null ? data.averageRating.toFixed(1) : '—'}
+            {data?.averageRating != null ? data.averageRating.toFixed(1) : '-'}
           </Text>
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Note moyenne
@@ -269,7 +275,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </TouchableOpacity>
       </View>
 
-      {/* Earnings breakdown: gross, eBio commission, net — last 30 days.
+      {/* Earnings breakdown: gross, eBio commission, net, last 30 days.
           Tapping opens the shop wallet where the money actually lives. */}
       {(data?.revenue ?? 0) > 0 && (
         <TouchableOpacity
@@ -372,6 +378,32 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </View>
           <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Relevé des ventes</Text>
         </TouchableOpacity>
+
+        {onNavigateToExportPacks && (
+          <>
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity style={styles.actionItem} onPress={onNavigateToExportPacks} activeOpacity={0.6}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.earth[50] }]}>
+                <Gift size={18} color={colors.earth[600]} />
+              </View>
+              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Packs du pays</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {onNavigateToExportGuide && (
+          <>
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity style={styles.actionItem} onPress={onNavigateToExportGuide} activeOpacity={0.6}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.blue[50] }]}>
+                <BookOpen size={18} color={colors.blue[600]} />
+              </View>
+              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Vendre à l’étranger : le guide</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <View style={styles.actionDivider} />
 

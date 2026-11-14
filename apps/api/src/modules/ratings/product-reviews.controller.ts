@@ -37,7 +37,7 @@ export class ProductReviewsController {
 
   /**
    * The whole rating step in one call. Three products rated is one round
-   * trip — on a mobile network, three sequential calls are three chances to
+   * trip, on a mobile network, three sequential calls are three chances to
    * half-fail.
    */
   @Post('orders/:orderId/product-reviews')

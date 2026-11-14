@@ -17,7 +17,7 @@ qualité ~84), le manifeste est `app/components/illustrations.ts`.
 Garder les **mêmes personnages récurrents** d'une image à l'autre : une
 maraîchère (tablier vert, foulard) et une acheteuse (robe wax bleue).
 
-## 0. `etape-chercher.webp` — hero
+## 0. `etape-chercher.webp`, hero
 
 (voir prompt 1 : la scène de rue sert d'illustration du hero)
 

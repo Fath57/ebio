@@ -60,7 +60,7 @@ describe('découpage d\'une recherche', () => {
   })
 
   // The original scenario: "je cherche du gari avec de l'huile rouge". No
-  // product carries the word "rouge" — it is palm oil.
+  // product carries the word "rouge", it is palm oil.
   it('traduit le vocabulaire d\'ici : « huile rouge » est de l\'huile de palme', () => {
     expect(searchTerms('huile rouge')).toEqual(['huile', 'palme'])
     expect(searchTerms('gari et huiles rouges')).toEqual(['gari', 'huile', 'palme'])
