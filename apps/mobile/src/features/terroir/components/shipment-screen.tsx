@@ -1,7 +1,8 @@
 import type { TerroirCountry, TerroirReorderLine, TerroirShipment, TerroirShipmentLine } from '../terroir-api'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
-import { useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -76,6 +77,8 @@ interface ShipmentScreenProps {
 /** One terroir parcel: where it stands, its dated timeline and where to collect it. */
 export function ShipmentScreen({ shipmentId, onBack, onReorder }: ShipmentScreenProps) {
   const { semantic } = useTheme()
+  // The floating tab bar covers the bottom of the screen: the last button must clear it.
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { lines: valiseLines, addLine, clear } = useTerroirCart()
   const { displayCurrency } = useTerroirMoney()
   const [reordering, setReordering] = useState(false)
@@ -249,7 +252,7 @@ export function ShipmentScreen({ shipmentId, onBack, onReorder }: ShipmentScreen
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Ma valise envoyée" subtitle={shipmentHeading(shipment.country)} onBack={onBack} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         refreshControl={(
           <RefreshControl
             refreshing={refreshing}
