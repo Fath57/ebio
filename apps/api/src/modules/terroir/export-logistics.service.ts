@@ -35,12 +35,41 @@ export interface DepartureView {
   collectionDays: number
 }
 
+/** How a shop's terroir orders reach the eBio hub, as the back office follows it. */
+export interface CollectionRun {
+  mode: 'COURIER' | 'EBIO'
+  deliveryId: string | null
+  /** The courier run's status (DeliveryStatus); null in EBIO mode. */
+  status: string | null
+  courierName: string | null
+  courierPhone: string | null
+  /** The code the hub staff give the courier at the hand-over. */
+  hubCode: string | null
+  pickedUpAt: Date | null
+  receivedAt: Date | null
+}
+
 export interface CollectionGroup {
   supplierId: string
   shopName: string
   lines: Array<{ shipmentId: string, orderId: string, orderItemId: string, orderNumber: string, name: string, quantity: number, imageUrl: string | null }>
   collected: boolean
+  /** Null while the shop has not prepared and a courier will be sent. */
+  collection: CollectionRun | null
 }
+
+interface CollectionRunRow {
+  id: string
+  order_id: string
+  status: string
+  confirmation_code: string | null
+  picked_up_at: Date | string | null
+  delivered_at: Date | string | null
+  full_name: string | null
+  phone: string | null
+}
+
+const NO_COURIER_RUN: CollectionRun = { mode: 'EBIO', deliveryId: null, status: null, courierName: null, courierPhone: null, hubCode: null, pickedUpAt: null, receivedAt: null }
 
 export interface DepartureDetailView extends DepartureView {
   shipments: ExportShipment[]
@@ -274,6 +303,7 @@ export class ExportLogisticsService {
         )
 
     const groups = new Map<string, CollectionGroup>()
+    const shopOrders = new Map<string, Order[]>()
     for (const order of orders) {
       const shipment = order.checkout ? byCheckout.get(order.checkout.id) : undefined
       if (!shipment) {
@@ -284,6 +314,7 @@ export class ExportLogisticsService {
         shopName: order.supplier.shopName,
         lines: [],
         collected: true,
+        collection: null,
       }
       for (const item of order.items) {
         if (shipment.removedItemIds.includes(item.id)) {
@@ -293,8 +324,51 @@ export class ExportLogisticsService {
       }
       group.collected = group.collected && order.status === OrderStatus.DELIVERED
       groups.set(order.supplier.id, group)
+      shopOrders.set(order.supplier.id, [...(shopOrders.get(order.supplier.id) ?? []), order])
     }
+    await this.attachCollectionRuns(groups, shopOrders)
     return { ...view, shipments, collection: [...groups.values()].sort((a, b) => a.shopName.localeCompare(b.shopName)) }
+  }
+
+  /**
+   * Each shop's way to the hub: its courier run (the live one first, then the
+   * newest), or EBIO when its orders went, or will go, without a courier.
+   * Null while a courier will be sent once the shop has prepared.
+   */
+  private async attachCollectionRuns(groups: Map<string, CollectionGroup>, shopOrders: Map<string, Order[]>): Promise<void> {
+    const orderIds = [...shopOrders.values()].flat().map(order => order.id)
+    if (orderIds.length === 0) {
+      return
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT d.id, d.order_id, d.status, d.confirmation_code, d.picked_up_at, d.delivered_at, cp.full_name, cp.phone
+       FROM deliveries d
+       LEFT JOIN courier_profiles cp ON cp.id = d.courier_id
+       WHERE d.purpose = 'EXPORT_COLLECTION' AND d.order_id IN (${orderIds.map(() => '?').join(', ')})
+       ORDER BY (d.status = 'CANCELLED') ASC, d."createdAt" DESC`,
+      orderIds,
+    ) as CollectionRunRow[]
+    const mode = (await this.platformSettings.getTerroirExportSettings()).effectiveCollectionMode
+    for (const [supplierId, group] of groups) {
+      const ids = new Set((shopOrders.get(supplierId) ?? []).map(order => order.id))
+      const row = rows.find(candidate => ids.has(candidate.order_id))
+      if (row) {
+        group.collection = {
+          mode: 'COURIER',
+          deliveryId: row.id,
+          status: row.status,
+          courierName: row.full_name,
+          courierPhone: row.phone,
+          hubCode: row.confirmation_code,
+          pickedUpAt: row.picked_up_at ? new Date(row.picked_up_at) : null,
+          receivedAt: row.delivered_at ? new Date(row.delivered_at) : null,
+        }
+        continue
+      }
+      // Prepared or collected without a run: eBio collects (or did) itself.
+      const prepared = (shopOrders.get(supplierId) ?? []).some(order => order.status === OrderStatus.READY || order.status === OrderStatus.DELIVERED)
+      group.collection = prepared || mode === 'EBIO' ? { ...NO_COURIER_RUN } : null
+    }
   }
 
   /**

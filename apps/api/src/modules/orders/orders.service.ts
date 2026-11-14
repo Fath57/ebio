@@ -20,7 +20,7 @@ import { User, UserRole } from '../auth/auth.entity'
 import { SingleInstance } from '../db/cron-lock'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { VehicleType } from '../deliveries/entities/courier-profile.entity'
-import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
+import { Delivery, DeliveryPurpose, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { EmailService } from '../email/email.service'
 import { RouteMapService } from '../email/route-map.service'
 import { GiftNotifierService } from '../gift/gift-notifier.service'
@@ -463,12 +463,19 @@ export class OrdersService {
    * Live courier runs for a set of orders, keyed by order id, one query,
    * entity-only access to the deliveries module (no service dependency).
    */
-  async deliverySummaries(orderIds: string[]): Promise<Map<string, OrderDeliverySummary>> {
+  /**
+   * `forBuyer`: a terroir order's run to the eBio hub is left out, the buyer
+   * abroad follows the parcel, not the courier crossing Cotonou (011).
+   */
+  async deliverySummaries(orderIds: string[], options: { forBuyer?: boolean } = {}): Promise<Map<string, OrderDeliverySummary>> {
     const summaries = new Map<string, OrderDeliverySummary>()
     if (orderIds.length === 0) {
       return summaries
     }
-    const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier', 'deliveryRun'] })
+    const deliveries = await this.em.find(Delivery, {
+      order: { $in: orderIds },
+      ...(options.forBuyer ? { purpose: DeliveryPurpose.STANDARD } : {}),
+    }, { populate: ['courier', 'deliveryRun'] })
 
     // Progress of the runs involved: how many of their shops are already
     // collected. The buyer follows one progression, not two.
@@ -838,6 +845,11 @@ export class OrdersService {
     if (newStatus === OrderStatus.DELIVERED && order.pickupMode === PickupMode.DELIVERY) {
       await this.deliveriesService.closeForOrder(order)
     }
+    // A terroir order collected by eBio (« Collecté ») while a courier was
+    // bringing it: the run closes, paid if the parcel was on board (011).
+    if (newStatus === OrderStatus.DELIVERED && order.pickupMode === PickupMode.EXPORT) {
+      await this.deliveriesService.closeExportCollection(order)
+    }
 
     // A shop paid at delivery (its delay, or the platform's, is zero) gets its
     // money now rather than at the next hourly run. After the run closure:
@@ -854,6 +866,16 @@ export class OrdersService {
     // A DELIVERY order turning READY starts the courier dispatch.
     if (newStatus === OrderStatus.READY && order.pickupMode === PickupMode.DELIVERY) {
       await this.deliveriesService.createForOrder(order)
+    }
+    // A terroir order turning READY: in COURIER mode a courier brings it from
+    // the shop to the eBio hub (011). Never blocks the shop's READY.
+    if (newStatus === OrderStatus.READY && order.pickupMode === PickupMode.EXPORT) {
+      try {
+        await this.deliveriesService.createExportCollection(order)
+      }
+      catch (error) {
+        this.logger.error(`Export collection not created for order ${order.id}`, error instanceof Error ? error.stack : String(error))
+      }
     }
 
     // Cash order: eBio never touches the money, so its commission is

@@ -1,10 +1,12 @@
 import type { OnModuleInit } from '@nestjs/common'
+import type { ExportCollectionPickedUp, ExportCollectionReceived } from '../deliveries/deliveries.service'
 import type { ExportDepartureEventInput, ExportShipmentEventInput } from './contracts/terroir.contract'
 import type { ShipmentNews } from './terroir-notifier.service'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { AuditService } from '../admin/audit.service'
 import { User } from '../auth/auth.entity'
+import { DeliveriesService } from '../deliveries/deliveries.service'
 import { OrderItem } from '../orders/entities/order-item.entity'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { OrdersService } from '../orders/orders.service'
@@ -154,11 +156,17 @@ export class ExportShipmentsService implements OnModuleInit {
     private readonly catalog: ExportCatalogService,
     private readonly exportability: ExportabilityService,
     private readonly countries: ExportCountriesService,
+    private readonly deliveries: DeliveriesService,
   ) {}
 
-  /** A shop refusing (or an admin cancelling) an EXPORT order shrinks its parcel. */
+  /**
+   * A shop refusing (or an admin cancelling) an EXPORT order shrinks its
+   * parcel; a courier handing it over at the eBio hub collects it.
+   */
   onModuleInit(): void {
     this.orders.onExportOrderCancelled(orderId => this.onOrderCancelled(orderId))
+    this.deliveries.onExportCollectionReceived(event => this.collectAtHub(event))
+    this.deliveries.onExportCollectionPickedUp(event => this.onCollectionPickedUp(event))
   }
 
   // ===== BUYER =====
@@ -323,6 +331,64 @@ ${blocks.join('\n')}
     })
     await this.advanceCollection(shipmentId, actorUserId)
     return this.adminDetail(shipmentId)
+  }
+
+  /**
+   * A courier handed a shop's order over at the eBio hub (hub code, or the
+   * back office's « Reçu »): the same as « Collecté » for that order. Whichever
+   * comes first wins: an order already collected changes nothing, and a
+   * parcel that left eBio is not touched.
+   */
+  async collectAtHub(event: ExportCollectionReceived): Promise<void> {
+    const shipment = await this.load(event.shipmentId)
+    if (!AT_EBIO.includes(shipment.status)) {
+      return
+    }
+    const order = await this.em.findOne(Order, { id: event.orderId, checkout: shipment.checkout.id }, { refresh: true })
+    if (!order || !COLLECTABLE_ORDER.includes(order.status)) {
+      return
+    }
+    // Silent: the buyer follows the parcel, never « commande livrée ».
+    await this.orders.adminUpdateStatus(order.id, OrderStatus.DELIVERED, { silent: true })
+    if (event.actorUserId) {
+      await this.audit.record({
+        actorUserId: event.actorUserId,
+        action: 'EXPORT_SHIPMENT_COLLECTED',
+        targetType: 'export_shipment',
+        targetId: shipment.id,
+        payload: { supplierId: event.supplierId, orderIds: [order.id], deliveryId: event.deliveryId, source: event.source },
+      })
+    }
+    // The courier is no author of the parcel's timeline; the back office is.
+    await this.advanceCollection(shipment.id, event.source === 'ADMIN_RECEIVED' ? event.actorUserId : null)
+  }
+
+  /**
+   * « Reçu au point de regroupement »: the hub staff confirm the courier's
+   * hand-over from the back office, instead of giving him the code.
+   */
+  async receivedAtHub(deliveryId: string, actorUserId: string): Promise<AdminShipmentView> {
+    const delivery = await this.deliveries.receiveExportCollection(deliveryId, actorUserId)
+    if (!delivery.exportShipmentId) {
+      throw shipmentNotFound()
+    }
+    return this.adminDetail(delivery.exportShipmentId)
+  }
+
+  /**
+   * The courier left the shop: the buyer reads « en route vers le point eBio »
+   * on the parcel's timeline. Written quietly, a push per shop would be noise;
+   * never a courier's name or number.
+   */
+  private async onCollectionPickedUp(event: ExportCollectionPickedUp): Promise<void> {
+    const em = this.em.fork()
+    em.create(ExportShipmentEvent, {
+      shipment: em.getReference(ExportShipment, event.shipmentId),
+      step: null,
+      message: `Les produits de ${event.shopName} sont en route vers le point de regroupement eBio.`,
+      author: null,
+    })
+    await em.flush()
   }
 
   /**

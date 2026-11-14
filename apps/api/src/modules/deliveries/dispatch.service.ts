@@ -15,7 +15,7 @@ import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOffer, DeliveryOfferResponse } from './entities/delivery-offer.entity'
 import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
-import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
+import { Delivery, DeliveryPurpose, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 const MINUTE_MS = 60 * 1000
@@ -373,7 +373,9 @@ export class DispatchService {
         user,
         type: NotificationType.DELIVERY_OFFER,
         title: 'Course proposée en priorité',
-        body: `Retrait chez ${delivery.order.supplier.shopName}, répondez dans les ${formatWindow(timeoutS)}`,
+        body: delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+          ? `Retrait chez ${delivery.order.supplier.shopName} pour le point eBio, répondez dans les ${formatWindow(timeoutS)}`
+          : `Retrait chez ${delivery.order.supplier.shopName}, répondez dans les ${formatWindow(timeoutS)}`,
         data: { deliveryId: delivery.id, orderId: delivery.order.id, expiresAt: expiresAt.toISOString(), targeted: true },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -925,7 +927,9 @@ export class DispatchService {
       user,
       type: NotificationType.DELIVERY_OFFER,
       title: 'Nouvelle course disponible',
-      body: `Retrait chez ${delivery.order.supplier.shopName}, ${delivery.pickupAddress}`,
+      body: delivery.purpose === DeliveryPurpose.EXPORT_COLLECTION
+        ? `Retrait chez ${delivery.order.supplier.shopName}, à déposer au point eBio`
+        : `Retrait chez ${delivery.order.supplier.shopName}, ${delivery.pickupAddress}`,
       data: { deliveryId: delivery.id, orderId: delivery.order.id },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })))

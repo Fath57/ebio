@@ -159,8 +159,14 @@ export const familyWalletSettingSchema = z.object({
 
 export type FamilyWalletSettingInput = z.infer<typeof familyWalletSettingSchema>
 
+/** How a shop's terroir order reaches the eBio hub (011). */
+export const exportCollectionModeEnum = z.enum(['COURIER', 'EBIO']).meta({
+  title: 'ExportCollectionMode',
+  description: 'COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte',
+})
+
 /** Terroir export (011): the switch and its tuning, every field optional on write. */
-export const terroirExportSettingSchema = z.object({
+const terroirExportSettingFieldsSchema = z.object({
   enabled: z.boolean(),
   packagingWeightG: z.number().int().min(0).max(5_000),
   collectionDays: z.number().int().min(0).max(30),
@@ -173,6 +179,24 @@ export const terroirExportSettingSchema = z.object({
   minShelfLifeDays: z.number().int().min(1).max(3_650),
   /** Export criterion: maximum packed weight of one unit, in grams. */
   maxUnitWeightG: z.number().int().min(100).max(50_000),
+  /**
+   * Who brings each shop's terroir order to eBio: a platform courier
+   * (COURIER, the default) or eBio's own staff (EBIO).
+   */
+  collectionMode: exportCollectionModeEnum,
+  /** The eBio consolidation point in Cotonou, where couriers drop the orders. */
+  hubName: z.string().trim().max(120).nullable(),
+  hubAddress: z.string().trim().max(255).nullable(),
+  /** Both or neither: COURIER mode without them runs as EBIO. */
+  hubLatitude: z.number().min(-90).max(90).nullable(),
+  hubLongitude: z.number().min(-180).max(180).nullable(),
+  hubPhone: z.string().trim().regex(/^\+?[\d .-]{6,30}$/).nullable(),
+  hubHours: z.string().trim().max(200).nullable(),
+})
+
+export const terroirExportSettingSchema = terroirExportSettingFieldsSchema.extend({
+  /** What applies today: COURIER needs the hub's coordinates, else EBIO. */
+  effectiveCollectionMode: exportCollectionModeEnum,
 }).meta({
   title: 'TerroirExportSetting',
   description: 'Interrupteur et réglages de la Valise du pays',
@@ -180,7 +204,7 @@ export const terroirExportSettingSchema = z.object({
 
 export type TerroirExportSetting = z.infer<typeof terroirExportSettingSchema>
 
-export const updateTerroirExportSettingSchema = terroirExportSettingSchema.partial().meta({
+export const updateTerroirExportSettingSchema = terroirExportSettingFieldsSchema.partial().meta({
   title: 'UpdateTerroirExportSetting',
   description: 'Réglages de la Valise du pays à modifier',
 })

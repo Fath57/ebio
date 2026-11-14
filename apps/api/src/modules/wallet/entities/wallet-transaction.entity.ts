@@ -56,6 +56,8 @@ export enum WalletTransactionType {
   EXPORT_LOSS = 'EXPORT_LOSS',
   /** eBio books (EXPORT): an eBio pack sold below the sum of its lines, or its margin above. */
   EXPORT_PACK_COMPENSATION = 'EXPORT_PACK_COMPENSATION',
+  /** eBio books (EXPORT): what a courier earned carrying a shop's terroir order to the eBio hub. */
+  EXPORT_COLLECTION_COST = 'EXPORT_COLLECTION_COST',
 }
 
 /**

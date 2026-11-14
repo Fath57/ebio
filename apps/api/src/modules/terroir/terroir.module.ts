@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { SmsModule } from '../../common/sms.module'
 import { CurrencyModule } from '../currency/currency.module'
+import { DeliveriesModule } from '../deliveries/deliveries.module'
 import { EmailModule } from '../email/email.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { OrderEmailsModule } from '../orders/order-emails.module'
@@ -33,6 +34,7 @@ import { TerroirScheduler } from './terroir.scheduler'
 @Module({
   imports: [
     CurrencyModule,
+    forwardRef(() => DeliveriesModule),
     EmailModule,
     NotificationsModule,
     OrderEmailsModule,

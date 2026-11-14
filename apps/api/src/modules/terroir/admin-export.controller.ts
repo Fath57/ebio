@@ -254,6 +254,21 @@ export class AdminExportController {
     return TerroirMapper.toAdminShipment(await this.shipments.collect(id, body.supplierId, session.user.id))
   }
 
+  /**
+   * « Reçu au point de regroupement » (011): the hub staff confirm a
+   * courier's hand-over of a shop's order. Same effect as the hub code the
+   * courier enters, and as « Collecté »: the first one wins.
+   */
+  @CanManage('Delivery')
+  @Post('collections/:deliveryId/received')
+  @HttpCode(HttpStatus.OK)
+  async collectionReceived(
+    @Param('deliveryId', ParseUUIDPipe) deliveryId: string,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.receivedAtHub(deliveryId, session.user.id))
+  }
+
   @CanManage('Delivery')
   @Post('shipments/:id/missing')
   @HttpCode(HttpStatus.OK)

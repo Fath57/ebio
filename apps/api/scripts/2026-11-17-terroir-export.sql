@@ -7,8 +7,9 @@
 -- `migration:up --only Migration20261117090000` (les ordres sont idempotents).
 -- Contient aussi Migration20261118090000, Migration20261119090000 (table
 -- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères),
--- Migration20261120090000 (panier d'origine du colis) et Migration20261121090000
--- (validation d'export automatique), à enregistrer de la même façon.
+-- Migration20261120090000 (panier d'origine du colis), Migration20261121090000
+-- (validation d'export automatique) et Migration20261122090000 (collecte des
+-- boutiques par les livreurs eBio), à enregistrer de la même façon.
 --
 -- Purement additif : onze tables (catalogue d'export, agences, départs,
 -- colis), une colonne `orders.export_pack_id`, un troisième mode de retrait
@@ -394,5 +395,25 @@ ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_sizes_check" CHECK
       AND ("width_cm" IS NULL OR "width_cm" > 0)
       AND ("height_cm" IS NULL OR "height_cm" > 0)
       AND jsonb_array_length("origin_photos") <= 3);
+
+-- Migration20261122090000 : les livreurs eBio apportent les commandes export des boutiques
+-- au point de regroupement eBio. Une course porte un but (STANDARD ou EXPORT_COLLECTION),
+-- le colis qu'elle alimente, l'instantané du point et son point de dépôt ; le code du point
+-- prend 6 chiffres ; le gain du livreur est débité du compte EXPORT (EXPORT_COLLECTION_COST).
+ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "purpose" varchar(20) NOT NULL DEFAULT 'STANDARD';
+ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "export_shipment_id" uuid NULL;
+ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "export_hub" jsonb NULL;
+ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "dropoff_latitude" double precision NULL;
+ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "dropoff_longitude" double precision NULL;
+ALTER TABLE "deliveries" ALTER COLUMN "confirmation_code" TYPE varchar(6);
+ALTER TABLE "deliveries" DROP CONSTRAINT IF EXISTS "deliveries_purpose_check";
+ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_purpose_check" CHECK ("purpose" IN ('STANDARD', 'EXPORT_COLLECTION'));
+ALTER TABLE "deliveries" DROP CONSTRAINT IF EXISTS "deliveries_export_collection_check";
+ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_export_collection_check" CHECK (("purpose" = 'EXPORT_COLLECTION') = ("export_shipment_id" IS NOT NULL));
+ALTER TABLE "deliveries" DROP CONSTRAINT IF EXISTS "deliveries_export_shipment_id_foreign";
+ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_export_shipment_id_foreign" FOREIGN KEY ("export_shipment_id") REFERENCES "export_shipments" ("id") ON UPDATE CASCADE;
+CREATE INDEX IF NOT EXISTS "deliveries_export_shipment_id_index" ON "deliveries" ("export_shipment_id");
+ALTER TABLE "wallet_transactions" DROP CONSTRAINT IF EXISTS "wallet_transactions_type_check";
+ALTER TABLE "wallet_transactions" ADD CONSTRAINT "wallet_transactions_type_check" CHECK ("type" IN ('TOPUP', 'ORDER_PAYMENT', 'SALE_CREDIT', 'COMMISSION_DEBIT', 'WITHDRAWAL', 'WITHDRAWAL_REFUND', 'REFUND', 'ADJUSTMENT', 'PROMO_COMPENSATION', 'DELIVERY_EARNING', 'DELIVERY_COMMISSION', 'TIP_PAYMENT', 'TIP_EARNING', 'DELIVERY_SPONSORSHIP', 'BANNER_PAYMENT', 'BANNER_REFUND', 'REFERRAL_REWARD', 'PLATFORM_COMMISSION', 'PLATFORM_DELIVERY_SHARE', 'PLATFORM_BANNER', 'PLATFORM_MARKETING', 'FAMILY_TRANSFER_OUT', 'FAMILY_TRANSFER_IN', 'FAMILY_CLOSURE_OUT', 'FAMILY_CLOSURE_IN', 'EXPORT_SHIPPING_INCOME', 'EXPORT_INSURANCE_INCOME', 'EXPORT_LOSS', 'EXPORT_PACK_COMPENSATION', 'EXPORT_COLLECTION_COST'));
 
 COMMIT;

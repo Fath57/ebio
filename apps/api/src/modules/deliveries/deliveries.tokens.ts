@@ -27,6 +27,13 @@ export interface OrderDeliveryHooks {
   scheduleForOrder: (order: Order) => Promise<Delivery | null>
   /** The back office moved the delivery window: the run follows it. */
   applyWindowChange: (order: Order, actorUserId: string) => Promise<Delivery | null>
+  /**
+   * An EXPORT order turned READY (011): in COURIER mode, a courier run from
+   * the shop to the eBio hub. Null in EBIO mode, or when it cannot be priced.
+   */
+  createExportCollection: (order: Order) => Promise<Delivery | null>
+  /** An EXPORT order collected through the back office: its run closes. */
+  closeExportCollection: (order: Order) => Promise<void>
   cancelForOrder: (order: Order) => Promise<void>
   handleSupplierTakeover: (order: Order) => Promise<void>
   closeForOrder: (order: Order) => Promise<void>

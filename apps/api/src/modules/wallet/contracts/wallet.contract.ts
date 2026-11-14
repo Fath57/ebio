@@ -32,6 +32,7 @@ export const walletTransactionSchema = z.object({
     'EXPORT_INSURANCE_INCOME',
     'EXPORT_LOSS',
     'EXPORT_PACK_COMPENSATION',
+    'EXPORT_COLLECTION_COST',
   ]),
   amount: z.number(),
   balanceAfter: z.number(),

@@ -183,7 +183,16 @@ export const TerroirMapper = {
         actualWeightG: shipment.actualWeightG ?? null,
         insured: shipment.insured,
       })),
-      collection: view.collection,
+      collection: view.collection.map(group => ({
+        ...group,
+        collection: group.collection
+          ? {
+              ...group.collection,
+              pickedUpAt: group.collection.pickedUpAt?.toISOString() ?? null,
+              receivedAt: group.collection.receivedAt?.toISOString() ?? null,
+            }
+          : null,
+      })),
     }
   },
 

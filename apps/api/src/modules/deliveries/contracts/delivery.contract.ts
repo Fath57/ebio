@@ -151,7 +151,8 @@ export const transitionSchema = z.object({
 export const completeDeliverySchema = z.discriminatedUnion('proofType', [
   z.object({
     proofType: z.literal('CODE'),
-    code: z.string().regex(/^\d{4}$/),
+    /** The buyer's 4 digits, or the eBio hub's 6 digits on an EXPORT_COLLECTION run. */
+    code: z.string().regex(/^\d{4}(?:\d{2})?$/),
     occurredAt: z.string().datetime().optional(),
   }),
   z.object({
@@ -199,8 +200,31 @@ export const deliveryItemSchema = z.object({
   photo: z.string().nullable(),
 })
 
+/**
+ * STANDARD: to the buyer. EXPORT_COLLECTION (011): a terroir order from the
+ * shop to the eBio hub, paid by eBio, closed with the hub's code.
+ */
+export const deliveryPurposeEnum = z.enum(['STANDARD', 'EXPORT_COLLECTION']).meta({
+  title: 'DeliveryPurpose',
+  description: 'STANDARD : vers l’acheteur ; EXPORT_COLLECTION : de la boutique au point de regroupement eBio',
+})
+
+/** The eBio consolidation point an EXPORT_COLLECTION run ends at. */
+export const exportHubSchema = z.object({
+  name: z.string(),
+  address: z.string(),
+  phone: z.string().nullable(),
+  hours: z.string().nullable(),
+}).meta({
+  title: 'ExportHub',
+  description: 'Point de regroupement eBio où le livreur dépose la commande',
+})
+
 export const deliveryOfferSchema = z.object({
   id: z.string().uuid(),
+  purpose: deliveryPurposeEnum,
+  /** The hub to drop at, on an EXPORT_COLLECTION run; null otherwise. */
+  exportHub: exportHubSchema.nullable(),
   orderNumber: z.string(),
   pickupAddress: z.string(),
   dropoffAddress: z.string(),
@@ -299,6 +323,11 @@ export const courierRatingResponseSchema = z.object({
 
 export const deliveryResponseSchema = z.object({
   id: z.string().uuid(),
+  purpose: deliveryPurposeEnum,
+  /** The hub to drop at, on an EXPORT_COLLECTION run; null otherwise. */
+  exportHub: exportHubSchema.nullable(),
+  /** The terroir parcel an EXPORT_COLLECTION run feeds; null otherwise. */
+  exportShipmentId: z.string().uuid().nullable(),
   orderId: z.string().uuid(),
   orderNumber: z.string(),
   status: deliveryStatusEnum,
@@ -316,7 +345,7 @@ export const deliveryResponseSchema = z.object({
     collectedCount: z.number().int().min(0),
     awaitingBuyerDecision: z.boolean(),
   }).nullable(),
-  /** Buyer contact, only present for the assigned courier. The relative for a gift. */
+  /** Buyer contact, only present for the assigned courier. The relative for a gift. Null on an EXPORT_COLLECTION run (call the hub). */
   buyerContact: deliveryBuyerContactSchema.nullable(),
   /** Delivered to a relative: the hand-over takes code, photo and position together. */
   requiresGiftProof: z.boolean(),
@@ -331,7 +360,7 @@ export const deliveryResponseSchema = z.object({
   pickupPosition: geoPointSchema.nullable(),
   /** Drop-off point picked by the buyer at checkout (null for legacy orders). */
   dropoffPosition: geoPointSchema.nullable(),
-  /** Confirmation code, only present for the buyer. */
+  /** Confirmation code, only present for the buyer. The hub's code on an EXPORT_COLLECTION run: admin only. */
   confirmationCode: z.string().nullable(),
   proofType: z.enum(['CODE', 'PHOTO', 'CODE_AND_PHOTO']).nullable(),
   failReason: deliveryFailReasonEnum.nullable(),

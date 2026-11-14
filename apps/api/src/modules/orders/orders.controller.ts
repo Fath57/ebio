@@ -233,7 +233,7 @@ export class OrdersController {
     }
 
     const result = await this.ordersService.findByBuyer(session.user.id, filters)
-    const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
+    const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id), { forBuyer: true })
     return {
       // The payer's own list: the amount in the currency they paid in.
       orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, { display: OrderMapper.displayOf(order) })),
@@ -275,7 +275,7 @@ export class OrdersController {
     const order = await this.ordersService.findViewableById(id, session.user.id, session.user.role)
     const hasReview = await this.ordersService.hasReview(id)
     const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
-    const deliveries = await this.ordersService.deliverySummaries([id])
+    const deliveries = await this.ordersService.deliverySummaries([id], { forBuyer: order.buyer.id === session.user.id })
     const payer = await this.giftView.payerView(order, session.user.id)
     const collectBefore = await this.ordersService.exportCollectBefore([id])
     return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer, { collectBefore: collectBefore.get(id) ?? null }), hasReview, hasUnratedProducts }
