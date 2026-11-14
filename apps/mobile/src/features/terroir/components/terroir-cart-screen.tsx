@@ -1,4 +1,4 @@
-import type { TerroirCheckoutInput, TerroirPreview, TerroirSuggestion } from '../terroir-api'
+import type { TerroirCheckoutInput, TerroirPreview, TerroirPreviewLine, TerroirSuggestion } from '../terroir-api'
 import type { TerroirCartLine } from '../terroir-cart-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
@@ -18,26 +18,39 @@ import { useTerroirMoney } from '../hooks/use-terroir-money'
 import { useTerroirPreview } from '../hooks/use-terroir-preview'
 import { formatKg } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
-import { CountryChips, terroirStyles } from './terroir-ui'
+import { terroirStyles } from './terroir-ui'
+import { ValiseModeBanner } from './valise-ui'
+
+/** The server's pricing of a basket line, matched by product and format, or by pack. */
+function previewLineFor(line: TerroirCartLine, preview: TerroirPreview | null): TerroirPreviewLine | null {
+  if (!preview)
+    return null
+  return preview.lines.find(entry => line.kind === 'PACK'
+    ? entry.packId === line.packId
+    : entry.productId === line.productId && (entry.variantId ?? null) === (line.variantId ?? null)) ?? null
+}
 
 interface CartLineRowProps {
   line: TerroirCartLine
+  /** The server's view of the line: its price and shop, when the preview has them. */
+  priced: TerroirPreviewLine | null
   unavailable: boolean
   onQuantity: (key: string, quantity: number) => void
   onRemove: (line: TerroirCartLine) => void
 }
 
-function CartLineRow({ line, unavailable, onQuantity, onRemove }: CartLineRowProps) {
+function CartLineRow({ line, priced, unavailable, onQuantity, onRemove }: CartLineRowProps) {
   const { semantic } = useTheme()
   const { formatMoney } = useTerroirMoney()
-  const total = formatMoney(line.price * line.quantity)
+  const total = formatMoney((priced?.unitPrice ?? line.price) * line.quantity)
+  const shopName = line.shopName ?? priced?.shopName ?? null
   return (
     <View style={[styles.lineRow, { borderBottomColor: semantic.borderLight }]}>
       <Thumbnail uri={line.imageUrl} style={styles.lineImage} alt={line.name} />
       <View style={styles.lineBody}>
         {line.kind === 'PACK' && <Text style={[styles.packLabel, { color: colors.earth[600] }]}>Pack</Text>}
         <Text style={[styles.lineName, { color: semantic.textPrimary }]} numberOfLines={2}>{line.name}</Text>
-        {line.shopName && <Text style={[styles.lineShop, { color: semantic.textSecondary }]} numberOfLines={1}>{line.shopName}</Text>}
+        {shopName && <Text style={[styles.lineShop, { color: semantic.textSecondary }]} numberOfLines={1}>{shopName}</Text>}
         {unavailable && (
           <Text style={[styles.lineShop, { color: colors.coral[600] }]}>Indisponible à l’export : retirez-le pour commander.</Text>
         )}
@@ -82,7 +95,38 @@ interface WeightCardProps {
   onOpenProduct: (productId: string) => void
 }
 
-/** Weight, billed minimum and the free margin, with what fits in it (US8). */
+interface FillGaugeProps {
+  weightKg: number
+  billedKg: number
+}
+
+/** « 3,2 kg sur 5 kg payés », and a bar that stays green while the parcel is under what is paid. */
+function FillGauge({ weightKg, billedKg }: FillGaugeProps) {
+  const { semantic } = useTheme()
+  const ratio = billedKg > 0 ? Math.min(1, weightKg / billedKg) : 0
+  const within = weightKg <= billedKg
+  const percent = Math.round(ratio * 100)
+  return (
+    <View style={styles.gauge}>
+      <View style={styles.weightHeader}>
+        <Scale size={18} color={colors.blue[600]} strokeWidth={2.2} />
+        <Text style={[terroirStyles.cardTitle, styles.flex, { color: semantic.textPrimary }]}>
+          {`${formatKg(weightKg)} sur ${formatKg(billedKg)} payés`}
+        </Text>
+      </View>
+      <View
+        style={[styles.gaugeTrack, { backgroundColor: semantic.borderLight }]}
+        accessibilityRole="progressbar"
+        accessibilityLabel="Remplissage de votre valise"
+        accessibilityValue={{ min: 0, max: 100, now: percent }}
+      >
+        <View style={[styles.gaugeFill, { width: `${percent}%`, backgroundColor: within ? colors.green[400] : colors.earth[400] }]} />
+      </View>
+    </View>
+  )
+}
+
+/** The fill gauge, the free margin and what fits in it (US8). */
 function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps) {
   const { semantic } = useTheme()
   const { formatMoney } = useTerroirMoney()
@@ -91,15 +135,22 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
   const underMinimum = preview.marginKg > 0
   return (
     <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
-      <View style={styles.weightHeader}>
-        <Scale size={18} color={colors.blue[600]} strokeWidth={2.2} />
-        <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>{`Votre colis : ${formatKg(weightKg)}`}</Text>
-      </View>
-      {preview.billedKg > 0 && (
+      {preview.billedKg > 0
+        ? <FillGauge weightKg={weightKg} billedKg={preview.billedKg} />
+        : (
+            <View style={styles.weightHeader}>
+              <Scale size={18} color={colors.blue[600]} strokeWidth={2.2} />
+              <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>{`Votre colis : ${formatKg(weightKg)}`}</Text>
+            </View>
+          )}
+      {preview.billedKg > 0 && underMinimum && (
         <Text style={[styles.weightText, { color: semantic.textSecondary }]}>
-          {underMinimum
-            ? `Le transport est facturé ${formatKg(preview.billedKg)} minimum.`
-            : `Le transport est facturé ${formatKg(preview.billedKg)}.`}
+          {`Le transport est facturé ${formatKg(preview.billedKg)} minimum.`}
+        </Text>
+      )}
+      {preview.billedKg > 0 && !underMinimum && (
+        <Text style={[styles.weightText, { color: semantic.textSecondary }]}>
+          {`Palier suivant : ${formatKg(preview.billedKg)}. Jusque-là, le transport ne change pas.`}
         </Text>
       )}
       {underMinimum && (
@@ -149,7 +200,8 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
 }
 
 interface TerroirCartScreenProps {
-  onBack: () => void
+  /** Absent when the valise is the root of its tab. */
+  onBack?: () => void
   onCheckout: () => void
   onOpenProduct: (productId: string) => void
   onBrowse: () => void
@@ -161,7 +213,7 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
   // The floating tab bar covers the bottom of the screen: the footer sits above it.
   const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { formatMoney, formatServer, displayCurrency } = useTerroirMoney()
-  const { lines, country, countryInfo, countries, setCountry, setQuantity, removeLine, addLine, toInput } = useTerroirCart()
+  const { lines, country, countryInfo, setQuantity, removeLine, addLine, toInput } = useTerroirCart()
 
   const previewInput = useMemo<TerroirCheckoutInput | null>(() => lines.length === 0 || !country
     ? null
@@ -208,7 +260,8 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
       name: suggestion.name,
       imageUrl: suggestion.imageUrl,
       price: suggestion.price,
-      shopName: null,
+      // The suggestion names its shop; otherwise the next preview line will.
+      shopName: suggestion.shopName,
     })
   }
 
@@ -216,6 +269,7 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
         <ScreenHeader title="Ma valise" onBack={onBack} />
+        <ValiseModeBanner />
         <View style={terroirStyles.centered}>
           <ShoppingBasket size={32} color={colors.green[400]} />
           <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Votre valise est vide</Text>
@@ -234,27 +288,24 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Ma valise" subtitle={countryInfo ? `Livré ${countryInfo.inPhrase}` : undefined} onBack={onBack} />
+      <ValiseModeBanner />
       <ScrollView contentContainerStyle={styles.content}>
-        <CountryChips countries={countries ?? []} value={country} onChange={setCountry} />
-        {countries !== null && countries.length === 0 && (
-          <Text style={[styles.error, { color: semantic.textSecondary }]}>
-            Aucun départ n’est programmé pour l’instant : votre valise vous attend jusqu’au prochain.
-          </Text>
-        )}
+        {/* The gauge first: how full the valise is decides what to add next. */}
+        {loading && !preview && <ActivityIndicator color={colors.green[400]} />}
+        {error && <Text style={[styles.error, { color: colors.coral[600] }]}>{error}</Text>}
+        {preview && <WeightCard preview={preview} onAddSuggestion={handleAddSuggestion} onOpenProduct={onOpenProduct} />}
         <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
           {lines.map(line => (
             <CartLineRow
               key={line.key}
               line={line}
+              priced={previewLineFor(line, preview)}
               unavailable={unavailableKeys.has(line.key)}
               onQuantity={setQuantity}
               onRemove={confirmRemove}
             />
           ))}
         </View>
-        {loading && !preview && <ActivityIndicator color={colors.green[400]} />}
-        {error && <Text style={[styles.error, { color: colors.coral[600] }]}>{error}</Text>}
-        {preview && <WeightCard preview={preview} onAddSuggestion={handleAddSuggestion} onOpenProduct={onOpenProduct} />}
       </ScrollView>
       <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: (tabBarHeight || insets.bottom) + spacing[3] }]}>
         <View style={styles.footerTotal}>
@@ -338,6 +389,21 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  flex: {
+    flex: 1,
+  },
+  gauge: {
+    gap: spacing[2],
+  },
+  gaugeTrack: {
+    height: 8,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  gaugeFill: {
+    height: '100%',
+    borderRadius: radius.pill,
   },
   weightHeader: {
     flexDirection: 'row',

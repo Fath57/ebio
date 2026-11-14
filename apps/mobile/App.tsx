@@ -31,6 +31,7 @@ import { LocationProvider } from './src/features/common/location-context'
 import { ImageCropperHost } from './src/features/media/components/image-cropper'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
 import { TerroirCartProvider } from './src/features/terroir/terroir-cart-context'
+import { ValiseModeProvider } from './src/features/terroir/valise-mode-context'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
 import { useAccountBlock } from './src/utils/account-block'
@@ -117,27 +118,29 @@ export default function App(): React.JSX.Element | null {
           <LocationProvider>
             <CartProvider>
               <TerroirCartProvider>
-                <SafeAreaProvider onLayout={onLayoutRootView}>
-                  <AppNavigation />
-                  {accountBlock && <AccountBlockedScreen block={accountBlock} />}
-                  <AppAlertHost />
-                  <ImageCropperHost />
-                  <UpdatePrompt />
-                  {/* The store's version, which no over-the-air update can bring. */}
-                  <StoreUpdateGate />
-                  <StatusBar style="auto" />
-                  {showOnboarding === true && (
-                    <OnboardingScreen
-                      onFinish={() => {
-                        storage.set(ONBOARDING_KEY, '1')
-                        setShowOnboarding(false)
-                      }}
-                    />
-                  )}
-                  {showSplash && (
-                    <AnimatedSplash onFinish={() => setShowSplash(false)} />
-                  )}
-                </SafeAreaProvider>
+                <ValiseModeProvider>
+                  <SafeAreaProvider onLayout={onLayoutRootView}>
+                    <AppNavigation />
+                    {accountBlock && <AccountBlockedScreen block={accountBlock} />}
+                    <AppAlertHost />
+                    <ImageCropperHost />
+                    <UpdatePrompt />
+                    {/* The store's version, which no over-the-air update can bring. */}
+                    <StoreUpdateGate />
+                    <StatusBar style="auto" />
+                    {showOnboarding === true && (
+                      <OnboardingScreen
+                        onFinish={() => {
+                          storage.set(ONBOARDING_KEY, '1')
+                          setShowOnboarding(false)
+                        }}
+                      />
+                    )}
+                    {showSplash && (
+                      <AnimatedSplash onFinish={() => setShowSplash(false)} />
+                    )}
+                  </SafeAreaProvider>
+                </ValiseModeProvider>
               </TerroirCartProvider>
             </CartProvider>
           </LocationProvider>

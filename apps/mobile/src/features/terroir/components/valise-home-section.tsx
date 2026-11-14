@@ -4,18 +4,16 @@ import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import Calendar from 'lucide-react-native/dist/esm/icons/calendar'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
+import Package from 'lucide-react-native/dist/esm/icons/package'
 import Plane from 'lucide-react-native/dist/esm/icons/plane'
-import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
 import { PressableCard } from '../../common/components/pressable-card'
-import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
-import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
 import {
   fetchTerroirCatalog,
@@ -27,49 +25,9 @@ import {
   unsubscribeDepartureAlert,
   useTerroirCountries,
 } from '../terroir-api'
-import { guessTerroirCountry, useTerroirCart } from '../terroir-cart-context'
+import { guessTerroirCountry } from '../terroir-cart-context'
+import { useValiseMode } from '../valise-mode-context'
 import { CountryChips, TerroirBadge, terroirStyles } from './terroir-ui'
-
-interface TerroirHomeScreenProps {
-  onBack: () => void
-  onOpenProduct: (productId: string) => void
-  onOpenPack: (packId: string) => void
-  onOpenCart: () => void
-  onRequireLogin: () => void
-}
-
-interface CatalogCardProps {
-  item: TerroirCatalogItem
-  onPress: (item: TerroirCatalogItem) => void
-}
-
-function CatalogCard({ item, onPress }: CatalogCardProps) {
-  const { semantic } = useTheme()
-  const { formatMoney } = useTerroirMoney()
-  const money = formatMoney(item.price)
-  return (
-    <PressableCard
-      style={[styles.productCard, { backgroundColor: semantic.bgCard }]}
-      onPress={() => onPress(item)}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.kind === 'PACK' ? 'Pack ' : ''}${item.name}, ${money.primary}`}
-    >
-      <Thumbnail uri={item.imageUrl} style={styles.productImage} alt={item.name} />
-      <View style={styles.productBody}>
-        {item.kind === 'PACK' && <Text style={[styles.packLabel, { color: colors.earth[600] }]}>Pack</Text>}
-        <Text style={[styles.productName, { color: semantic.textPrimary }]} numberOfLines={2}>{item.name}</Text>
-        {item.shopName && (
-          <Text style={[styles.productShop, { color: semantic.textSecondary }]} numberOfLines={1}>{item.shopName}</Text>
-        )}
-        <Text style={[terroirStyles.price, { color: semantic.textPrimary }]}>{money.primary}</Text>
-        {money.secondary && (
-          <Text style={[terroirStyles.priceSecondary, { color: semantic.textTertiary }]}>{money.secondary}</Text>
-        )}
-        {item.badge && <TerroirBadge />}
-      </View>
-    </PressableCard>
-  )
-}
 
 interface AlertButtonProps {
   subscribed: boolean
@@ -200,7 +158,7 @@ interface NoDepartureStateProps {
  * No country is served by an open departure: the buyer can still ask to be
  * told, for any active country (`all=true`).
  */
-function NoDepartureState({ currency, onRequireLogin }: NoDepartureStateProps) {
+export function NoDepartureState({ currency, onRequireLogin }: NoDepartureStateProps) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
   const allCountries = useTerroirCountries(true)
@@ -286,70 +244,77 @@ function NoDepartureState({ currency, onRequireLogin }: NoDepartureStateProps) {
   )
 }
 
-export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCart, onRequireLogin }: TerroirHomeScreenProps) {
+interface PackCardProps {
+  item: TerroirCatalogItem
+  onPress: (packId: string) => void
+}
+
+function PackCard({ item, onPress }: PackCardProps) {
   const { semantic } = useTheme()
-  const bottomClearance = useTabBarClearance()
+  const { formatMoney } = useTerroirMoney()
+  const money = formatMoney(item.price)
+  return (
+    <PressableCard
+      style={[styles.packCard, { backgroundColor: semantic.bgCard }]}
+      onPress={() => onPress(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Pack ${item.name}, ${money.primary}`}
+    >
+      <Thumbnail uri={item.imageUrl} style={styles.packImage} alt={item.name} />
+      <View style={styles.packBody}>
+        <Text style={[styles.packOverline, { color: colors.earth[600] }]} numberOfLines={1}>
+          {item.shopName ? `Pack · ${item.shopName}` : 'Pack eBio'}
+        </Text>
+        <Text style={[styles.packName, { color: semantic.textPrimary }]} numberOfLines={2}>{item.name}</Text>
+        <Text style={[terroirStyles.price, { color: semantic.textPrimary }]}>{money.primary}</Text>
+        {money.secondary && <Text style={[terroirStyles.priceSecondary, { color: semantic.textTertiary }]}>{money.secondary}</Text>}
+        {item.badge && <TerroirBadge />}
+      </View>
+    </PressableCard>
+  )
+}
+
+interface ValiseHomeSectionProps {
+  onOpenPack: (packId: string) => void
+  onRequireLogin: () => void
+}
+
+/**
+ * What the home adds in Valise mode: the next departure (or the alert when
+ * none is planned) and the « Packs du pays » rail.
+ */
+export function ValiseHomeSection({ onOpenPack, onRequireLogin }: ValiseHomeSectionProps) {
+  const { semantic } = useTheme()
   const { data: session } = useSession()
-  const { country, countryInfo, countries, countriesError, reloadCountries, setCountry, itemCount } = useTerroirCart()
+  const { active, country, countryInfo } = useValiseMode()
   const { displayCurrency } = useTerroirMoney()
-  const [catalog, setCatalog] = useState<TerroirCatalogItem[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(true)
-  const [catalogError, setCatalogError] = useState<string | null>(null)
   const [departures, setDepartures] = useState<TerroirDepartures | null>(null)
   const [departuresLoading, setDeparturesLoading] = useState(true)
+  const [packs, setPacks] = useState<TerroirCatalogItem[]>([])
   const [alertBusy, setAlertBusy] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    if (!country)
+    if (!active || !country)
       return
     const target = country
     let cancelled = false
     async function load(): Promise<void> {
-      setCatalogLoading(true)
       setDeparturesLoading(true)
-      setCatalogError(null)
       const [catalogResult, departuresResult] = await Promise.allSettled([
         fetchTerroirCatalog(target, displayCurrency),
         fetchTerroirDepartures(target, displayCurrency),
       ])
       if (cancelled)
         return
-      if (catalogResult.status === 'fulfilled') {
-        setCatalog(catalogResult.value.items)
-      }
-      else {
-        setCatalog([])
-        setCatalogError(catalogResult.reason instanceof Error ? catalogResult.reason.message : 'Impossible de charger la Valise du pays.')
-      }
+      setPacks(catalogResult.status === 'fulfilled' ? catalogResult.value.items.filter(item => item.kind === 'PACK') : [])
       setDepartures(departuresResult.status === 'fulfilled' ? departuresResult.value : null)
-      setCatalogLoading(false)
       setDeparturesLoading(false)
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [country, displayCurrency, reloadKey])
-
-  const reloadAll = useCallback(() => {
-    reloadCountries()
-    setReloadKey(key => key + 1)
-  }, [reloadCountries])
-
-  // The module may have opened after the app started: the provider then has
-  // no countries yet, so the space asks for them on arrival.
-  useEffect(() => {
-    if (countries === null)
-      reloadCountries()
-  }, [])
-
-  const handleOpen = useCallback((item: TerroirCatalogItem) => {
-    if (item.kind === 'PACK')
-      onOpenPack(item.id)
-    else
-      onOpenProduct(item.id)
-  }, [onOpenPack, onOpenProduct])
+  }, [active, country, displayCurrency])
 
   const handleToggleAlert = useCallback(async () => {
     if (!session?.user) {
@@ -366,9 +331,8 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
       else
         await subscribeDepartureAlert(countryInfo.code)
       setDepartures(current => current ? { ...current, alertSubscribed: !subscribed } : { next: null, items: [], alertSubscribed: !subscribed })
-      if (!subscribed) {
+      if (!subscribed)
         appAlert('C’est noté', `Nous vous préviendrons dès qu’un départ ${countryInfo.toPhrase} sera ouvert.`)
-      }
     }
     catch (error) {
       appAlert('Alerte', error instanceof TerroirError ? error.message : 'Vérifiez votre connexion et réessayez.')
@@ -378,170 +342,51 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
     }
   }, [session?.user, departures?.alertSubscribed, countryInfo, onRequireLogin])
 
-  const cartButton = (
-    <TouchableOpacity
-      style={styles.cartButton}
-      onPress={onOpenCart}
-      accessibilityRole="button"
-      accessibilityLabel={itemCount > 0 ? `Ma valise, ${itemCount} article${itemCount > 1 ? 's' : ''}` : 'Ma valise'}
-    >
-      <ShoppingBasket size={22} color={semantic.textPrimary} strokeWidth={2} />
-      {itemCount > 0 && (
-        <View style={styles.cartCount}>
-          <Text style={styles.cartCountText}>{itemCount > 99 ? '99+' : String(itemCount)}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  )
-
-  const intro = (
-    <Text style={[styles.intro, { color: semantic.textSecondary }]}>
-      Des produits validés par eBio pour voyager, envoyés en un seul colis par une agence partenaire.
-    </Text>
-  )
-
-  // No country known yet: still loading, failed, or none served by a departure.
-  if (!countryInfo || !countries) {
-    return (
-      <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="La Valise du pays" onBack={onBack} rightSlot={cartButton} />
-        <ScrollView contentContainerStyle={[styles.listContent, styles.headerBlock, { paddingBottom: bottomClearance + spacing[6] }]}>
-          {intro}
-          {((countries === null && !countriesError) || (countries !== null && countries.length > 0)) && (
-            <ActivityIndicator style={styles.loader} color={colors.green[400]} />
-          )}
-          {countries === null && countriesError && (
-            <View style={terroirStyles.centered}>
-              <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{countriesError}</Text>
-              <TouchableOpacity
-                style={[terroirStyles.secondaryButton, { borderColor: semantic.borderNormal }]}
-                onPress={reloadAll}
-                accessibilityRole="button"
-              >
-                <Text style={[terroirStyles.secondaryButtonText, { color: semantic.textPrimary }]}>Réessayer</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {countries !== null && countries.length === 0 && <NoDepartureState currency={displayCurrency} onRequireLogin={onRequireLogin} />}
-        </ScrollView>
-      </View>
-    )
-  }
-
-  const header = (
-    <View style={styles.headerBlock}>
-      {intro}
-      <CountryChips countries={countries} value={country} onChange={setCountry} />
-      <DeparturesBlock
-        departures={departures}
-        loading={departuresLoading}
-        toPhrase={countryInfo.toPhrase}
-        alertBusy={alertBusy}
-        onToggleAlert={() => {
-          void handleToggleAlert()
-        }}
-      />
-      <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>Produits et packs</Text>
-    </View>
-  )
+  if (!active || !countryInfo)
+    return null
 
   return (
-    <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader
-        title="La Valise du pays"
-        subtitle={`Livré ${countryInfo.inPhrase}`}
-        onBack={onBack}
-        rightSlot={cartButton}
-      />
-      <FlatList
-        data={catalogLoading ? [] : catalog}
-        keyExtractor={item => `${item.kind}-${item.id}`}
-        numColumns={2}
-        columnWrapperStyle={styles.column}
-        contentContainerStyle={[styles.listContent, { paddingBottom: bottomClearance + spacing[6] }]}
-        ListHeaderComponent={header}
-        renderItem={({ item }) => (
-          <View style={styles.cell}>
-            <CatalogCard item={item} onPress={handleOpen} />
+    <View style={styles.section}>
+      <View style={styles.padded}>
+        <DeparturesBlock
+          departures={departures}
+          loading={departuresLoading}
+          toPhrase={countryInfo.toPhrase}
+          alertBusy={alertBusy}
+          onToggleAlert={() => {
+            void handleToggleAlert()
+          }}
+        />
+      </View>
+      {packs.length > 0 && (
+        <View style={styles.packsBlock}>
+          <View style={styles.packsHeader}>
+            <Package size={14} color={colors.earth[600]} strokeWidth={2.4} />
+            <Text style={[styles.overline, { color: semantic.textSecondary }]}>Packs du pays</Text>
           </View>
-        )}
-        refreshing={false}
-        onRefresh={reloadAll}
-        ListEmptyComponent={catalogLoading
-          ? <ActivityIndicator style={styles.loader} color={colors.green[400]} />
-          : (
-              <View style={terroirStyles.centered}>
-                <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>
-                  {catalogError ?? `Aucun produit n’est encore proposé à l’envoi ${countryInfo.toPhrase}.`}
-                </Text>
-                {catalogError && (
-                  <TouchableOpacity
-                    style={[terroirStyles.secondaryButton, { borderColor: semantic.borderNormal }]}
-                    onPress={() => setReloadKey(key => key + 1)}
-                    accessibilityRole="button"
-                  >
-                    <Text style={[terroirStyles.secondaryButtonText, { color: semantic.textPrimary }]}>Réessayer</Text>
-                  </TouchableOpacity>
-                )}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.packsRail}>
+            {packs.map(item => (
+              <View key={item.id} style={styles.packCell}>
+                <PackCard item={item} onPress={onOpenPack} />
               </View>
-            )}
-      />
+            ))}
+          </ScrollView>
+        </View>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  section: {
+    marginTop: spacing[4],
+    gap: spacing[4],
   },
-  listContent: {
+  padded: {
     paddingHorizontal: spacing[4],
   },
-  headerBlock: {
-    gap: spacing[4],
-    paddingTop: spacing[2],
-    paddingBottom: spacing[3],
-  },
-  intro: {
+  hint: {
     ...typography.bodyS,
-  },
-  sectionTitle: {
-    ...typography.overline,
-    marginTop: spacing[2],
-  },
-  column: {
-    gap: spacing[3],
-  },
-  cell: {
-    flex: 1,
-    marginBottom: spacing[3],
-  },
-  productCard: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  productImage: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-  },
-  productBody: {
-    padding: spacing[3],
-    gap: spacing[1],
-  },
-  packLabel: {
-    ...typography.overline,
-  },
-  productName: {
-    fontFamily: fonts.sansSb,
-    fontSize: 14,
-  },
-  productShop: {
-    ...typography.caption,
   },
   departureBanner: {
     borderRadius: radius.lg,
@@ -558,9 +403,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.sansSb,
     fontSize: 14,
-  },
-  hint: {
-    ...typography.bodyS,
   },
   expandButton: {
     minHeight: 44,
@@ -584,30 +426,47 @@ const styles = StyleSheet.create({
   departureLine: {
     ...typography.bodyS,
   },
-  cartButton: {
-    width: 44,
-    height: 44,
+  packsBlock: {
+    gap: spacing[3],
+  },
+  packsHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
   },
-  cartCount: {
-    position: 'absolute',
-    top: 4,
-    right: 2,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.green[600],
-    alignItems: 'center',
-    justifyContent: 'center',
+  overline: {
+    ...typography.overline,
   },
-  cartCountText: {
-    fontFamily: fonts.sansBd,
-    fontSize: 10,
-    color: colors.neutral[0],
+  packsRail: {
+    paddingHorizontal: spacing[4],
+    gap: spacing[3],
   },
-  loader: {
-    marginTop: spacing[8],
+  packCell: {
+    width: 200,
+  },
+  packCard: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  packImage: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+  },
+  packBody: {
+    padding: spacing[3],
+    gap: spacing[1],
+  },
+  packOverline: {
+    ...typography.overline,
+  },
+  packName: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
   },
 })

@@ -555,6 +555,17 @@ export interface TerroirSuggestion {
   weightG: number | null
   price: number
   imageUrl: string | null
+  shopName: string | null
+}
+
+/** A basket line as the server priced it. */
+export interface TerroirPreviewLine {
+  productId: string | null
+  variantId: string | null
+  packId: string | null
+  shopName: string | null
+  /** FCFA per unit, null when the server did not say. */
+  unitPrice: number | null
 }
 
 export interface TerroirPreview {
@@ -567,6 +578,7 @@ export interface TerroirPreview {
   optionHomeDeliveryFee: number | null
   optionInsurancePrice: number
   suggestions: TerroirSuggestion[]
+  lines: TerroirPreviewLine[]
   itemsTotal: number
   shippingPrice: number
   homeDeliveryFee: number
@@ -593,8 +605,16 @@ function readPreview(data: unknown): TerroirPreview {
         weightG: num(entry.weightG),
         price: num(entry.price) ?? 0,
         imageUrl: str(entry.imageUrl),
+        shopName: str(entry.shopName),
       }))
       .filter(entry => entry.productId && entry.name),
+    lines: list(raw.lines).map(entry => ({
+      productId: str(entry.productId),
+      variantId: str(entry.variantId),
+      packId: str(entry.packId),
+      shopName: str(entry.shopName),
+      unitPrice: num(entry.unitPrice ?? entry.price),
+    })),
     itemsTotal: num(raw.itemsTotal) ?? 0,
     shippingPrice: num(raw.shippingPrice) ?? 0,
     homeDeliveryFee: num(raw.homeDeliveryFee) ?? 0,
@@ -697,6 +717,18 @@ export interface TerroirShipmentLine {
   shopName: string | null
 }
 
+/** A line of a past parcel, as it could be ordered again today. */
+export interface TerroirReorderLine {
+  productId: string | null
+  variantId: string | null
+  packId: string | null
+  quantity: number
+  name: string
+  imageUrl: string | null
+  shopName: string | null
+  available: boolean
+}
+
 export interface TerroirShipmentEvent {
   step: TerroirShipmentStatus | null
   message: string | null
@@ -715,6 +747,7 @@ export interface TerroirShipment extends TerroirShipmentSummary {
   giftMessage: string | null
   supplement: TerroirSupplement | null
   collectBefore: string | null
+  reorderLines: TerroirReorderLine[]
 }
 
 export type TerroirSupplementStatus = 'REQUESTED' | 'PAID' | 'WAIVED' | 'ITEM_REMOVED'
@@ -813,6 +846,18 @@ export async function fetchTerroirShipment(id: string): Promise<TerroirShipment>
     giftMessage: str(obj(raw.gift).message),
     supplement: withWeights(readSupplement(raw.supplement), raw),
     collectBefore: str(obj(raw.departure).collectBefore),
+    reorderLines: list(raw.reorderLines)
+      .map(line => ({
+        productId: str(line.productId),
+        variantId: str(line.variantId),
+        packId: str(line.packId),
+        quantity: num(line.quantity) ?? 1,
+        name: str(line.name) ?? '',
+        imageUrl: str(line.imageUrl),
+        shopName: str(line.shopName),
+        available: line.available === true,
+      }))
+      .filter(line => line.productId !== null || line.packId !== null),
   }
 }
 
@@ -856,9 +901,77 @@ export async function removeTerroirSupplementLine(shipmentId: string, lineId: st
 }
 
 // ---------------------------------------------------------------------------
+// Exportability (Valise mode)
+
+export type TerroirExportStatus = 'EXPORTABLE' | 'NOT_REQUESTED' | 'PENDING' | 'REJECTED' | 'BANNED_CATEGORY' | 'UNAVAILABLE'
+
+const EXPORT_STATUSES: TerroirExportStatus[] = ['EXPORTABLE', 'NOT_REQUESTED', 'PENDING', 'REJECTED', 'BANNED_CATEGORY', 'UNAVAILABLE']
+
+/** Whether one product can travel in the valise, and the words to say it. */
+export interface TerroirExportability {
+  productId: string
+  status: TerroirExportStatus
+  packedWeightG: number | null
+  label: string
+  reason: string | null
+}
+
+const EXPORT_FALLBACK_LABELS: Record<TerroirExportStatus, string> = {
+  EXPORTABLE: 'Exportable',
+  NOT_REQUESTED: 'Non exportable',
+  PENDING: 'Export en cours de validation',
+  REJECTED: 'Non exportable',
+  BANNED_CATEGORY: 'Non exportable',
+  UNAVAILABLE: 'Indisponible',
+}
+
+/** Reads one exportability block; the product id may come from outside it (product detail). */
+export function readExportability(value: unknown, productId?: string): TerroirExportability | null {
+  const raw = obj(value)
+  const id = str(raw.productId) ?? productId ?? null
+  const status = EXPORT_STATUSES.find(entry => entry === raw.status)
+  if (!id || !status)
+    return null
+  return {
+    productId: id,
+    status,
+    packedWeightG: num(raw.packedWeightG),
+    label: str(raw.label) ?? EXPORT_FALLBACK_LABELS[status],
+    reason: str(raw.reason),
+  }
+}
+
+/** One batch of at most 100 products for one destination. */
+export async function fetchTerroirExportability(country: TerroirCountry, productIds: string[]): Promise<TerroirExportability[]> {
+  const query = new URLSearchParams({ country, productIds: productIds.join(',') })
+  const data = await getJson(`/api/terroir/exportability?${query.toString()}`, 'Impossible de vérifier l’export de ces produits.')
+  return list(obj(data).items ?? data)
+    .map(entry => readExportability(entry))
+    .filter((entry): entry is TerroirExportability => entry !== null)
+}
+
+// ---------------------------------------------------------------------------
 // Switch
 
 let enabledCache: boolean | null = null
+
+/**
+ * The switch as the server states it right now: null when it could not be
+ * read (offline), which is not the same as off.
+ */
+export async function readTerroirSwitch(): Promise<boolean | null> {
+  try {
+    const res = await apiFetch('/api/settings/public')
+    if (!res.ok)
+      return null
+    const data = await res.json() as Raw
+    enabledCache = data.terroirExportEnabled === true
+    return enabledCache
+  }
+  catch {
+    return null
+  }
+}
 
 /** Reads the switch once, outside navigation (providers). Unreadable means off. */
 export async function fetchTerroirEnabled(): Promise<boolean> {

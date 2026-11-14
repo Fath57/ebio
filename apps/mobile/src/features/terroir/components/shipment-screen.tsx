@@ -1,14 +1,18 @@
-import type { TerroirShipment, TerroirShipmentLine } from '../terroir-api'
+import type { TerroirCountry, TerroirReorderLine, TerroirShipment, TerroirShipmentLine } from '../terroir-api'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
+import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
-import { fetchTerroirShipment, formatDay, formatWindow, payTerroirSupplement, removeTerroirSupplementLine, SHIPMENT_STATUS_LABELS, useTerroirCountries, verifySupplementPayment } from '../terroir-api'
+import { useTerroirMoney } from '../hooks/use-terroir-money'
+import { fetchTerroirPack, fetchTerroirShipment, formatDay, formatWindow, payTerroirSupplement, removeTerroirSupplementLine, SHIPMENT_STATUS_LABELS, useTerroirCountries, verifySupplementPayment } from '../terroir-api'
+import { useTerroirCart } from '../terroir-cart-context'
 import { shipmentHeading, shipmentTotalLabel, StatusPill } from './shipments-list'
 import { SupplementCard } from './supplement-card'
 import { PickupAddress, terroirStyles } from './terroir-ui'
@@ -20,14 +24,61 @@ function formatInstant(iso: string): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 }
 
+function readAmount(value: unknown): number | null {
+  const parsed = typeof value === 'string' ? Number(value) : value
+  return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null
+}
+
+/**
+ * Today's FCFA price of a line to order again, for the valise to show before
+ * its first preview (which reprices everything anyway). 0 when unknown.
+ */
+async function currentPrice(line: TerroirReorderLine, currency: string): Promise<number> {
+  try {
+    if (line.packId)
+      return (await fetchTerroirPack(line.packId, currency)).price
+    if (!line.productId)
+      return 0
+    const res = await apiFetch(`/api/products/${line.productId}`)
+    if (!res.ok)
+      return 0
+    const data = await res.json() as Record<string, unknown>
+    if (line.variantId && Array.isArray(data.variants)) {
+      const variant = (data.variants as Array<Record<string, unknown>>).find(entry => entry.id === line.variantId)
+      const variantPrice = readAmount(variant?.price)
+      if (variantPrice !== null)
+        return variantPrice
+    }
+    return readAmount(data.promotionalPrice) ?? readAmount(data.pricePerUnit) ?? 0
+  }
+  catch {
+    return 0
+  }
+}
+
+/** « 2 produits ne sont plus disponibles : Gari, Sodabi. » */
+function missingSentence(missing: TerroirReorderLine[]): string | null {
+  if (missing.length === 0)
+    return null
+  const names = missing.map(line => line.name).join(', ')
+  return missing.length === 1
+    ? `1 produit n’est plus disponible : ${names}.`
+    : `${missing.length} produits ne sont plus disponibles : ${names}.`
+}
+
 interface ShipmentScreenProps {
   shipmentId: string
   onBack: () => void
+  /** The valise was filled again: turn the Valise mode on for this country and open « Ma valise ». */
+  onReorder?: (country: TerroirCountry) => void
 }
 
 /** One terroir parcel: where it stands, its dated timeline and where to collect it. */
-export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
+export function ShipmentScreen({ shipmentId, onBack, onReorder }: ShipmentScreenProps) {
   const { semantic } = useTheme()
+  const { lines: valiseLines, addLine, clear } = useTerroirCart()
+  const { displayCurrency } = useTerroirMoney()
+  const [reordering, setReordering] = useState(false)
   // Fills the names the country helpers read.
   useTerroirCountries(true)
   const [shipment, setShipment] = useState<TerroirShipment | null>(null)
@@ -115,6 +166,57 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
       setBusy(false)
     }
   }, [shipmentId, load])
+
+  const refill = useCallback(async (available: TerroirReorderLine[], replace: boolean, country: TerroirCountry): Promise<void> => {
+    setReordering(true)
+    try {
+      const prices = await Promise.all(available.map(line => currentPrice(line, displayCurrency)))
+      if (replace)
+        clear()
+      available.forEach((line, index) => {
+        addLine(line.packId
+          ? { kind: 'PACK', packId: line.packId, name: line.name, imageUrl: line.imageUrl, price: prices[index] ?? 0, shopName: line.shopName, quantity: line.quantity }
+          : { kind: 'PRODUCT', productId: line.productId ?? undefined, variantId: line.variantId, name: line.name, imageUrl: line.imageUrl, price: prices[index] ?? 0, shopName: line.shopName, quantity: line.quantity })
+      })
+      onReorder?.(country)
+    }
+    finally {
+      setReordering(false)
+    }
+  }, [displayCurrency, clear, addLine, onReorder])
+
+  const handleReorder = useCallback(() => {
+    if (!shipment)
+      return
+    const available = shipment.reorderLines.filter(line => line.available)
+    const missingNote = missingSentence(shipment.reorderLines.filter(line => !line.available))
+    if (available.length === 0) {
+      appAlert('Valise indisponible', missingNote ?? 'Aucun produit de cette valise ne peut repartir pour le moment.')
+      return
+    }
+    const run = (replace: boolean): void => {
+      void refill(available, replace, shipment.country)
+    }
+    if (valiseLines.length > 0) {
+      const message = ['Votre valise contient déjà des produits. Voulez-vous la remplacer, ou y ajouter ceux de cet envoi ?', missingNote]
+        .filter((part): part is string => part !== null)
+        .join('\n\n')
+      appAlert('Refaire cette valise', message, [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Ajouter', onPress: () => run(false) },
+        { text: 'Remplacer', style: 'destructive', onPress: () => run(true) },
+      ])
+      return
+    }
+    if (missingNote) {
+      appAlert('Refaire cette valise', missingNote, [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Continuer', onPress: () => run(false) },
+      ])
+      return
+    }
+    run(false)
+  }, [shipment, valiseLines.length, refill])
 
   if (payment) {
     return (
@@ -248,6 +350,21 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
           </View>
           {shipment.insured && <Text style={[styles.eventDate, { color: semantic.textSecondary }]}>Colis assuré</Text>}
         </View>
+
+        {onReorder && shipment.reorderLines.length > 0 && (
+          <TouchableOpacity
+            style={[terroirStyles.primaryButton, reordering && terroirStyles.disabled]}
+            onPress={handleReorder}
+            disabled={reordering}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: reordering, busy: reordering }}
+          >
+            {reordering
+              ? <ActivityIndicator color={colors.neutral[0]} />
+              : <RotateCcw size={18} color={colors.neutral[0]} strokeWidth={2.2} />}
+            <Text style={terroirStyles.primaryButtonText}>Refaire cette valise</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   )

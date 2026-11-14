@@ -35,10 +35,16 @@ import { apiFetch } from '../../../utils/api-client'
 import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
+import { appAlert } from '../../common/components/app-alert'
 import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
-import { useMoney } from '../../common/hooks/use-money'
 import { useFavorite } from '../../favorites/hooks/use-favorite'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
+import { ExportChip, ValiseAddBar } from '../../terroir/components/valise-ui'
+import { primeExportability, useProductExportability } from '../../terroir/exportability'
+import { useShoppingMoney } from '../../terroir/hooks/use-shopping-money'
+import { readExportability } from '../../terroir/terroir-api'
+import { useTerroirCart } from '../../terroir/terroir-cart-context'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 import { useProductUnits } from '../hooks/use-product-units'
 import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
 import { FormatPicker } from './format-picker'
@@ -100,6 +106,8 @@ interface ProductDetailScreenProps {
    * request while the screen is sliding in.
    */
   detail?: Record<string, unknown> | null
+  /** Opens « Ma valise », after an add in Valise mode. */
+  onOpenValise?: () => void
 }
 
 export function ProductDetailScreen({
@@ -110,14 +118,19 @@ export function ProductDetailScreen({
   onOpenProduct,
   onSeeAllReviews,
   detail,
+  onOpenValise,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
-  const { formatMoney } = useMoney()
+  const formatMoney = useShoppingMoney()
   const { shortLabel } = useProductUnits()
   const insets = useSafeAreaInsets()
   const { getItemCount, groups, addItem, updateQuantity } = useCart()
-  // Keep the content clear of the floating cart bar.
-  const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
+  // Valise mode: the page fills the valise from a footer, never the local cart.
+  const { active: valise, country: valiseCountry } = useValiseMode()
+  const exportability = useProductExportability(product.id)
+  const { addLine } = useTerroirCart()
+  // Keep the content clear of the floating cart bar (hidden in Valise mode).
+  const cartBarClearance = !valise && getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
   const { isFavorite, toggle: toggleFavorite } = useFavorite(product.id)
 
   /** Mettre de côté est un geste qu'on veut sentir : il ne laisse rien à l'écran. */
@@ -151,6 +164,10 @@ export function ProductDetailScreen({
           ? data.nutritionalValues as NutritionalValues
           : null,
       })
+      // Asked with the Valise country, the detail carries the export verdict.
+      const verdict = valiseCountry ? readExportability(data.exportability, product.id) : null
+      if (valiseCountry && verdict)
+        primeExportability(valiseCountry, verdict)
     }
     if (detail) {
       applyDetail(detail)
@@ -159,7 +176,8 @@ export function ProductDetailScreen({
     let cancelled = false
     async function loadComposition() {
       try {
-        const res = await apiFetch(`/api/products/${product.id}`)
+        const query = valiseCountry ? `?exportCountry=${valiseCountry}` : ''
+        const res = await apiFetch(`/api/products/${product.id}${query}`)
         if (!res.ok)
           return
         const data = await res.json() as Record<string, unknown>
@@ -174,7 +192,7 @@ export function ProductDetailScreen({
     return () => {
       cancelled = true
     }
-  }, [product.id, detail])
+  }, [product.id, detail, valiseCountry])
 
   const unitHasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
   const unitPrice = unitHasPromo ? product.promotionalPrice! : product.pricePerUnit
@@ -266,6 +284,27 @@ export function ProductDetailScreen({
     }
   }, [cartItem, updateQuantity])
 
+  const handleValiseAdd = useCallback((quantity: number) => {
+    const lineName = selectedFormat ? `${product.name}, ${selectedFormat.label}` : product.name
+    addLine({
+      kind: 'PRODUCT',
+      productId: product.id,
+      variantId: selectedFormat?.id ?? null,
+      name: lineName,
+      imageUrl: product.imageUrl,
+      price: displayPrice,
+      shopName: supplier.shopName,
+      quantity,
+    })
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined)
+    appAlert('Ajouté à votre valise', quantity > 1 ? `${quantity} × ${lineName}` : lineName, onOpenValise
+      ? [
+          { text: 'Continuer', style: 'cancel' },
+          { text: 'Voir ma valise', onPress: onOpenValise },
+        ]
+      : undefined)
+  }, [addLine, product.id, product.name, product.imageUrl, selectedFormat, displayPrice, supplier.shopName, onOpenValise])
+
   const handleShare = useCallback(async () => {
     try {
       // The public product page carries the OG preview card and opens the
@@ -331,7 +370,8 @@ export function ProductDetailScreen({
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] + cartBarClearance }}
+        // In Valise mode the footer already sits above the tab bar.
+        contentContainerStyle={{ paddingBottom: valise ? spacing[6] : 64 + insets.bottom + spacing[6] + cartBarClearance }}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -428,6 +468,7 @@ export function ProductDetailScreen({
             {composition !== null && composition.labels.length > 0 && (
               <ProductLabelChips labels={composition.labels} />
             )}
+            {valise && exportability && <ExportChip item={exportability} />}
           </View>
 
           {/* Price block, editorial treatment */}
@@ -479,7 +520,7 @@ export function ProductDetailScreen({
 
               {/* Le geste d'achat est ici, à hauteur du prix : il n'y a plus de
                   bouton à aller chercher au bas d'une longue fiche. */}
-              {isInStock && (
+              {isInStock && !valise && (
                 <CartControl
                   quantity={cartItem?.quantity ?? 0}
                   unitLabel={unitLabel}
@@ -514,19 +555,21 @@ export function ProductDetailScreen({
             </View>
           )}
 
-          {/* Le reste du rayon de cette boutique */}
-          <View style={styles.suggestionsBlock}>
-            <BasketSuggestions
-              supplierId={supplier.id}
-              productIds={suggestionSeed}
-              title="D'autres produits du fournisseur"
-              // Ici le lien entre les produits est la boutique, pas le panier :
-              // « souvent acheté avec vos articles » parlerait d'un panier que
-              // l'acheteur n'a pas forcément sous les yeux.
-              reasonLabels={{ BOUGHT_TOGETHER: 'Du même fournisseur' }}
-              onOpenProduct={onOpenProduct}
-            />
-          </View>
+          {/* Le reste du rayon de cette boutique (it fills the local cart: not in Valise mode) */}
+          {!valise && (
+            <View style={styles.suggestionsBlock}>
+              <BasketSuggestions
+                supplierId={supplier.id}
+                productIds={suggestionSeed}
+                title="D'autres produits du fournisseur"
+                // Ici le lien entre les produits est la boutique, pas le panier :
+                // « souvent acheté avec vos articles » parlerait d'un panier que
+                // l'acheteur n'a pas forcément sous les yeux.
+                reasonLabels={{ BOUGHT_TOGETHER: 'Du même fournisseur' }}
+                onOpenProduct={onOpenProduct}
+              />
+            </View>
+          )}
         </View>
 
         {/* ============================================================== */}
@@ -646,6 +689,16 @@ export function ProductDetailScreen({
           </View>
         )}
       </Animated.ScrollView>
+
+      {valise && (
+        <ValiseAddBar
+          key={`${product.id}-${selectedFormat?.id ?? 'unit'}`}
+          exportability={exportability}
+          unitPrice={displayPrice}
+          outOfStock={!isInStock}
+          onAdd={handleValiseAdd}
+        />
+      )}
     </View>
   )
 }

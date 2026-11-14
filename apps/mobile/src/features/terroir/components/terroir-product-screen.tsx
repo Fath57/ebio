@@ -1,4 +1,4 @@
-import type { TerroirPack, TerroirProduct } from '../terroir-api'
+import type { TerroirPack } from '../terroir-api'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import * as Haptics from 'expo-haptics'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
@@ -13,7 +13,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
-import { fetchTerroirPack, fetchTerroirProduct, formatKg } from '../terroir-api'
+import { fetchTerroirPack } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
 import { OriginBlock, originSentence, TerroirBadge, terroirStyles } from './terroir-ui'
 
@@ -72,17 +72,20 @@ function QuantityStepper({ value, onChange }: QuantityStepperProps) {
 }
 
 interface AddBarProps {
-  priceLabel: string
-  secondary: string | null
+  /** FCFA per unit: the button shows the total for the quantity. */
+  unitPrice: number
   quantity: number
   onQuantityChange: (value: number) => void
   disabled: boolean
   onAdd: () => void
 }
 
-function AddBar({ priceLabel, secondary, quantity, onQuantityChange, disabled, onAdd }: AddBarProps) {
+function AddBar({ unitPrice, quantity, onQuantityChange, disabled, onAdd }: AddBarProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  const { formatMoney } = useTerroirMoney()
+  // Converted as a whole: 2 × 0,94 € shows what the FCFA total comes to.
+  const total = formatMoney(unitPrice * quantity)
   // The floating tab bar covers the bottom of the screen: the footer sits above it.
   const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   return (
@@ -94,29 +97,14 @@ function AddBar({ priceLabel, secondary, quantity, onQuantityChange, disabled, o
         disabled={disabled}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        accessibilityLabel={`Ajouter à ma valise, ${priceLabel}`}
+        accessibilityLabel={`Ajouter ${quantity} à ma valise, ${total.primary}`}
       >
         <ShoppingBasket size={18} color={colors.neutral[0]} strokeWidth={2.2} />
         <View>
           <Text style={terroirStyles.primaryButtonText}>Ajouter à ma valise</Text>
-          <Text style={styles.addPrice}>{secondary ? `${priceLabel} · ${secondary}` : priceLabel}</Text>
+          <Text style={styles.addPrice}>{total.secondary ? `${total.primary} · ${total.secondary}` : total.primary}</Text>
         </View>
       </TouchableOpacity>
-    </View>
-  )
-}
-
-interface InfoRowProps {
-  label: string
-  value: string
-}
-
-function InfoRow({ label, value }: InfoRowProps) {
-  const { semantic } = useTheme()
-  return (
-    <View style={styles.infoRow}>
-      <Text style={[styles.infoLabel, { color: semantic.textTertiary }]}>{label}</Text>
-      <Text style={[styles.infoValue, { color: semantic.textPrimary }]}>{value}</Text>
     </View>
   )
 }
@@ -127,144 +115,6 @@ function confirmAdded(name: string, onOpenCart: () => void): void {
     { text: 'Continuer', style: 'cancel' },
     { text: 'Voir ma valise', onPress: onOpenCart },
   ])
-}
-
-interface TerroirProductScreenProps {
-  productId: string
-  onBack: () => void
-  onOpenCart: () => void
-}
-
-export function TerroirProductScreen({ productId, onBack, onOpenCart }: TerroirProductScreenProps) {
-  const { semantic } = useTheme()
-  const { formatMoney, displayCurrency } = useTerroirMoney()
-  const { addLine } = useTerroirCart()
-  const [product, setProduct] = useState<TerroirProduct | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [variantId, setVariantId] = useState<string | null>(null)
-  const [quantity, setQuantity] = useState(1)
-
-  useEffect(() => {
-    let cancelled = false
-    fetchTerroirProduct(productId, displayCurrency)
-      .then((loaded) => {
-        if (cancelled)
-          return
-        setProduct(loaded)
-        setVariantId(loaded.variants[0]?.id ?? null)
-      })
-      .catch((loadError: unknown) => {
-        if (!cancelled)
-          setError(loadError instanceof Error ? loadError.message : 'Impossible de charger ce produit.')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [productId, displayCurrency])
-
-  const variant = product?.variants.find(entry => entry.id === variantId) ?? null
-  const unitPrice = variant?.price ?? product?.price ?? 0
-
-  const handleAdd = useCallback(() => {
-    if (!product)
-      return
-    addLine({
-      kind: 'PRODUCT',
-      productId: product.id,
-      variantId: variant?.id ?? null,
-      name: variant ? `${product.name}, ${variant.label}` : product.name,
-      imageUrl: product.photos[0] ?? null,
-      price: unitPrice,
-      shopName: product.shopName,
-      quantity,
-    })
-    confirmAdded(product.name, onOpenCart)
-  }, [product, variant, unitPrice, quantity, addLine, onOpenCart])
-
-  if (!product) {
-    return (
-      <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Produit du pays" onBack={onBack} />
-        <View style={terroirStyles.centered}>
-          {error
-            ? <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{error}</Text>
-            : <ActivityIndicator color={colors.green[400]} />}
-        </View>
-      </View>
-    )
-  }
-
-  const money = formatMoney(unitPrice)
-  const weightG = variant?.packedWeightG ?? product.packedWeightG
-  return (
-    <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title={product.name} onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <PhotoStrip photos={product.photos} name={product.name} />
-        <View style={styles.body}>
-          {product.badge && <TerroirBadge />}
-          <Text style={[styles.title, { color: semantic.textPrimary }]}>{product.name}</Text>
-          {product.shopName && <Text style={[styles.shop, { color: semantic.textSecondary }]}>{product.shopName}</Text>}
-          <View>
-            <Text style={[styles.price, { color: semantic.textPrimary }]}>{money.primary}</Text>
-            {money.secondary && <Text style={[terroirStyles.priceSecondary, { color: semantic.textTertiary }]}>{money.secondary}</Text>}
-          </View>
-
-          {product.variants.length > 0 && (
-            <View style={styles.variants} accessibilityRole="radiogroup">
-              {product.variants.map((entry) => {
-                const selected = entry.id === variantId
-                return (
-                  <TouchableOpacity
-                    key={entry.id}
-                    style={[
-                      styles.variantChip,
-                      selected
-                        ? { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[600] }
-                        : { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal },
-                    ]}
-                    onPress={() => setVariantId(entry.id)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.variantText, { color: selected ? semantic.textPrimaryColor : semantic.textPrimary }]}>
-                      {selected ? `✓ ${entry.label}` : entry.label}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-          )}
-
-          {product.description && (
-            <Text style={[styles.description, { color: semantic.textSecondary }]}>{product.description}</Text>
-          )}
-
-          {product.origin && <OriginBlock origin={product.origin} />}
-
-          <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
-            <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Composition et conservation</Text>
-            {product.ingredients && <InfoRow label="Ingrédients" value={product.ingredients} />}
-            {product.allergens.length > 0 && <InfoRow label="Allergènes" value={product.allergens.join(', ')} />}
-            {product.conservation && <InfoRow label="Conservation" value={product.conservation} />}
-            {product.shelfLifeDays !== null && <InfoRow label="Durée de conservation" value={`${product.shelfLifeDays} jours`} />}
-            {weightG !== null && <InfoRow label="Poids emballé" value={formatKg(weightG / 1000)} />}
-            {!product.ingredients && product.allergens.length === 0 && !product.conservation && product.shelfLifeDays === null && weightG === null && (
-              <Text style={[styles.description, { color: semantic.textSecondary }]}>Informations non renseignées.</Text>
-            )}
-          </View>
-        </View>
-      </ScrollView>
-      <AddBar
-        priceLabel={money.primary}
-        secondary={money.secondary}
-        quantity={quantity}
-        onQuantityChange={setQuantity}
-        disabled={false}
-        onAdd={handleAdd}
-      />
-    </View>
-  )
 }
 
 interface TerroirPackScreenProps {
@@ -389,8 +239,7 @@ export function TerroirPackScreen({ packId, onBack, onOpenCart }: TerroirPackScr
         </View>
       </ScrollView>
       <AddBar
-        priceLabel={money.primary}
-        secondary={money.secondary}
+        unitPrice={pack.price}
         quantity={quantity}
         onQuantityChange={setQuantity}
         disabled={!pack.orderable}
@@ -426,31 +275,6 @@ const styles = StyleSheet.create({
   },
   description: {
     ...typography.bodyL,
-  },
-  variants: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  variantChip: {
-    minHeight: 44,
-    paddingHorizontal: spacing[4],
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: 'center',
-  },
-  variantText: {
-    fontFamily: fonts.sansMd,
-    fontSize: 14,
-  },
-  infoRow: {
-    gap: 2,
-  },
-  infoLabel: {
-    ...typography.overline,
-  },
-  infoValue: {
-    ...typography.bodyS,
   },
   packItem: {
     gap: spacing[2],

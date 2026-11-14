@@ -26,6 +26,9 @@ import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
 import { TerroirHomeEntry } from '../../terroir/components/terroir-home-entry'
+import { ValiseHomeSection } from '../../terroir/components/valise-home-section'
+import { ValiseModeBanner } from '../../terroir/components/valise-ui'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 import { useHomeBanners } from '../hooks/use-home-banners'
 import { useHomeSections } from '../hooks/use-home-sections'
 import { CategoryRail } from './category-rail'
@@ -64,8 +67,12 @@ interface HomeScreenProps {
   onOpenNotifications: () => void
   onOpenWallet: () => void
   onOpenAssistant: () => void
-  /** Opens the Terroir space; its card hides while the module is off. */
+  /** Turns the Valise mode on; its card hides while the module is off. */
   onOpenTerroir?: () => void
+  /** Opens a pack of the « Packs du pays » rail (Valise mode). */
+  onOpenTerroirPack?: (packId: string) => void
+  /** The departure alert needs an account. */
+  onRequireLogin?: () => void
 }
 
 export function HomeScreen({
@@ -80,8 +87,11 @@ export function HomeScreen({
   onOpenWallet,
   onOpenAssistant,
   onOpenTerroir,
+  onOpenTerroirPack,
+  onRequireLogin,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
+  const { active: valise } = useValiseMode()
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -130,6 +140,9 @@ export function HomeScreen({
         onOpenAssistant={onOpenAssistant}
       />
 
+      {/* Valise mode: where the valise goes, and the way out. */}
+      <ValiseModeBanner />
+
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
@@ -144,7 +157,9 @@ export function HomeScreen({
           />
         </View>
 
-        {onOpenTerroir && <TerroirHomeEntry onPress={onOpenTerroir} />}
+        {valise && onOpenTerroirPack && onRequireLogin
+          ? <ValiseHomeSection onOpenPack={onOpenTerroirPack} onRequireLogin={onRequireLogin} />
+          : onOpenTerroir && <TerroirHomeEntry onPress={onOpenTerroir} />}
 
         {/* Catégories */}
         <View style={styles.categoriesBlock}>

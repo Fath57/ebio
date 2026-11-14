@@ -76,8 +76,11 @@ import { ShipmentScreen } from '../features/terroir/components/shipment-screen'
 import { ShipmentsList } from '../features/terroir/components/shipments-list'
 import { TerroirCartScreen } from '../features/terroir/components/terroir-cart-screen'
 import { TerroirCheckoutScreen } from '../features/terroir/components/terroir-checkout-screen'
-import { TerroirHomeScreen } from '../features/terroir/components/terroir-home-screen'
-import { TerroirPackScreen, TerroirProductScreen } from '../features/terroir/components/terroir-product-screen'
+import { TerroirPackScreen } from '../features/terroir/components/terroir-product-screen'
+import { ValiseModeBanner } from '../features/terroir/components/valise-ui'
+import { ValiseWaitlistScreen } from '../features/terroir/components/valise-waitlist-screen'
+import { useTerroirCart } from '../features/terroir/terroir-cart-context'
+import { useValiseMode } from '../features/terroir/valise-mode-context'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
@@ -135,12 +138,10 @@ function SearchStackScreen() {
       <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
       <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <SearchStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
-      {/* Terroir vers l'étranger (011): a space of its own, on the home stack. */}
-      <SearchStack.Screen name="Terroir" component={TerroirHomeWrapper} />
-      <SearchStack.Screen name="TerroirProduct" component={TerroirProductWrapper} />
+      {/* La Valise du pays (011) is a mode of the whole app, not a space of
+        * its own: only the wait for a departure and the packs live here. */}
+      <SearchStack.Screen name="Terroir" component={TerroirWaitlistWrapper} />
       <SearchStack.Screen name="TerroirPack" component={TerroirPackWrapper} />
-      <SearchStack.Screen name="TerroirCart" component={TerroirCartWrapper} />
-      <SearchStack.Screen name="TerroirCheckout" component={TerroirCheckoutWrapper} />
       {/* Writing to a shop needs an account: a visitor signs in here and
         * comes straight back to the shop rather than to another tab. */}
       <SearchStack.Screen name="Login" component={LoginWrapper} />
@@ -151,6 +152,8 @@ function SearchStackScreen() {
 }
 
 function SearchHomeWrapper({ navigation }: any) {
+  const { enter } = useValiseMode()
+  const { countries } = useTerroirCart()
   // The green header paints the status-bar area itself (no SafeScreen strip).
   return (
     <View style={{ flex: 1 }}>
@@ -163,7 +166,17 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Notifications')}
         onOpenWallet={() => navigation.navigate('BuyerWallet')}
-        onOpenTerroir={() => navigation.navigate('Terroir')}
+        onOpenTerroir={() => {
+          // A country to ship to: the mode turns on, right here on the home.
+          // None yet (loading, or no departure): the waiting screen decides.
+          if (countries && countries.length > 0) {
+            enter()
+            return
+          }
+          navigation.navigate('Terroir')
+        }}
+        onOpenTerroirPack={(packId: string) => navigation.navigate('TerroirPack', { packId })}
+        onRequireLogin={() => navigation.navigate('Login')}
         onOpenAssistant={() => {
           track('assistant_ouvert')
           navigation.navigate('Assistant')
@@ -192,27 +205,13 @@ function SearchHomeWrapper({ navigation }: any) {
   )
 }
 
-function TerroirHomeWrapper({ navigation }: any) {
+function TerroirWaitlistWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <TerroirHomeScreen
+      <ValiseWaitlistScreen
         onBack={() => navigation.goBack()}
-        onOpenProduct={(productId: string) => navigation.navigate('TerroirProduct', { productId })}
-        onOpenPack={(packId: string) => navigation.navigate('TerroirPack', { packId })}
-        onOpenCart={() => navigation.navigate('TerroirCart')}
+        onEntered={() => navigation.popToTop()}
         onRequireLogin={() => navigation.navigate('Login')}
-      />
-    </SafeScreen>
-  )
-}
-
-function TerroirProductWrapper({ route, navigation }: any) {
-  return (
-    <SafeScreen>
-      <TerroirProductScreen
-        productId={route.params.productId}
-        onBack={() => navigation.goBack()}
-        onOpenCart={() => navigation.navigate('TerroirCart')}
       />
     </SafeScreen>
   )
@@ -224,24 +223,32 @@ function TerroirPackWrapper({ route, navigation }: any) {
       <TerroirPackScreen
         packId={route.params.packId}
         onBack={() => navigation.goBack()}
-        onOpenCart={() => navigation.navigate('TerroirCart')}
+        onOpenCart={() => navigation.navigate('Panier', { screen: 'CartHome' })}
       />
     </SafeScreen>
   )
 }
 
-function TerroirCartWrapper({ navigation }: any) {
+/** « Ma valise »: the cart tab's root while the Valise mode is on. */
+function ValiseCartWrapper({ navigation }: any) {
   const { data: session } = useSession()
   return (
     <SafeScreen>
       <TerroirCartScreen
-        onBack={() => navigation.goBack()}
         onCheckout={() => navigation.navigate(session?.user ? 'TerroirCheckout' : 'Login')}
-        onOpenProduct={(productId: string) => navigation.navigate('TerroirProduct', { productId })}
-        onBrowse={() => navigation.navigate('Terroir')}
+        onOpenProduct={(productId: string) => navigation.navigate('ProductDetail', { productId })}
+        onBrowse={() => navigation.navigate('Accueil', { screen: 'SearchHome' })}
       />
     </SafeScreen>
   )
+}
+
+/** The cart tab shows the valise in Valise mode, the local cart otherwise; neither touches the other. */
+function CartHomeSwitch({ navigation, route }: any) {
+  const { active } = useValiseMode()
+  return active
+    ? <ValiseCartWrapper navigation={navigation} route={route} />
+    : <CartHomeWrapper navigation={navigation} route={route} />
 }
 
 function TerroirCheckoutWrapper({ navigation }: any) {
@@ -279,6 +286,7 @@ function TerroirCheckoutWrapper({ navigation }: any) {
  */
 function AssistantWrapper({ navigation }: any) {
   const { addItem } = useCart()
+  const { exit: exitValise } = useValiseMode()
 
   return (
     <SafeScreen>
@@ -295,6 +303,8 @@ function AssistantWrapper({ navigation }: any) {
             unit: line.unit,
             quantity: line.quantity,
           }))
+          // The assistant fills the local cart: show that one, not the valise.
+          exitValise()
           navigation.navigate('Panier', { screen: 'CartHome' })
         }}
       />
@@ -306,6 +316,7 @@ function SearchResultsWrapper({ route, navigation }: any) {
   const params = route.params ?? {}
   return (
     <SafeScreen>
+      <ValiseModeBanner />
       <SearchScreen
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
@@ -435,6 +446,8 @@ async function openChatWithCourier(navigation: any, deliveryId: string, peerName
 function SupplierProfileWrapper({ route, navigation }: any) {
   const { supplierId } = route.params
   const { data: session } = useSession()
+  // The local cart's bar has no place while the shop fills the valise.
+  const { active: valise } = useValiseMode()
   return (
     <View style={{ flex: 1 }}>
       <SupplierProfileScreen
@@ -452,7 +465,7 @@ function SupplierProfileWrapper({ route, navigation }: any) {
         }}
         onGoBack={() => navigation.goBack()}
       />
-      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+      {!valise && <CartCtaBar onPress={() => navigation.navigate('Panier')} />}
     </View>
   )
 }
@@ -516,6 +529,7 @@ function freshProductDetail(productId: string | undefined): LoadedProductDetail 
 
 function ProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
+  const { active: valise, country: valiseCountry } = useValiseMode()
   const [loaded, setLoaded] = React.useState<LoadedProductDetail | null>(() => freshProductDetail(productId))
 
   // A banner only carries an id: we fill in the product and its
@@ -526,7 +540,8 @@ function ProductDetailWrapper({ route, navigation }: any) {
     let cancelled = false
     async function load() {
       try {
-        const productRes = await apiFetch(`/api/products/${productId}`)
+        // In Valise mode the detail also says whether the product travels.
+        const productRes = await apiFetch(`/api/products/${productId}${valiseCountry ? `?exportCountry=${valiseCountry}` : ''}`)
         if (!productRes.ok)
           return
         const rawProduct = await productRes.json() as ApiProductDetail
@@ -551,7 +566,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
     return () => {
       cancelled = true
     }
-  }, [productId])
+  }, [productId, valiseCountry])
 
   const product = route.params?.product ?? loaded?.product
   const supplier = route.params?.supplier ?? loaded?.supplier
@@ -576,8 +591,9 @@ function ProductDetailWrapper({ route, navigation }: any) {
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
         onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
         onSeeAllReviews={id => navigation.navigate('ProductReviews', { productId: id, productName: product.name })}
+        onOpenValise={() => navigation.navigate('Panier', { screen: 'CartHome' })}
       />
-      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+      {!valise && <CartCtaBar onPress={() => navigation.navigate('Panier')} />}
     </View>
   )
 }
@@ -637,7 +653,7 @@ const CartStack = createNativeStackNavigator()
 function CartStackScreen() {
   return (
     <CartStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
-      <CartStack.Screen name="CartHome" component={CartHomeWrapper} />
+      <CartStack.Screen name="CartHome" component={CartHomeSwitch} />
       <CartStack.Screen name="Login" component={LoginWrapper} />
       <CartStack.Screen name="Register" component={RegisterWrapper} />
       <CartStack.Screen name="ForgotPassword" component={ForgotPasswordWrapper} />
@@ -646,6 +662,8 @@ function CartStackScreen() {
       {/* Regarder un article de son panier ne doit pas déplacer l'acheteur
         * dans l'onglet Accueil, ni l'y laisser en revenant. */}
       <CartStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
+      {/* « Ma valise » lives in this tab in Valise mode: its checkout too. */}
+      <CartStack.Screen name="TerroirCheckout" component={TerroirCheckoutWrapper} />
     </CartStack.Navigator>
   )
 }
@@ -1106,9 +1124,17 @@ function TerroirShipmentsWrapper({ navigation }: any) {
 }
 
 function TerroirShipmentWrapper({ route, navigation }: any) {
+  const { enter } = useValiseMode()
   return (
     <SafeScreen>
-      <ShipmentScreen shipmentId={route.params.shipmentId} onBack={() => navigation.goBack()} />
+      <ShipmentScreen
+        shipmentId={route.params.shipmentId}
+        onBack={() => navigation.goBack()}
+        onReorder={(country: string) => {
+          enter(country)
+          navigation.navigate('Panier', { screen: 'CartHome' })
+        }}
+      />
     </SafeScreen>
   )
 }
@@ -1173,7 +1199,10 @@ function RateOrderWrapper({ route, navigation }: any) {
 /** L'icône du panier, avec son compteur par-dessus l'icône partagée. */
 function CartTabIcon({ size, color, focused }: { size: number, color: string, focused?: boolean }) {
   const { getItemCount } = useCart()
-  const count = getItemCount()
+  const { itemCount: valiseCount } = useTerroirCart()
+  // In Valise mode the tab is « Ma valise »: it counts the valise.
+  const { active: valise } = useValiseMode()
+  const count = valise ? valiseCount : getItemCount()
 
   return (
     <View>
@@ -1284,11 +1313,14 @@ function LiveOrderFabHost() {
   const place = React.useSyncExternalStore(buyerPlace.subscribe, buyerPlace.get)
   const insets = useSafeAreaInsets()
   const hasBasket = useCart().getItemCount() > 0
+  // In Valise mode the product page has its own footer in that spot.
+  const { active: valise } = useValiseMode()
   return (
     <LiveOrderFab
       hidden={place.tab === 'Commandes'
         || HIDE_TAB_BAR_ROUTES.has(place.screen)
-        || (hasBasket && CART_BAR_ROUTES.has(place.screen))}
+        || (valise && place.screen === 'ProductDetail')
+        || (!valise && hasBasket && CART_BAR_ROUTES.has(place.screen))}
       // Same figure as the tab bar's own height below.
       bottomOffset={64 + insets.bottom}
       onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
@@ -1323,6 +1355,7 @@ export function AppNavigation() {
 
 function BuyerTabs() {
   const { semantic } = useTheme()
+  const { active: valise } = useValiseMode()
   const insets = useSafeAreaInsets()
   useNotifications()
   usePendingReferralClaim()
@@ -1447,6 +1480,7 @@ function BuyerTabs() {
         <Tab.Screen
           name="Panier"
           component={CartStackScreen}
+          options={{ tabBarLabel: valise ? 'Ma valise' : 'Panier' }}
           listeners={({ navigation }) => ({
             tabPress: () => popTabStackToTop(navigation, 'Panier'),
           })}

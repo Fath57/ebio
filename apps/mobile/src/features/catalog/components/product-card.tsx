@@ -14,7 +14,10 @@ import {
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { ScalePressable } from '../../../utils/animations'
 import { useCart } from '../../cart/cart-context'
-import { useMoney } from '../../common/hooks/use-money'
+import { ExportChip, ValiseCardAction } from '../../terroir/components/valise-ui'
+import { useProductExportability } from '../../terroir/exportability'
+import { useShoppingMoney } from '../../terroir/hooks/use-shopping-money'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 import { unitShortLabel } from '../hooks/use-product-units'
 import { promotionChipLabels } from '../promotions'
 import { PromotionChips } from './promotion-chips'
@@ -50,7 +53,10 @@ export function ProductCard({
   onPress,
 }: ProductCardProps) {
   const { groups, addItem, updateQuantity } = useCart()
-  const { formatMoney } = useMoney()
+  const formatMoney = useShoppingMoney()
+  // In Valise mode the card fills the valise, and says whether the product travels.
+  const { active: valise } = useValiseMode()
+  const exportability = useProductExportability(id)
 
   const hasPromo = promotionalPrice !== null && promotionalPrice < pricePerUnit
   const displayPrice = hasPromo ? promotionalPrice : pricePerUnit
@@ -185,8 +191,19 @@ export function ProductCard({
             )}
           </View>
 
+          {/* Valise action: only what can travel gets a « + ». */}
+          {valise && isInStock && exportability?.status === 'EXPORTABLE' && (
+            <ValiseCardAction
+              productId={id}
+              name={name}
+              imageUrl={imageUrl}
+              price={displayPrice}
+              shopName={supplierName ?? null}
+            />
+          )}
+
           {/* Cart action, inline, right side */}
-          {cartEnabled && isInStock && (
+          {!valise && cartEnabled && isInStock && (
             cartItem
               ? (
                   <View style={styles.stepper}>
@@ -224,6 +241,12 @@ export function ProductCard({
                 )
           )}
         </View>
+
+        {valise && exportability && (
+          <View style={styles.exportRow}>
+            <ExportChip item={exportability} />
+          </View>
+        )}
       </View>
     </ScalePressable>
   )
@@ -370,6 +393,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.neutral[400],
     textDecorationLine: 'line-through',
+  },
+
+  exportRow: {
+    marginTop: spacing[1],
   },
 
   // Add button
