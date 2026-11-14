@@ -10,8 +10,9 @@ import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
+import { BUYER_CODE_PATTERN, HUB_CODE_LENGTH } from '../types'
 
-interface CompleteResult { ok: boolean, queued: boolean, errorMessage?: string, errorCode?: string }
+interface CompleteResult { ok: boolean, queued: boolean, status?: number, errorMessage?: string, errorCode?: string }
 
 interface ProofScreenProps {
   /** Cash orders close with the buyer's code only: the photo fallback is off. */
@@ -23,6 +24,11 @@ interface ProofScreenProps {
   requiresGiftProof?: boolean
   /** Name of the relative receiving the basket, for the instructions. */
   recipientName?: string | null
+  /**
+   * « La Valise du pays » collection: the parcel ends at the eBio hub and
+   * closes with the hub's 6-digit code only, never a photo.
+   */
+  isCollection?: boolean
   onComplete: (body: Record<string, unknown>) => Promise<CompleteResult>
   onDone: () => void
 }
@@ -233,19 +239,114 @@ function GiftProofForm({ recipientName, onComplete, onDone }: GiftProofFormProps
   )
 }
 
+interface HubCodeFormProps {
+  onComplete: (body: Record<string, unknown>) => Promise<CompleteResult>
+  onDone: () => void
+}
+
+const HUB_CODE_PATTERN = new RegExp(`^\\d{${HUB_CODE_LENGTH}}$`)
+
+/**
+ * Drop-off at the eBio hub: the staff read a 6-digit code from the back
+ * office once the parcel is in their hands. No photo: the code is the proof.
+ */
+function HubCodeForm({ onComplete, onDone }: HubCodeFormProps) {
+  const { semantic } = useTheme()
+  const [code, setCode] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const complete = HUB_CODE_PATTERN.test(code)
+
+  async function submit() {
+    if (!complete) {
+      setError(`Saisissez les ${HUB_CODE_LENGTH} chiffres donnés par l’équipe eBio.`)
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    const result = await onComplete({ proofType: 'CODE', code })
+    setSubmitting(false)
+    if (result.ok) {
+      appAlert('Colis remis', 'Colis remis au point eBio, votre gain est crédité.')
+      onDone()
+    }
+    else if (result.queued) {
+      appAlert('Hors connexion', 'Le dépôt sera confirmé dès le retour du réseau.')
+      onDone()
+    }
+    else if (result.status === 422 && result.errorCode !== 'EXPORT_HUB_CODE_REQUIRED') {
+      setError('Ce code ne correspond pas. Demandez-le à nouveau à l’équipe eBio du point de regroupement.')
+    }
+    else {
+      setError(result.errorMessage ?? 'Le dépôt n’a pas pu être confirmé. Réessayez.')
+    }
+  }
+
+  return (
+    <>
+      <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
+        Remettez le colis à l’équipe eBio, puis saisissez le code qu’elle vous donne.
+      </Text>
+      <Text style={[styles.fieldLabel, { color: semantic.textSecondary }]}>
+        Code du point de regroupement, donné par l’équipe eBio
+      </Text>
+      <TextInput
+        style={[
+          styles.codeInput,
+          { backgroundColor: semantic.bgCard, color: semantic.textPrimary, borderColor: error ? colors.coral[600] : semantic.borderNormal },
+        ]}
+        value={code}
+        onChangeText={(value) => {
+          setCode(value.replace(/\D/g, '').slice(0, HUB_CODE_LENGTH))
+          setError(null)
+        }}
+        keyboardType="number-pad"
+        maxLength={HUB_CODE_LENGTH}
+        placeholder="000000"
+        placeholderTextColor={semantic.textTertiary}
+        accessibilityLabel={`Code du point de regroupement à ${HUB_CODE_LENGTH} chiffres`}
+        onSubmitEditing={() => {
+          void submit()
+        }}
+      />
+      {error
+        ? (
+            <Text style={[styles.error, { color: colors.coral[600] }]} accessibilityRole="alert" accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          )
+        : null}
+      <Pressable
+        style={[styles.primary, (submitting || !complete) && styles.disabled]}
+        onPress={() => {
+          void submit()
+        }}
+        disabled={submitting}
+        accessibilityRole="button"
+        accessibilityLabel="Valider le dépôt au point eBio"
+        accessibilityState={{ disabled: submitting || !complete, busy: submitting }}
+      >
+        {submitting
+          ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+          : <Text style={styles.primaryText}>Valider le dépôt</Text>}
+      </Pressable>
+    </>
+  )
+}
+
 /**
  * Proof of delivery. Nominal path: the 4-digit code the buyer received at
  * pickup. Fallback: a photo of the handed-over package (absent customer, etc.).
  */
-export function ProofScreen({ isCash = false, requiresGiftProof = false, recipientName = null, onComplete, onDone }: ProofScreenProps) {
+export function ProofScreen({ isCash = false, requiresGiftProof = false, recipientName = null, isCollection = false, onComplete, onDone }: ProofScreenProps) {
   const { semantic } = useTheme()
   const [code, setCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { takePhotoAndUpload, uploading } = useMediaUpload({ context: 'DELIVERY_PROOF' })
 
   async function submitCode() {
-    if (!/^\d{4}$/.test(code)) {
-      appAlert('Code incomplet', 'Saisissez les 4 chiffres communiqués au client.')
+    if (!BUYER_CODE_PATTERN.test(code)) {
+      appAlert('Code incomplet', 'Saisissez le code communiqué au client (4 chiffres).')
       return
     }
     setSubmitting(true)
@@ -282,20 +383,22 @@ export function ProofScreen({ isCash = false, requiresGiftProof = false, recipie
   return (
     <KeyboardAwareView style={{ flex: 1, backgroundColor: semantic.bgPage }}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, { color: semantic.textPrimary }]}>Preuve de livraison</Text>
-        {requiresGiftProof
-          ? <GiftProofForm recipientName={recipientName} onComplete={onComplete} onDone={onDone} />
-          : (
-              <ProofCodeOrPhoto
-                isCash={isCash}
-                code={code}
-                setCode={setCode}
-                submitting={submitting}
-                uploading={uploading}
-                submitCode={submitCode}
-                submitPhoto={submitPhoto}
-              />
-            )}
+        <Text style={[styles.title, { color: semantic.textPrimary }]}>{isCollection ? 'Dépôt au point eBio' : 'Preuve de livraison'}</Text>
+        {isCollection
+          ? <HubCodeForm onComplete={onComplete} onDone={onDone} />
+          : requiresGiftProof
+            ? <GiftProofForm recipientName={recipientName} onComplete={onComplete} onDone={onDone} />
+            : (
+                <ProofCodeOrPhoto
+                  isCash={isCash}
+                  code={code}
+                  setCode={setCode}
+                  submitting={submitting}
+                  uploading={uploading}
+                  submitCode={submitCode}
+                  submitPhoto={submitPhoto}
+                />
+              )}
       </ScrollView>
     </KeyboardAwareView>
   )
@@ -333,12 +436,12 @@ function ProofCodeOrPhoto({ isCash, code, setCode, submitting, uploading, submit
       <TextInput
         style={[styles.codeInput, { backgroundColor: semantic.bgCard, color: semantic.textPrimary, borderColor: semantic.borderNormal }]}
         value={code}
-        onChangeText={value => setCode(value.replace(/\D/g, '').slice(0, 4))}
+        onChangeText={value => setCode(value.replace(/\D/g, '').slice(0, 6))}
         keyboardType="number-pad"
-        maxLength={4}
+        maxLength={6}
         placeholder="0000"
         placeholderTextColor={semantic.textTertiary}
-        accessibilityLabel="Code de confirmation à 4 chiffres"
+        accessibilityLabel="Code de confirmation du client"
       />
 
       <Pressable
@@ -494,6 +597,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing[3],
     justifyContent: 'center',
+  },
+  error: {
+    ...typography.bodyS,
+    marginTop: spacing[2],
   },
   note: {
     ...typography.caption,

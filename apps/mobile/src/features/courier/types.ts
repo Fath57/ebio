@@ -38,8 +38,23 @@ export interface CourierProfile {
   createdAt: string
 }
 
+/** STANDARD: to the buyer. EXPORT_COLLECTION: a terroir order from the shop to the eBio hub. */
+export type DeliveryPurpose = 'STANDARD' | 'EXPORT_COLLECTION'
+
+/** The eBio consolidation point a collection run ends at. */
+export interface ExportHub {
+  name: string
+  address: string
+  phone: string | null
+  hours: string | null
+}
+
 export interface DeliveryOffer {
   id: string
+  /** Absent with an API older than the « La Valise du pays » collections. */
+  purpose?: DeliveryPurpose
+  /** The hub to drop at, on a collection run; null otherwise. */
+  exportHub?: ExportHub | null
   orderNumber: string
   pickupAddress: string
   dropoffAddress: string
@@ -93,6 +108,12 @@ export interface DeliveryEventDto {
 
 export interface Delivery {
   id: string
+  /** Absent with an API older than the « La Valise du pays » collections. */
+  purpose?: DeliveryPurpose
+  /** The hub to drop at, on a collection run; null otherwise. */
+  exportHub?: ExportHub | null
+  /** The terroir parcel a collection run feeds; null otherwise. */
+  exportShipmentId?: string | null
   orderId: string
   orderNumber: string
   status: DeliveryStatus
@@ -169,6 +190,14 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
   OTHER: 'Autre motif',
 }
 
+/** The fail reasons as they read on a collection: there is no buyer, only the eBio hub. */
+export const COLLECTION_FAIL_LABELS: Record<DeliveryFailReason, string> = {
+  CUSTOMER_ABSENT: 'Point eBio fermé',
+  ADDRESS_NOT_FOUND: 'Point eBio introuvable',
+  CUSTOMER_REFUSED: 'Colis refusé au point eBio',
+  OTHER: 'Autre motif',
+}
+
 /**
  * One offer in the feed.
  *
@@ -202,3 +231,20 @@ export function giftContactLine(contact: DeliveryContact | null): string | null 
   const from = /^[aeiouyhàâéèêëîïôöûü]/i.test(payer) ? `d'${payer}` : `de ${payer}`
   return `Pour ${contact.name}, de la part ${from}`
 }
+
+/** A run from the shop to the eBio hub (« La Valise du pays »), paid by eBio. */
+export function isExportCollection(delivery: { purpose?: DeliveryPurpose }): boolean {
+  return delivery.purpose === 'EXPORT_COLLECTION'
+}
+
+/** « Collecte eBio, Ferme Adjoa », the line a collection reads as in the history and the wallet. */
+export function collectionLabel(shopName: string | null | undefined): string {
+  const shop = shopName?.trim()
+  return shop ? `Collecte eBio, ${shop}` : 'Collecte eBio'
+}
+
+/** The hub's code: six digits, read to the courier by the eBio staff. */
+export const HUB_CODE_LENGTH = 6
+
+/** The buyer's confirmation code: four digits (six accepted, as the API does). */
+export const BUYER_CODE_PATTERN = /^\d{4}(?:\d{2})?$/

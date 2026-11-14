@@ -1,12 +1,15 @@
 import type { Delivery } from '../types'
 import { useFocusEffect } from '@react-navigation/native'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
 /** The courier's current job, first active delivery (one at a time in practice). */
 export function useActiveDelivery() {
   const [delivery, setDelivery] = useState<Delivery | null>(null)
   const [loading, setLoading] = useState(true)
+  // Collections reported failed: back on offer without a courier, they must not
+  // linger on screen while the queued failure waits for the network.
+  const released = useRef(new Set<string>())
 
   const refresh = useCallback(async () => {
     try {
@@ -15,7 +18,7 @@ export function useActiveDelivery() {
         return
       }
       const list = await res.json() as Delivery[]
-      setDelivery(list[0] ?? null)
+      setDelivery(list.find(item => !released.current.has(item.id)) ?? null)
     }
     catch {
       // Offline: keep the cached delivery, transitions queue locally anyway.
@@ -39,9 +42,17 @@ export function useActiveDelivery() {
    * list until they pulled to refresh.
    */
   const show = useCallback((accepted: Delivery) => {
+    // Accepted again after a failure: it is ours once more.
+    released.current.delete(accepted.id)
     setDelivery(accepted)
     refresh()
   }, [refresh])
 
-  return { delivery, loading, refresh, show }
+  /** Drops a run the courier no longer holds (a failed collection, re-offered). */
+  const release = useCallback((id: string) => {
+    released.current.add(id)
+    setDelivery(current => (current?.id === id ? null : current))
+  }, [])
+
+  return { delivery, loading, refresh, show, release }
 }

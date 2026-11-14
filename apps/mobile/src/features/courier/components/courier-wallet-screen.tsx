@@ -6,6 +6,7 @@ import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-li
 import ArrowUpFromLine from 'lucide-react-native/dist/esm/icons/arrow-up-from-line'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
+import Luggage from 'lucide-react-native/dist/esm/icons/luggage'
 import Percent from 'lucide-react-native/dist/esm/icons/percent'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
@@ -33,7 +34,9 @@ import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { announceTopupOutcome, awaitSettlement } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
+import { isCollectionEarning, useCollectionShops } from '../hooks/use-collection-shops'
 import { useCourierWallet } from '../hooks/use-courier-wallet'
+import { collectionLabel } from '../types'
 import { AddNumberSheet, MIN_WITHDRAWAL, TopupSheet, WithdrawSheet } from './courier-wallet-sheets'
 
 const NUMBER_STATUS_LABELS: Record<CourierPayoutNumber['status'], string> = {
@@ -103,6 +106,14 @@ const MOVEMENT_STYLES: Record<CourierWalletTransactionType, MovementStyle> = {
   PROMO_COMPENSATION: { label: 'Compensation promo', Icon: ArrowDownToLine, color: colors.green[600], background: colors.green[50] },
 }
 
+/** A « La Valise du pays » collection earning: the suitcase's blue, not the bike's green. */
+const COLLECTION_MOVEMENT: MovementStyle = {
+  label: 'Gain de collecte',
+  Icon: Luggage,
+  color: colors.blue[600],
+  background: colors.blue[50],
+}
+
 const FALLBACK_MOVEMENT: MovementStyle = {
   label: 'Mouvement',
   Icon: SlidersHorizontal,
@@ -120,6 +131,8 @@ function formatDate(iso: string): string {
 
 interface MovementRowProps {
   movement: CourierWalletTransaction
+  /** Collection earnings: the shop the parcel came from, once resolved. */
+  collectionShop?: string | null
   isFirst: boolean
   isLast: boolean
 }
@@ -128,9 +141,10 @@ interface MovementRowProps {
  * One line of the ledger. The rows are list items, so they draw the card
  * themselves: rounded on the first and the last one.
  */
-function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
+function MovementRow({ movement, collectionShop = null, isFirst, isLast }: MovementRowProps) {
   const { semantic } = useTheme()
-  const style = MOVEMENT_STYLES[movement.type] ?? FALLBACK_MOVEMENT
+  const collection = isCollectionEarning(movement)
+  const style = collection ? COLLECTION_MOVEMENT : MOVEMENT_STYLES[movement.type] ?? FALLBACK_MOVEMENT
   const MovementIcon = style.Icon
   return (
     <View
@@ -152,7 +166,7 @@ function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
         </View>
         <View style={styles.rowBody}>
           <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
-            {movement.description || style.label}
+            {collection ? collectionLabel(collectionShop) : movement.description || style.label}
           </Text>
           <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
             {style.label}
@@ -208,6 +222,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     startTopup,
     checkTopup,
   } = useCourierWallet()
+  const collectionShops = useCollectionShops(movements)
 
   const [isAddingNumber, setIsAddingNumber] = useState(false)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
@@ -432,8 +447,14 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
       <FlatList
         data={movements}
         keyExtractor={movement => movement.id}
+        extraData={collectionShops}
         renderItem={({ item, index }) => (
-          <MovementRow movement={item} isFirst={index === 0} isLast={index === movements.length - 1} />
+          <MovementRow
+            movement={item}
+            collectionShop={item.deliveryId ? collectionShops[item.deliveryId] ?? null : null}
+            isFirst={index === 0}
+            isLast={index === movements.length - 1}
+          />
         )}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
         showsVerticalScrollIndicator={false}

@@ -37,6 +37,7 @@ import { useCourierProfile } from '../features/courier/hooks/use-courier-profile
 import { useOffers } from '../features/courier/hooks/use-offers'
 import { useOfflineQueue } from '../features/courier/hooks/use-offline-queue'
 import { useOutOfZone } from '../features/courier/hooks/use-out-of-zone'
+import { isExportCollection } from '../features/courier/types'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { useNotificationsUnreadCount } from '../features/notifications/hooks/use-notifications-unread-count'
@@ -224,7 +225,7 @@ function CourierGate() {
 const CoursesStack = createNativeStackNavigator()
 
 function CoursesHomeWrapper({ navigation }: any) {
-  const { delivery, loading, refresh, show } = useActiveDelivery()
+  const { delivery, loading, refresh, show, release } = useActiveDelivery()
   const offers = useOffers()
   const refreshOffers = offers.refresh
   const { profile, refresh: refreshProfile } = useCourierProfile()
@@ -271,7 +272,7 @@ function CoursesHomeWrapper({ navigation }: any) {
   if (delivery && delivery.status !== 'DELIVERED' && delivery.status !== 'FAILED') {
     return (
       <SafeScreen>
-        <ScreenHeader title="Course en cours" subtitle={delivery.orderNumber} />
+        <ScreenHeader title={isExportCollection(delivery) ? 'Collecte en cours' : 'Course en cours'} subtitle={delivery.orderNumber} />
         <ConnectivityBanner />
         <ActiveDeliveryScreen
           delivery={delivery}
@@ -282,7 +283,9 @@ function CoursesHomeWrapper({ navigation }: any) {
             paymentMethod: delivery.paymentMethod,
             requiresGiftProof: delivery.requiresGiftProof === true,
             recipientName: delivery.buyerContact?.role === 'RECIPIENT' ? delivery.buyerContact.name : null,
+            isCollection: isExportCollection(delivery),
           })}
+          onReleased={() => release(delivery.id)}
           onOpenChat={(conversationId, peerName) =>
             navigation.navigate('CourierChat', { conversationId, peerName, orderNumber: delivery.orderNumber, kind: 'COURIER' })}
           onChanged={() => {
@@ -336,12 +339,13 @@ function CoursesHomeWrapper({ navigation }: any) {
 }
 
 function CourierProofWrapper({ route, navigation }: any) {
-  const { deliveryId, paymentMethod, requiresGiftProof, recipientName } = route.params
+  const { deliveryId, paymentMethod, requiresGiftProof, recipientName, isCollection } = route.params
   const queue = useOfflineQueue()
   return (
     <SafeScreen>
-      <ScreenHeader title="Preuve de livraison" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={isCollection === true ? 'Dépôt au point eBio' : 'Preuve de livraison'} onBack={() => navigation.goBack()} />
       <ProofScreen
+        isCollection={isCollection === true}
         isCash={paymentMethod === 'CASH_ON_DELIVERY'}
         requiresGiftProof={requiresGiftProof === true}
         recipientName={recipientName ?? null}
