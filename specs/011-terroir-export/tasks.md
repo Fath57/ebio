@@ -143,7 +143,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 - [X] T058 Comptes plateforme : le compte `EXPORT` visible dans Argent → Comptes ; colonne de solde
 - [X] T059 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : terroir, droits et taxes inclus, remboursement sans retour, assurance
 - [X] T060 `pnpm generate` (API temporaire sur un port libre) ; lint, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
-- [ ] T061 Dérouler `quickstart.md` ; `/design-review` des pages back-office et de la page `colis/:token`
+- [X] T061 Dérouler `quickstart.md` ; `/design-review` des pages back-office et de la page `colis/:token`
 
 ---
 

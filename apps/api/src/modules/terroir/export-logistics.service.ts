@@ -37,7 +37,7 @@ export interface DepartureView {
 export interface CollectionGroup {
   supplierId: string
   shopName: string
-  lines: Array<{ shipmentId: string, orderId: string, orderItemId: string, name: string, quantity: number, imageUrl: string | null }>
+  lines: Array<{ shipmentId: string, orderId: string, orderItemId: string, orderNumber: string, name: string, quantity: number, imageUrl: string | null }>
   collected: boolean
 }
 
@@ -282,7 +282,7 @@ export class ExportLogisticsService {
         if (shipment.removedItemIds.includes(item.id)) {
           continue
         }
-        group.lines.push({ shipmentId: shipment.id, orderId: order.id, orderItemId: item.id, name: item.product.name, quantity: item.quantity, imageUrl: item.product.photos?.[0] ?? null })
+        group.lines.push({ shipmentId: shipment.id, orderId: order.id, orderItemId: item.id, orderNumber: order.orderNumber, name: item.product.name, quantity: item.quantity, imageUrl: item.product.photos?.[0] ?? null })
       }
       group.collected = group.collected && order.status === OrderStatus.DELIVERED
       groups.set(order.supplier.id, group)

@@ -138,6 +138,7 @@ export interface ExportCollectionLine {
   shipmentId: string
   orderId: string
   orderItemId: string
+  orderNumber: string
   name: string
   quantity: number
   imageUrl: string | null

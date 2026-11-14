@@ -30,6 +30,9 @@ import {
   weighShipment,
 } from '../utils/terroir-queries'
 
+/** Parcels still at eBio: the only ones the API lets us weigh. */
+const WEIGHABLE_STATUSES = new Set<string>(['PAID', 'COLLECTING', 'PACKED'])
+
 type Pending
   = | { kind: 'event' }
     | { kind: 'collect', shop: ExportCollectionShop }
@@ -230,17 +233,19 @@ export default function ExportDepartureDetailPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Can action="manage" subject="Delivery">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setPending({ kind: 'weigh', shipment })
-                              }}
-                            >
-                              <Scale className="mr-1 h-4 w-4" />
-                              {t('admin.terroir.weigh.action')}
-                            </Button>
+                            {WEIGHABLE_STATUSES.has(shipment.status) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  setPending({ kind: 'weigh', shipment })
+                                }}
+                              >
+                                <Scale className="mr-1 h-4 w-4" />
+                                {t('admin.terroir.weigh.action')}
+                              </Button>
+                            )}
                           </Can>
                         </TableCell>
                       </TableRow>
@@ -341,6 +346,7 @@ function CollectionCard({ shop, onCollect, onMissing }: CollectionCardProps) {
                 <span className="min-w-0">
                   <span className="font-mono">{`${line.quantity} × `}</span>
                   <span className="font-medium">{line.name}</span>
+                  <span className="text-muted-foreground block font-mono text-xs">{line.orderNumber}</span>
                 </span>
               </span>
               {!shop.collected && (

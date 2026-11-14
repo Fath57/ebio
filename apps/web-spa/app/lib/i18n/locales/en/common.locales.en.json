@@ -3047,7 +3047,7 @@
         "cancelAria": "Cancel the {{date}} departure",
         "orderBefore": "Orders until {{date}}",
         "depositBefore": "Drop at agency before {{date}}",
-        "arrivalRange": "Estimated arrival {{from}} – {{to}}",
+        "arrivalRange": "Arrival {{from}} – {{to}}",
         "ratePerKg": "{{price}} / kg · minimum {{min}}",
         "homeFee": "home {{fee}}",
         "columns": {

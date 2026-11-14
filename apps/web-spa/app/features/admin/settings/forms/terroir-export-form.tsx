@@ -92,7 +92,7 @@ export function TerroirExportForm({ values, categories, onSubmit, isPending }: T
   return (
     <Form {...form}>
       <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid items-start gap-4 sm:grid-cols-2">
           <NumberField form={form} name="packagingWeightG" min={0} max={5000} />
           <NumberField form={form} name="collectionDays" min={0} max={30} />
           <NumberField form={form} name="weightTolerancePct" min={0} max={100} />

@@ -14,7 +14,7 @@ import { CancelDepartureDialog } from '../components/cancel-departure-dialog'
 import { FillGauge } from '../components/fill-gauge'
 import { DepartureStatusBadge } from '../components/terroir-status-badges'
 import { DepartureFormDialog } from '../forms/departure-form-dialog'
-import { formatDateTime, formatDay, formatKg } from '../utils/terroir-format'
+import { formatDateTime, formatDay, formatDayShort, formatKg } from '../utils/terroir-format'
 import { agenciesQueryOptions, cancelDeparture, departuresQueryOptions, saveDeparture, TERROIR_KEY } from '../utils/terroir-queries'
 import { DEPARTURE_STATUSES } from '../utils/terroir-types'
 
@@ -102,17 +102,8 @@ export default function ExportDeparturesPage() {
         <div className="space-y-0.5 text-xs">
           <p>{t('admin.terroir.departures.orderBefore', { date: formatDateTime(row.original.orderBefore) })}</p>
           <p className="text-muted-foreground">{t('admin.terroir.departures.depositBefore', { date: formatDateTime(row.original.depositDeadline) })}</p>
+          <p className="text-muted-foreground">{t('admin.terroir.departures.arrivalRange', { from: formatDayShort(row.original.arrival.from), to: formatDayShort(row.original.arrival.to) })}</p>
         </div>
-      ),
-    },
-    {
-      id: 'arrival',
-      header: t('admin.terroir.departures.columns.arrival'),
-      meta: { hideBelow: 'lg' },
-      cell: ({ row }) => (
-        <span className="text-sm whitespace-nowrap">
-          {t('admin.terroir.departures.arrivalRange', { from: formatDay(row.original.arrival.from), to: formatDay(row.original.arrival.to) })}
-        </span>
       ),
     },
     {

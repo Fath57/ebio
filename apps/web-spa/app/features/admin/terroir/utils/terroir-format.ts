@@ -1,4 +1,5 @@
 const FR_DAY = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const FR_DAY_SHORT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 const FR_DATE_TIME = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 /** Non-breaking spaces, so « 82,4 kg » never wraps. */
@@ -26,6 +27,12 @@ export function formatGrams(grams: number): string {
 export function formatDay(isoDay: string): string {
   const date = new Date(`${isoDay.slice(0, 10)}T00:00:00Z`)
   return Number.isNaN(date.getTime()) ? isoDay : FR_DAY.format(date)
+}
+
+/** Same as `formatDay` with an abbreviated month, for narrow table cells. */
+export function formatDayShort(isoDay: string): string {
+  const date = new Date(`${isoDay.slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(date.getTime()) ? isoDay : FR_DAY_SHORT.format(date)
 }
 
 export function formatDateTime(iso: string | null | undefined): string {

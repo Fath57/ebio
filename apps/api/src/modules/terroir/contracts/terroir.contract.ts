@@ -315,6 +315,8 @@ export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend(
       orderId: z.string().uuid(),
       /** For POST /admin/export/shipments/:id/missing. */
       orderItemId: z.string().uuid(),
+      /** Tells apart two lines of the same product in different parcels. */
+      orderNumber: z.string(),
       name: z.string(),
       quantity: z.number(),
       /** A product is never shown without its picture. */
