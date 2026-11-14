@@ -4467,6 +4467,16 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 90
+                  },
+                  "minShelfLifeDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3650
+                  },
+                  "maxUnitWeightG": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 50000
                   }
                 },
                 "additionalProperties": false,
@@ -13677,6 +13687,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "exportCountry",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -19666,27 +19684,46 @@
         }
       }
     },
-    "/api/admin/export/reviews": {
+    "/api/admin/export/products": {
       "get": {
-        "operationId": "AdminExportController_reviews",
+        "operationId": "AdminExportController_listProducts",
         "tags": [
           "AdminExport"
         ],
         "parameters": [
           {
             "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EXPORTABLE",
+                "INCOMPLETE",
+                "WITHDRAWN"
+              ],
+              "title": "ExportProfileStatus",
+              "description": "Export d'un produit : exportable, incomplet (critères manquants), retiré par eBio"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "page",
             "required": true,
             "in": "query",
             "schema": {
-              "default": "PENDING",
-              "type": "string",
-              "enum": [
-                "PENDING",
-                "APPROVED",
-                "REJECTED"
-              ],
-              "title": "ExportProfileStatus",
-              "description": "Validation d'un produit pour l'export : en attente, validé, refusé"
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           }
         ],
@@ -19697,15 +19734,15 @@
         }
       }
     },
-    "/api/admin/export/products/{id}/review": {
+    "/api/admin/export/products/{productId}/withdraw": {
       "post": {
-        "operationId": "AdminExportController_reviewProduct",
+        "operationId": "AdminExportController_withdrawProduct",
         "tags": [
           "AdminExport"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -19715,81 +19752,61 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé",
+          "description": "Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "decision": {
-                    "type": "string",
-                    "enum": [
-                      "APPROVE",
-                      "REJECT"
-                    ],
-                    "title": "ExportReviewDecision",
-                    "description": "Décision d'eBio sur un produit ou un pack"
-                  },
-                  "checklist": {
-                    "default": {},
-                    "type": "object",
-                    "properties": {
-                      "label_french": {
-                        "type": "boolean"
-                      },
-                      "allergens_declared": {
-                        "type": "boolean"
-                      },
-                      "dates_present": {
-                        "type": "boolean"
-                      },
-                      "shelf_life_sufficient": {
-                        "type": "boolean"
-                      },
-                      "ingredients_allowed": {
-                        "type": "boolean"
-                      },
-                      "label_photo": {
-                        "type": "boolean"
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "ExportChecklist",
-                    "description": "Liste de contrôle d'export : chaque clé cochée"
-                  },
                   "reason": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 500
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
                   }
                 },
                 "required": [
-                  "decision",
-                  "checklist"
+                  "reason"
                 ],
                 "additionalProperties": false,
-                "title": "ReviewExportProduct",
-                "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé"
+                "title": "ExportWithdraw",
+                "description": "Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique"
               }
             }
           }
         },
         "responses": {
-          "201": {
+          "200": {
             "description": ""
           }
         }
       }
     },
-    "/api/admin/export/packs/{id}/review": {
+    "/api/admin/export/products/{productId}/reinstate": {
       "post": {
-        "operationId": "AdminExportController_reviewPack",
+        "operationId": "AdminExportController_reinstateProduct",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/packs/{id}/withdraw": {
+      "post": {
+        "operationId": "AdminExportController_withdrawPack",
         "tags": [
           "AdminExport"
         ],
@@ -19805,45 +19822,53 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Validation d'un pack, ou refus motivé",
+          "description": "Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "decision": {
-                    "type": "string",
-                    "enum": [
-                      "APPROVE",
-                      "REJECT"
-                    ],
-                    "title": "ExportReviewDecision",
-                    "description": "Décision d'eBio sur un produit ou un pack"
-                  },
                   "reason": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 500
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
                   }
                 },
                 "required": [
-                  "decision"
+                  "reason"
                 ],
                 "additionalProperties": false,
-                "title": "ReviewExportPack",
-                "description": "Validation d'un pack, ou refus motivé"
+                "title": "ExportWithdraw",
+                "description": "Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique"
               }
             }
           }
         },
         "responses": {
-          "201": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/packs/{id}/reinstate": {
+      "post": {
+        "operationId": "AdminExportController_reinstatePack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -19855,7 +19880,37 @@
         "tags": [
           "AdminExport"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "ebio",
+              "type": "string",
+              "enum": [
+                "ebio",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EXPORTABLE",
+                "INCOMPLETE",
+                "WITHDRAWN",
+                "RETIRED"
+              ],
+              "title": "ExportPackStatus",
+              "description": "Export d'un pack du pays : exportable, incomplet, retiré par eBio, retiré par son auteur"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -20116,6 +20171,20 @@
         }
       }
     },
+    "/api/suppliers/{supplierId}/export-criteria": {
+      "get": {
+        "operationId": "SupplierExportController_exportCriteria",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/{supplierId}/products/{id}/export": {
       "get": {
         "operationId": "SupplierExportController_getProfile",
@@ -20171,16 +20240,23 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette",
+          "description": "Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
                   "packedWeightG": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 50000
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 50000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "lengthCm": {
                     "anyOf": [
@@ -20219,9 +20295,48 @@
                     ]
                   },
                   "shelfLifeDays": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 3650
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 3650
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "storage": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "AMBIENT",
+                          "COOL",
+                          "FROZEN"
+                        ],
+                        "title": "ExportStorage",
+                        "description": "Conservation du produit : ambiante, au frais, surgelé"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "allergens": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "noAllergens": {
+                    "default": false,
+                    "type": "boolean"
                   },
                   "origin": {
                     "default": {
@@ -20301,16 +20416,30 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "declaresFrenchLabel": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "declaresDatesPrinted": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "declaresSealedPackaging": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
-                  "packedWeightG",
-                  "shelfLifeDays",
-                  "origin"
+                  "noAllergens",
+                  "origin",
+                  "declaresFrenchLabel",
+                  "declaresDatesPrinted",
+                  "declaresSealedPackaging"
                 ],
                 "additionalProperties": false,
                 "title": "ExportProfileInput",
-                "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette"
+                "description": "Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique"
               }
             }
           }
@@ -20719,6 +20848,41 @@
                 "USD",
                 "CAD"
               ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/exportability": {
+      "get": {
+        "operationId": "TerroirClientController_getExportability",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "title": "ExportCountryCode",
+              "description": "Code ISO à deux lettres du pays de destination d'une valise"
+            }
+          },
+          {
+            "name": "productIds",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$"
             }
           }
         ],
@@ -24598,6 +24762,16 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 90
+          },
+          "minShelfLifeDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "maxUnitWeightG": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 50000
           }
         },
         "additionalProperties": false,
@@ -30247,59 +30421,21 @@
         "title": "LostExportShipment",
         "description": "Colis perdu (false) ou abîmé (true) : remboursé sans retour"
       },
-      "ReviewExportProduct": {
+      "ExportWithdraw": {
         "type": "object",
         "properties": {
-          "decision": {
-            "$ref": "#/components/schemas/ExportReviewDecision"
-          },
-          "checklist": {
-            "$ref": "#/components/schemas/ExportChecklist"
-          },
           "reason": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 500
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
           }
         },
         "required": [
-          "decision",
-          "checklist"
+          "reason"
         ],
         "additionalProperties": false,
-        "title": "ReviewExportProduct",
-        "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé"
-      },
-      "ReviewExportPack": {
-        "type": "object",
-        "properties": {
-          "decision": {
-            "$ref": "#/components/schemas/ExportReviewDecision"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 500
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "decision"
-        ],
-        "additionalProperties": false,
-        "title": "ReviewExportPack",
-        "description": "Validation d'un pack, ou refus motivé"
+        "title": "ExportWithdraw",
+        "description": "Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique"
       },
       "ExportPackInput": {
         "type": "object",
@@ -30403,9 +30539,16 @@
         "type": "object",
         "properties": {
           "packedWeightG": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 50000
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 50000
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "lengthCm": {
             "anyOf": [
@@ -30444,9 +30587,48 @@
             ]
           },
           "shelfLifeDays": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 3650
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 3650
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "storage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "AMBIENT",
+                  "COOL",
+                  "FROZEN"
+                ],
+                "title": "ExportStorage",
+                "description": "Conservation du produit : ambiante, au frais, surgelé"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allergens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "noAllergens": {
+            "default": false,
+            "type": "boolean"
           },
           "origin": {
             "$ref": "#/components/schemas/ExportOrigin"
@@ -30461,16 +30643,30 @@
                 "type": "null"
               }
             ]
+          },
+          "declaresFrenchLabel": {
+            "default": false,
+            "type": "boolean"
+          },
+          "declaresDatesPrinted": {
+            "default": false,
+            "type": "boolean"
+          },
+          "declaresSealedPackaging": {
+            "default": false,
+            "type": "boolean"
           }
         },
         "required": [
-          "packedWeightG",
-          "shelfLifeDays",
-          "origin"
+          "noAllergens",
+          "origin",
+          "declaresFrenchLabel",
+          "declaresDatesPrinted",
+          "declaresSealedPackaging"
         ],
         "additionalProperties": false,
         "title": "ExportProfileInput",
-        "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette"
+        "description": "Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique"
       },
       "TerroirDepartureAlertInput": {
         "type": "object",
@@ -33626,63 +33822,66 @@
         "title": "ExportShipmentStatus",
         "description": "Étape d'une valise"
       },
-      "ExportReviewsQuery": {
+      "AdminExportProductsQuery": {
         "type": "object",
         "properties": {
           "status": {
-            "default": "PENDING",
             "type": "string",
             "enum": [
-              "PENDING",
-              "APPROVED",
-              "REJECTED"
+              "EXPORTABLE",
+              "INCOMPLETE",
+              "WITHDRAWN"
             ],
             "title": "ExportProfileStatus",
-            "description": "Validation d'un produit pour l'export : en attente, validé, refusé"
+            "description": "Export d'un produit : exportable, incomplet (critères manquants), retiré par eBio"
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
-          "status"
+          "page"
         ],
         "additionalProperties": false,
-        "title": "ExportReviewsQuery",
-        "description": "Filtre de la file de validation"
+        "title": "AdminExportProductsQuery",
+        "description": "Filtre des produits proposés à l'export : statut, recherche, page"
       },
-      "ExportReviewDecision": {
-        "type": "string",
-        "enum": [
-          "APPROVE",
-          "REJECT"
-        ],
-        "title": "ExportReviewDecision",
-        "description": "Décision d'eBio sur un produit ou un pack"
-      },
-      "ExportChecklist": {
-        "default": {},
+      "AdminExportPacksQuery": {
         "type": "object",
         "properties": {
-          "label_french": {
-            "type": "boolean"
+          "scope": {
+            "default": "ebio",
+            "type": "string",
+            "enum": [
+              "ebio",
+              "all"
+            ]
           },
-          "allergens_declared": {
-            "type": "boolean"
-          },
-          "dates_present": {
-            "type": "boolean"
-          },
-          "shelf_life_sufficient": {
-            "type": "boolean"
-          },
-          "ingredients_allowed": {
-            "type": "boolean"
-          },
-          "label_photo": {
-            "type": "boolean"
+          "status": {
+            "type": "string",
+            "enum": [
+              "EXPORTABLE",
+              "INCOMPLETE",
+              "WITHDRAWN",
+              "RETIRED"
+            ],
+            "title": "ExportPackStatus",
+            "description": "Export d'un pack du pays : exportable, incomplet, retiré par eBio, retiré par son auteur"
           }
         },
+        "required": [
+          "scope"
+        ],
         "additionalProperties": false,
-        "title": "ExportChecklist",
-        "description": "Liste de contrôle d'export : chaque clé cochée"
+        "title": "AdminExportPacksQuery",
+        "description": "Filtre des packs du pays : ceux d'eBio ou tous, par statut"
       },
       "ExportPackItemInput": {
         "type": "object",
@@ -33846,6 +34045,28 @@
         "additionalProperties": false,
         "title": "TerroirCatalogQuery",
         "description": "Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d'affichage"
+      },
+      "TerroirExportabilityQuery": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "title": "ExportCountryCode",
+            "description": "Code ISO à deux lettres du pays de destination d'une valise"
+          },
+          "productIds": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$"
+          }
+        },
+        "required": [
+          "country",
+          "productIds"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirExportabilityQuery",
+        "description": "Pays de destination et produits dont on veut savoir s'ils peuvent partir"
       },
       "TerroirDisplayQuery": {
         "type": "object",

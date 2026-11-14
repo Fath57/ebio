@@ -190,20 +190,20 @@ import type {
   AdminExportControllerListPacksResponses,
   AdminExportControllerListPickupPointsData,
   AdminExportControllerListPickupPointsResponses,
+  AdminExportControllerListProductsData,
+  AdminExportControllerListProductsResponses,
   AdminExportControllerLostData,
   AdminExportControllerLostResponses,
   AdminExportControllerManifestData,
   AdminExportControllerManifestResponses,
   AdminExportControllerMissingData,
   AdminExportControllerMissingResponses,
+  AdminExportControllerReinstatePackData,
+  AdminExportControllerReinstatePackResponses,
+  AdminExportControllerReinstateProductData,
+  AdminExportControllerReinstateProductResponses,
   AdminExportControllerRetirePackData,
   AdminExportControllerRetirePackResponses,
-  AdminExportControllerReviewPackData,
-  AdminExportControllerReviewPackResponses,
-  AdminExportControllerReviewProductData,
-  AdminExportControllerReviewProductResponses,
-  AdminExportControllerReviewsData,
-  AdminExportControllerReviewsResponses,
   AdminExportControllerShipmentData,
   AdminExportControllerShipmentEventData,
   AdminExportControllerShipmentEventResponses,
@@ -220,6 +220,10 @@ import type {
   AdminExportControllerUpdatePickupPointResponses,
   AdminExportControllerWeighData,
   AdminExportControllerWeighResponses,
+  AdminExportControllerWithdrawPackData,
+  AdminExportControllerWithdrawPackResponses,
+  AdminExportControllerWithdrawProductData,
+  AdminExportControllerWithdrawProductResponses,
   AdminFamilyWalletsControllerDetailData,
   AdminFamilyWalletsControllerDetailResponses,
   AdminFamilyWalletsControllerListData,
@@ -872,6 +876,8 @@ import type {
   SupplierBannerRequestsControllerListResponses,
   SupplierExportControllerCreatePackData,
   SupplierExportControllerCreatePackResponses,
+  SupplierExportControllerExportCriteriaData,
+  SupplierExportControllerExportCriteriaResponses,
   SupplierExportControllerGetProfileData,
   SupplierExportControllerGetProfileResponses,
   SupplierExportControllerListPacksData,
@@ -964,6 +970,8 @@ import type {
   TerroirClientControllerGetCountriesResponses,
   TerroirClientControllerGetDeparturesData,
   TerroirClientControllerGetDeparturesResponses,
+  TerroirClientControllerGetExportabilityData,
+  TerroirClientControllerGetExportabilityResponses,
   TerroirClientControllerGetPackData,
   TerroirClientControllerGetPackResponses,
   TerroirClientControllerGetProductData,
@@ -7077,28 +7085,28 @@ export const adminExportControllerLost = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const adminExportControllerReviews = <
+export const adminExportControllerListProducts = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<AdminExportControllerReviewsData, ThrowOnError>,
+  options: Options<AdminExportControllerListProductsData, ThrowOnError>,
 ) =>
   (options.client ?? client).get<
-    AdminExportControllerReviewsResponses,
+    AdminExportControllerListProductsResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/admin/export/reviews", ...options });
+  >({ url: "/api/admin/export/products", ...options });
 
-export const adminExportControllerReviewProduct = <
+export const adminExportControllerWithdrawProduct = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<AdminExportControllerReviewProductData, ThrowOnError>,
+  options: Options<AdminExportControllerWithdrawProductData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AdminExportControllerReviewProductResponses,
+    AdminExportControllerWithdrawProductResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/admin/export/products/{id}/review",
+    url: "/api/admin/export/products/{productId}/withdraw",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -7106,30 +7114,52 @@ export const adminExportControllerReviewProduct = <
     },
   });
 
-export const adminExportControllerReviewPack = <
+export const adminExportControllerReinstateProduct = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<AdminExportControllerReviewPackData, ThrowOnError>,
+  options: Options<AdminExportControllerReinstateProductData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AdminExportControllerReviewPackResponses,
+    AdminExportControllerReinstateProductResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/export/products/{productId}/reinstate", ...options });
+
+export const adminExportControllerWithdrawPack = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExportControllerWithdrawPackData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminExportControllerWithdrawPackResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/admin/export/packs/{id}/review",
+    url: "/api/admin/export/packs/{id}/withdraw",
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
   });
+
+export const adminExportControllerReinstatePack = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExportControllerReinstatePackData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminExportControllerReinstatePackResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/export/packs/{id}/reinstate", ...options });
 
 export const adminExportControllerListPacks = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<AdminExportControllerListPacksData, ThrowOnError>,
+  options: Options<AdminExportControllerListPacksData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).get<
+  (options.client ?? client).get<
     AdminExportControllerListPacksResponses,
     unknown,
     ThrowOnError
@@ -7192,6 +7222,17 @@ export const adminExportControllerUpdatePack = <
       ...options.headers,
     },
   });
+
+export const supplierExportControllerExportCriteria = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SupplierExportControllerExportCriteriaData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SupplierExportControllerExportCriteriaResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/{supplierId}/export-criteria", ...options });
 
 export const supplierExportControllerRemoveProfile = <
   ThrowOnError extends boolean = false,
@@ -7312,6 +7353,17 @@ export const terroirClientControllerGetCatalog = <
     unknown,
     ThrowOnError
   >({ url: "/api/terroir/catalog", ...options });
+
+export const terroirClientControllerGetExportability = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<TerroirClientControllerGetExportabilityData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    TerroirClientControllerGetExportabilityResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/terroir/exportability", ...options });
 
 export const terroirClientControllerGetProduct = <
   ThrowOnError extends boolean = false,

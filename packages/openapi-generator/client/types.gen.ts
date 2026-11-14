@@ -185,6 +185,8 @@ export type UpdateTerroirExportSetting = {
   insuranceMin?: number;
   bannedCategoryIds?: Array<string>;
   pickupReminderDays?: number;
+  minShelfLifeDays?: number;
+  maxUnitWeightG?: number;
 };
 
 /**
@@ -2224,24 +2226,12 @@ export type LostExportShipment = {
 };
 
 /**
- * ReviewExportProduct
+ * ExportWithdraw
  *
- * Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé
+ * Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique
  */
-export type ReviewExportProduct = {
-  decision: ExportReviewDecision;
-  checklist: ExportChecklist;
-  reason?: string | null;
-};
-
-/**
- * ReviewExportPack
- *
- * Validation d'un pack, ou refus motivé
- */
-export type ReviewExportPack = {
-  decision: ExportReviewDecision;
-  reason?: string | null;
+export type ExportWithdraw = {
+  reason: string;
 };
 
 /**
@@ -2273,16 +2263,22 @@ export type UpdateExportPack = {
 /**
  * ExportProfileInput
  *
- * Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette
+ * Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique
  */
 export type ExportProfileInput = {
-  packedWeightG: number;
+  packedWeightG?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;
-  shelfLifeDays: number;
+  shelfLifeDays?: number | null;
+  storage?: "AMBIENT" | "COOL" | "FROZEN" | null;
+  allergens?: string | null;
+  noAllergens: boolean;
   origin: ExportOrigin;
   labelPhoto?: string | null;
+  declaresFrenchLabel: boolean;
+  declaresDatesPrinted: boolean;
+  declaresSealedPackaging: boolean;
 };
 
 /**
@@ -3748,49 +3744,34 @@ export type ExportShipmentStatus =
   (typeof ExportShipmentStatus)[keyof typeof ExportShipmentStatus];
 
 /**
- * ExportReviewsQuery
+ * AdminExportProductsQuery
  *
- * Filtre de la file de validation
+ * Filtre des produits proposés à l'export : statut, recherche, page
  */
-export type ExportReviewsQuery = {
+export type AdminExportProductsQuery = {
   /**
    * ExportProfileStatus
    *
-   * Validation d'un produit pour l'export : en attente, validé, refusé
+   * Export d'un produit : exportable, incomplet (critères manquants), retiré par eBio
    */
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status?: "EXPORTABLE" | "INCOMPLETE" | "WITHDRAWN";
+  search?: string;
+  page: number;
 };
 
 /**
- * ExportReviewDecision
+ * AdminExportPacksQuery
  *
- * Décision d'eBio sur un produit ou un pack
+ * Filtre des packs du pays : ceux d'eBio ou tous, par statut
  */
-export const ExportReviewDecision = {
-  APPROVE: "APPROVE",
-  REJECT: "REJECT",
-} as const;
-
-/**
- * ExportReviewDecision
- *
- * Décision d'eBio sur un produit ou un pack
- */
-export type ExportReviewDecision =
-  (typeof ExportReviewDecision)[keyof typeof ExportReviewDecision];
-
-/**
- * ExportChecklist
- *
- * Liste de contrôle d'export : chaque clé cochée
- */
-export type ExportChecklist = {
-  label_french?: boolean;
-  allergens_declared?: boolean;
-  dates_present?: boolean;
-  shelf_life_sufficient?: boolean;
-  ingredients_allowed?: boolean;
-  label_photo?: boolean;
+export type AdminExportPacksQuery = {
+  scope: "ebio" | "all";
+  /**
+   * ExportPackStatus
+   *
+   * Export d'un pack du pays : exportable, incomplet, retiré par eBio, retiré par son auteur
+   */
+  status?: "EXPORTABLE" | "INCOMPLETE" | "WITHDRAWN" | "RETIRED";
 };
 
 /**
@@ -3842,6 +3823,21 @@ export type TerroirCatalogQuery = {
   search?: string;
   page: number;
   currency?: "XOF" | "EUR" | "USD" | "CAD";
+};
+
+/**
+ * TerroirExportabilityQuery
+ *
+ * Pays de destination et produits dont on veut savoir s'ils peuvent partir
+ */
+export type TerroirExportabilityQuery = {
+  /**
+   * ExportCountryCode
+   *
+   * Code ISO à deux lettres du pays de destination d'une valise
+   */
+  country: string;
+  productIds: string;
 };
 
 /**
@@ -6130,6 +6126,8 @@ export type AdminTerroirExportSettingControllerUpdateData = {
     insuranceMin?: number;
     bannedCategoryIds?: Array<string>;
     pickupReminderDays?: number;
+    minShelfLifeDays?: number;
+    maxUnitWeightG?: number;
   };
   path?: never;
   query?: never;
@@ -10120,7 +10118,9 @@ export type ProductsControllerFindByIdData = {
   path: {
     id: string;
   };
-  query?: never;
+  query: {
+    exportCountry: string;
+  };
   url: "/api/products/{id}";
 };
 
@@ -12656,93 +12656,104 @@ export type AdminExportControllerLostResponses = {
   200: unknown;
 };
 
-export type AdminExportControllerReviewsData = {
+export type AdminExportControllerListProductsData = {
   body?: never;
   path?: never;
   query: {
     /**
      * ExportProfileStatus
      *
-     * Validation d'un produit pour l'export : en attente, validé, refusé
+     * Export d'un produit : exportable, incomplet (critères manquants), retiré par eBio
      */
-    status: "PENDING" | "APPROVED" | "REJECTED";
+    status?: "EXPORTABLE" | "INCOMPLETE" | "WITHDRAWN";
+    search?: string;
+    page: number;
   };
-  url: "/api/admin/export/reviews";
+  url: "/api/admin/export/products";
 };
 
-export type AdminExportControllerReviewsResponses = {
+export type AdminExportControllerListProductsResponses = {
   200: unknown;
 };
 
-export type AdminExportControllerReviewProductData = {
+export type AdminExportControllerWithdrawProductData = {
   /**
-   * ReviewExportProduct
+   * ExportWithdraw
    *
-   * Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé
+   * Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique
    */
   body: {
-    /**
-     * ExportReviewDecision
-     *
-     * Décision d'eBio sur un produit ou un pack
-     */
-    decision: "APPROVE" | "REJECT";
-    /**
-     * ExportChecklist
-     *
-     * Liste de contrôle d'export : chaque clé cochée
-     */
-    checklist: {
-      label_french?: boolean;
-      allergens_declared?: boolean;
-      dates_present?: boolean;
-      shelf_life_sufficient?: boolean;
-      ingredients_allowed?: boolean;
-      label_photo?: boolean;
-    };
-    reason?: string | null;
+    reason: string;
+  };
+  path: {
+    productId: string;
+  };
+  query?: never;
+  url: "/api/admin/export/products/{productId}/withdraw";
+};
+
+export type AdminExportControllerWithdrawProductResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerReinstateProductData = {
+  body?: never;
+  path: {
+    productId: string;
+  };
+  query?: never;
+  url: "/api/admin/export/products/{productId}/reinstate";
+};
+
+export type AdminExportControllerReinstateProductResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerWithdrawPackData = {
+  /**
+   * ExportWithdraw
+   *
+   * Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique
+   */
+  body: {
+    reason: string;
   };
   path: {
     id: string;
   };
   query?: never;
-  url: "/api/admin/export/products/{id}/review";
+  url: "/api/admin/export/packs/{id}/withdraw";
 };
 
-export type AdminExportControllerReviewProductResponses = {
-  201: unknown;
+export type AdminExportControllerWithdrawPackResponses = {
+  200: unknown;
 };
 
-export type AdminExportControllerReviewPackData = {
-  /**
-   * ReviewExportPack
-   *
-   * Validation d'un pack, ou refus motivé
-   */
-  body: {
-    /**
-     * ExportReviewDecision
-     *
-     * Décision d'eBio sur un produit ou un pack
-     */
-    decision: "APPROVE" | "REJECT";
-    reason?: string | null;
-  };
+export type AdminExportControllerReinstatePackData = {
+  body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/api/admin/export/packs/{id}/review";
+  url: "/api/admin/export/packs/{id}/reinstate";
 };
 
-export type AdminExportControllerReviewPackResponses = {
-  201: unknown;
+export type AdminExportControllerReinstatePackResponses = {
+  200: unknown;
 };
 
 export type AdminExportControllerListPacksData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    scope: "ebio" | "all";
+    /**
+     * ExportPackStatus
+     *
+     * Export d'un pack du pays : exportable, incomplet, retiré par eBio, retiré par son auteur
+     */
+    status?: "EXPORTABLE" | "INCOMPLETE" | "WITHDRAWN" | "RETIRED";
+  };
   url: "/api/admin/export/packs";
 };
 
@@ -12830,6 +12841,17 @@ export type AdminExportControllerUpdatePackResponses = {
   200: unknown;
 };
 
+export type SupplierExportControllerExportCriteriaData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/{supplierId}/export-criteria";
+};
+
+export type SupplierExportControllerExportCriteriaResponses = {
+  200: unknown;
+};
+
 export type SupplierExportControllerRemoveProfileData = {
   body?: never;
   path: {
@@ -12862,14 +12884,17 @@ export type SupplierExportControllerUpsertProfileData = {
   /**
    * ExportProfileInput
    *
-   * Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette
+   * Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique
    */
   body: {
-    packedWeightG: number;
+    packedWeightG?: number | null;
     lengthCm?: number | null;
     widthCm?: number | null;
     heightCm?: number | null;
-    shelfLifeDays: number;
+    shelfLifeDays?: number | null;
+    storage?: "AMBIENT" | "COOL" | "FROZEN" | null;
+    allergens?: string | null;
+    noAllergens: boolean;
     /**
      * ExportOrigin
      *
@@ -12883,6 +12908,9 @@ export type SupplierExportControllerUpsertProfileData = {
       photos: Array<string>;
     };
     labelPhoto?: string | null;
+    declaresFrenchLabel: boolean;
+    declaresDatesPrinted: boolean;
+    declaresSealedPackaging: boolean;
   };
   path: {
     supplierId: string;
@@ -13012,6 +13040,25 @@ export type TerroirClientControllerGetCatalogData = {
 };
 
 export type TerroirClientControllerGetCatalogResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetExportabilityData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * ExportCountryCode
+     *
+     * Code ISO à deux lettres du pays de destination d'une valise
+     */
+    country: string;
+    productIds: string;
+  };
+  url: "/api/terroir/exportability";
+};
+
+export type TerroirClientControllerGetExportabilityResponses = {
   200: unknown;
 };
 

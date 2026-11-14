@@ -158,6 +158,8 @@ export const zUpdateTerroirExportSetting = z.object({
       .max(200),
   ),
   pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
+  minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
+  maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
 });
 
 /**
@@ -1895,6 +1897,15 @@ export const zExportShipmentEventInput = z.object({
  */
 export const zLostExportShipment = z.object({
   damaged: z.boolean(),
+});
+
+/**
+ * ExportWithdraw
+ *
+ * Retrait d'un produit ou d'un pack de l'export, motif envoyé à la boutique
+ */
+export const zExportWithdraw = z.object({
+  reason: z.string().min(3).max(500),
 });
 
 /**
@@ -4234,56 +4245,26 @@ export const zExportDepartureEventInput = z.object({
 });
 
 /**
- * ExportReviewsQuery
+ * AdminExportProductsQuery
  *
- * Filtre de la file de validation
+ * Filtre des produits proposés à l'export : statut, recherche, page
  */
-export const zExportReviewsQuery = z.object({
-  status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+export const zAdminExportProductsQuery = z.object({
+  status: z.optional(z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN"])),
+  search: z.optional(z.string().max(120)),
+  page: z.int().gte(1).lte(9007199254740991).default(1),
 });
 
 /**
- * ExportReviewDecision
+ * AdminExportPacksQuery
  *
- * Décision d'eBio sur un produit ou un pack
+ * Filtre des packs du pays : ceux d'eBio ou tous, par statut
  */
-export const zExportReviewDecision = z.enum(["APPROVE", "REJECT"]);
-
-/**
- * ReviewExportPack
- *
- * Validation d'un pack, ou refus motivé
- */
-export const zReviewExportPack = z.object({
-  decision: zExportReviewDecision,
-  reason: z.optional(z.union([z.string().max(500), z.null()])),
-});
-
-/**
- * ExportChecklist
- *
- * Liste de contrôle d'export : chaque clé cochée
- */
-export const zExportChecklist = z
-  .object({
-    label_french: z.optional(z.boolean()),
-    allergens_declared: z.optional(z.boolean()),
-    dates_present: z.optional(z.boolean()),
-    shelf_life_sufficient: z.optional(z.boolean()),
-    ingredients_allowed: z.optional(z.boolean()),
-    label_photo: z.optional(z.boolean()),
-  })
-  .default({});
-
-/**
- * ReviewExportProduct
- *
- * Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé
- */
-export const zReviewExportProduct = z.object({
-  decision: zExportReviewDecision,
-  checklist: zExportChecklist,
-  reason: z.optional(z.union([z.string().max(500), z.null()])),
+export const zAdminExportPacksQuery = z.object({
+  scope: z.enum(["ebio", "all"]),
+  status: z.optional(
+    z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN", "RETIRED"]),
+  ),
 });
 
 /**
@@ -4354,16 +4335,24 @@ export const zExportOrigin = z
 /**
  * ExportProfileInput
  *
- * Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette
+ * Profil d'export d'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique
  */
 export const zExportProfileInput = z.object({
-  packedWeightG: z.int().gt(0).lte(50000),
+  packedWeightG: z.optional(z.union([z.int().gt(0).lte(50000), z.null()])),
   lengthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
   widthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
   heightCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
-  shelfLifeDays: z.int().gt(0).lte(3650),
+  shelfLifeDays: z.optional(z.union([z.int().gt(0).lte(3650), z.null()])),
+  storage: z.optional(
+    z.union([z.enum(["AMBIENT", "COOL", "FROZEN"]), z.null()]),
+  ),
+  allergens: z.optional(z.union([z.string().max(500), z.null()])),
+  noAllergens: z.boolean().default(false),
   origin: zExportOrigin,
   labelPhoto: z.optional(z.union([z.url(), z.null()])),
+  declaresFrenchLabel: z.boolean().default(false),
+  declaresDatesPrinted: z.boolean().default(false),
+  declaresSealedPackaging: z.boolean().default(false),
 });
 
 /**
@@ -4392,6 +4381,20 @@ export const zTerroirCatalogQuery = z.object({
   search: z.optional(z.string().max(100)),
   page: z.int().gte(1).lte(500).default(1),
   currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+});
+
+/**
+ * TerroirExportabilityQuery
+ *
+ * Pays de destination et produits dont on veut savoir s'ils peuvent partir
+ */
+export const zTerroirExportabilityQuery = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  productIds: z
+    .string()
+    .regex(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$/,
+    ),
 });
 
 /**
@@ -5983,6 +5986,8 @@ export const zAdminTerroirExportSettingControllerUpdateData = z.object({
         .max(200),
     ),
     pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
+    minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
+    maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -8808,7 +8813,9 @@ export const zProductsControllerFindByIdData = z.object({
   path: z.object({
     id: z.string(),
   }),
-  query: z.optional(z.never()),
+  query: z.object({
+    exportCountry: z.string(),
+  }),
 });
 
 export const zProductsControllerSoftDeleteData = z.object({
@@ -10666,28 +10673,37 @@ export const zAdminExportControllerLostData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zAdminExportControllerReviewsData = z.object({
+export const zAdminExportControllerListProductsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+    status: z.optional(z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN"])),
+    search: z.optional(z.string().max(120)),
+    page: z.int().gte(1).lte(9007199254740991).default(1),
   }),
 });
 
-export const zAdminExportControllerReviewProductData = z.object({
+export const zAdminExportControllerWithdrawProductData = z.object({
   body: z.object({
-    decision: z.enum(["APPROVE", "REJECT"]),
-    checklist: z
-      .object({
-        label_french: z.optional(z.boolean()),
-        allergens_declared: z.optional(z.boolean()),
-        dates_present: z.optional(z.boolean()),
-        shelf_life_sufficient: z.optional(z.boolean()),
-        ingredients_allowed: z.optional(z.boolean()),
-        label_photo: z.optional(z.boolean()),
-      })
-      .default({}),
-    reason: z.optional(z.union([z.string().max(500), z.null()])),
+    reason: z.string().min(3).max(500),
+  }),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerReinstateProductData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerWithdrawPackData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(500),
   }),
   path: z.object({
     id: z.string(),
@@ -10695,11 +10711,8 @@ export const zAdminExportControllerReviewProductData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zAdminExportControllerReviewPackData = z.object({
-  body: z.object({
-    decision: z.enum(["APPROVE", "REJECT"]),
-    reason: z.optional(z.union([z.string().max(500), z.null()])),
-  }),
+export const zAdminExportControllerReinstatePackData = z.object({
+  body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
   }),
@@ -10709,7 +10722,12 @@ export const zAdminExportControllerReviewPackData = z.object({
 export const zAdminExportControllerListPacksData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
-  query: z.optional(z.never()),
+  query: z.object({
+    scope: z.enum(["ebio", "all"]),
+    status: z.optional(
+      z.enum(["EXPORTABLE", "INCOMPLETE", "WITHDRAWN", "RETIRED"]),
+    ),
+  }),
 });
 
 export const zAdminExportControllerCreatePackData = z.object({
@@ -10800,6 +10818,12 @@ export const zAdminExportControllerUpdatePackData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zSupplierExportControllerExportCriteriaData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSupplierExportControllerRemoveProfileData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -10820,11 +10844,16 @@ export const zSupplierExportControllerGetProfileData = z.object({
 
 export const zSupplierExportControllerUpsertProfileData = z.object({
   body: z.object({
-    packedWeightG: z.int().gt(0).lte(50000),
+    packedWeightG: z.optional(z.union([z.int().gt(0).lte(50000), z.null()])),
     lengthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
     widthCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
     heightCm: z.optional(z.union([z.int().gt(0).lte(300), z.null()])),
-    shelfLifeDays: z.int().gt(0).lte(3650),
+    shelfLifeDays: z.optional(z.union([z.int().gt(0).lte(3650), z.null()])),
+    storage: z.optional(
+      z.union([z.enum(["AMBIENT", "COOL", "FROZEN"]), z.null()]),
+    ),
+    allergens: z.optional(z.union([z.string().max(500), z.null()])),
+    noAllergens: z.boolean().default(false),
     origin: z
       .object({
         producer: z.optional(z.union([z.string().max(120), z.null()])),
@@ -10835,6 +10864,9 @@ export const zSupplierExportControllerUpsertProfileData = z.object({
       })
       .default({ photos: [] }),
     labelPhoto: z.optional(z.union([z.url(), z.null()])),
+    declaresFrenchLabel: z.boolean().default(false),
+    declaresDatesPrinted: z.boolean().default(false),
+    declaresSealedPackaging: z.boolean().default(false),
   }),
   path: z.object({
     supplierId: z.string(),
@@ -10958,6 +10990,19 @@ export const zTerroirClientControllerGetCatalogData = z.object({
     search: z.optional(z.string().max(100)),
     page: z.int().gte(1).lte(500).default(1),
     currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
+  }),
+});
+
+export const zTerroirClientControllerGetExportabilityData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/),
+    productIds: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,99}$/,
+      ),
   }),
 });
 
