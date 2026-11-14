@@ -9,7 +9,7 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
-import { ExportDepartureStatus, ExportReception, ExportShipmentStatus } from './contracts/terroir.contract'
+import { ExportCountry, ExportDepartureStatus, ExportReception, ExportShipmentStatus } from './contracts/terroir.contract'
 import { ExportAgency } from './entities/export-agency.entity'
 import { ExportDepartureAlert } from './entities/export-departure-alert.entity'
 import { ExportDepartureRate } from './entities/export-departure-rate.entity'
@@ -17,7 +17,7 @@ import { ExportDeparture } from './entities/export-departure.entity'
 import { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import { ExportShipmentEvent } from './entities/export-shipment-event.entity'
 import { ExportShipment } from './entities/export-shipment.entity'
-import { availableDepartures, FILL_ALERT_RATIO, fillRatio, shippingPrice } from './terroir-math'
+import { availableDepartures, FILL_ALERT_RATIO, fillRatio, orderDeadline, shippingPrice } from './terroir-math'
 import { TerroirNotifierService } from './terroir-notifier.service'
 import { addDays, spokenDay, terroirError } from './terroir-texts'
 
@@ -37,7 +37,7 @@ export interface DepartureView {
 export interface CollectionGroup {
   supplierId: string
   shopName: string
-  lines: Array<{ shipmentId: string, orderId: string, name: string, quantity: number }>
+  lines: Array<{ shipmentId: string, orderId: string, orderItemId: string, name: string, quantity: number }>
   collected: boolean
 }
 
@@ -191,6 +191,7 @@ export class ExportLogisticsService {
       targetId: departure.id,
       payload: { agencyId: agency.id, departsOn: input.departsOn, rates: input.rates },
     })
+    await this.announceOpening(departure.id)
     return this.view(departure.id)
   }
 
@@ -199,6 +200,7 @@ export class ExportLogisticsService {
     if (departure.status === ExportDepartureStatus.CANCELLED) {
       throw terroirError(HttpStatus.CONFLICT, 'EXPORT_DEPARTURE_CANCELLED', 'Ce départ est annulé : il ne peut plus être modifié.')
     }
+    const wasOpen = departure.status === ExportDepartureStatus.OPEN
     if (input.agencyId !== undefined && input.agencyId !== departure.agency.id) {
       departure.agency = await this.getAgency(input.agencyId)
     }
@@ -229,6 +231,9 @@ export class ExportLogisticsService {
     await this.audit.record({ actorUserId, action: 'EXPORT_DEPARTURE_UPDATED', targetType: 'export_departure', targetId: id, payload: { ...input } })
     // A larger capacity does not reopen a FULL departure by itself; a smaller one may close it.
     await this.refreshFill(id)
+    if (!wasOpen && input.status === ExportDepartureStatus.OPEN) {
+      await this.announceOpening(id)
+    }
     return this.view(id)
   }
 
@@ -274,7 +279,10 @@ export class ExportLogisticsService {
         collected: true,
       }
       for (const item of order.items) {
-        group.lines.push({ shipmentId: shipment.id, orderId: order.id, name: item.product.name, quantity: item.quantity })
+        if (shipment.removedItemIds.includes(item.id)) {
+          continue
+        }
+        group.lines.push({ shipmentId: shipment.id, orderId: order.id, orderItemId: item.id, name: item.product.name, quantity: item.quantity })
       }
       group.collected = group.collected && order.status === OrderStatus.DELIVERED
       groups.set(order.supplier.id, group)
@@ -414,6 +422,63 @@ export class ExportLogisticsService {
       { agency: { $in: agencyIds }, country: country as ExportPickupPoint['country'], active: true },
       { orderBy: { city: 'ASC', createdAt: 'ASC' } },
     )
+  }
+
+  // ===== DEPARTURE ALERTS =====
+
+  /** « Me prévenir du prochain départ » (FR-032): one pending alert per buyer and country. */
+  async subscribeAlert(userId: string, country: ExportCountry): Promise<void> {
+    await this.em.getConnection().execute(
+      `INSERT INTO export_departure_alerts (id, user_id, country, created_at, sent_at)
+       VALUES (gen_random_uuid(), ?, ?, NOW(), NULL)
+       ON CONFLICT (user_id, country) WHERE sent_at IS NULL DO NOTHING`,
+      [userId, country],
+    )
+  }
+
+  async unsubscribeAlert(userId: string, country: ExportCountry): Promise<void> {
+    await this.em.getConnection().execute(
+      `DELETE FROM export_departure_alerts WHERE user_id = ? AND country = ? AND sent_at IS NULL`,
+      [userId, country],
+    )
+  }
+
+  /**
+   * A departure opened (created, or set back to OPEN): every buyer waiting
+   * for one towards a country it serves is told, once — the alert is marked
+   * sent in the same statement that picks it. Nothing goes out for a
+   * departure already past its order deadline.
+   */
+  async announceOpening(departureId: string): Promise<number> {
+    const departure = await this.em.fork().findOne(ExportDeparture, { id: departureId }, { populate: ['agency', 'rates'] })
+    if (!departure || departure.status !== ExportDepartureStatus.OPEN) {
+      return 0
+    }
+    const { collectionDays } = await this.platformSettings.getTerroirExportSettings()
+    const orderBefore = orderDeadline(departure.depositDeadline, collectionDays)
+    if (orderBefore.getTime() <= Date.now()) {
+      return 0
+    }
+    let sent = 0
+    for (const rate of departure.rates.getItems()) {
+      const rows = await this.em.getConnection().execute(
+        `UPDATE export_departure_alerts SET sent_at = NOW() WHERE country = ? AND sent_at IS NULL RETURNING user_id`,
+        [rate.country],
+      ) as Array<{ user_id: string }>
+      if (rows.length === 0) {
+        continue
+      }
+      const point = await this.em.fork().findOne(
+        ExportPickupPoint,
+        { agency: departure.agency.id, country: rate.country, active: true },
+        { orderBy: { city: 'ASC', createdAt: 'ASC' } },
+      )
+      for (const row of rows) {
+        await this.notifier.departureOpen({ userId: row.user_id, city: point?.city ?? null, departsOn: departure.departsOn, orderBefore })
+      }
+      sent += rows.length
+    }
+    return sent
   }
 
   // ===== FILL =====

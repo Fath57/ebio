@@ -19,7 +19,7 @@ import { ExportPickupPoint } from './export-pickup-point.entity'
 @Index({ name: 'export_shipments_departure_idx', properties: ['departure', 'status'] })
 @Index({ name: 'export_shipments_buyer_idx', properties: ['buyer', 'createdAt'] })
 export class ExportShipment {
-  [OptionalProps]?: 'id' | 'reception' | 'homeDeliveryFee' | 'insured' | 'insurancePrice' | 'status' | 'supplementStatus' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'reception' | 'homeDeliveryFee' | 'insured' | 'insurancePrice' | 'status' | 'supplementStatus' | 'removedItemIds' | 'removedOrderIds' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -97,6 +97,24 @@ export class ExportShipment {
 
   @Property({ fieldName: 'supplement_requested_at', type: 'Date', nullable: true })
   supplementRequestedAt?: Date | null
+
+  /**
+   * The wallet top-up opened to pay the supplement by card (INTRAM page):
+   * once credited, the supplement is debited from that wallet.
+   */
+  @Property({ fieldName: 'supplement_topup_id', type: 'uuid', nullable: true })
+  supplementTopupId?: string | null
+
+  /**
+   * Lines taken out of the parcel after their shop was paid (the buyer's
+   * choice at weighing): they stay on the shop's order, not in the parcel.
+   */
+  @Property({ fieldName: 'removed_item_ids', type: 'json', columnType: 'jsonb', default: '[]' })
+  removedItemIds: string[] = []
+
+  /** Cancelled orders already deducted from the parcel: a replay deducts nothing. */
+  @Property({ fieldName: 'removed_order_ids', type: 'json', columnType: 'jsonb', default: '[]' })
+  removedOrderIds: string[] = []
 
   /** The « still waiting at the pickup point » reminder went out (FR-027). */
   @Property({ fieldName: 'pickup_reminded_at', type: 'Date', nullable: true })

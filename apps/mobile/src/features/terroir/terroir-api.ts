@@ -581,6 +581,8 @@ export interface TerroirShipmentSummary {
 }
 
 export interface TerroirShipmentLine {
+  /** Order line id, sent back to remove the product from an overweight parcel. */
+  id: string | null
   name: string
   quantity: number
   imageUrl: string | null
@@ -603,8 +605,49 @@ export interface TerroirShipment extends TerroirShipmentSummary {
   events: TerroirShipmentEvent[]
   insured: boolean
   giftMessage: string | null
-  supplement: { amount: number, deadline: string | null } | null
+  supplement: TerroirSupplement | null
   collectBefore: string | null
+}
+
+export type TerroirSupplementStatus = 'REQUESTED' | 'PAID' | 'WAIVED' | 'ITEM_REMOVED'
+
+/** Extra transport asked once eBio has weighed the parcel (contract §3). */
+export interface TerroirSupplement {
+  amount: number
+  display: DisplayBlock | null
+  deadline: string | null
+  status: TerroirSupplementStatus
+  estimatedWeightG: number | null
+  actualWeightG: number | null
+}
+
+const SUPPLEMENT_STATUSES: TerroirSupplementStatus[] = ['REQUESTED', 'PAID', 'WAIVED', 'ITEM_REMOVED']
+
+/** The weights live on the shipment; the supplement card shows them. */
+function withWeights(supplement: TerroirSupplement | null, shipment: Raw): TerroirSupplement | null {
+  if (!supplement)
+    return null
+  return {
+    ...supplement,
+    estimatedWeightG: supplement.estimatedWeightG ?? num(shipment.estimatedWeightG),
+    actualWeightG: supplement.actualWeightG ?? num(shipment.actualWeightG),
+  }
+}
+
+function readSupplement(value: unknown): TerroirSupplement | null {
+  const raw = obj(value)
+  const amount = num(raw.amount)
+  if (amount === null)
+    return null
+  const status = SUPPLEMENT_STATUSES.find(entry => entry === raw.status) ?? 'REQUESTED'
+  return {
+    amount,
+    display: readDisplay(raw.display),
+    deadline: str(raw.deadline),
+    status,
+    estimatedWeightG: num(raw.estimatedWeightG),
+    actualWeightG: num(raw.actualWeightG),
+  }
 }
 
 function readSummary(raw: Raw): TerroirShipmentSummary {
@@ -638,14 +681,13 @@ export async function fetchTerroirShipments(): Promise<TerroirShipmentSummary[]>
 
 export async function fetchTerroirShipment(id: string): Promise<TerroirShipment> {
   const raw = obj(await getJson(`/api/terroir/shipments/${id}`, 'Impossible de charger ce colis.'))
-  const supplement = obj(raw.supplement)
-  const supplementAmount = num(supplement.amount)
   return {
     ...readSummary(raw),
     reception: raw.reception === 'HOME' ? 'HOME' : 'PICKUP',
     pickupPoint: readPickupPoint(raw.pickupPoint),
     homeAddress: str(raw.homeAddress),
     lines: list(raw.lines).map(line => ({
+      id: str(line.id) ?? str(line.lineId) ?? str(line.orderItemId),
       name: str(line.name) ?? '',
       quantity: num(line.quantity) ?? 1,
       imageUrl: str(line.imageUrl),
@@ -661,9 +703,48 @@ export async function fetchTerroirShipment(id: string): Promise<TerroirShipment>
       .filter(event => event.at && (event.step || event.message)),
     insured: raw.insured === true,
     giftMessage: str(obj(raw.gift).message),
-    supplement: supplementAmount !== null ? { amount: supplementAmount, deadline: str(supplement.deadline) } : null,
+    supplement: withWeights(readSupplement(raw.supplement), raw),
     collectBefore: str(obj(raw.departure).collectBefore),
   }
+}
+
+export interface TerroirSupplementPayment {
+  paymentUrl: string | null
+  providerTransactionId: string | null
+  /** The wallet top-up that carries the card payment of the supplement. */
+  topupId: string | null
+}
+
+/** Pays the weight supplement: the answer carries the hosted payment page to open. */
+export async function payTerroirSupplement(shipmentId: string): Promise<TerroirSupplementPayment> {
+  const raw = obj(await sendJson(`/api/terroir/shipments/${shipmentId}/supplement`, 'POST', { choice: 'PAY' }, 'Impossible de lancer le paiement du complément.'))
+  return {
+    paymentUrl: str(raw.paymentUrl),
+    providerTransactionId: str(raw.providerTransactionId) ?? str(raw.reference),
+    topupId: str(raw.topupId),
+  }
+}
+
+/**
+ * Asks the server to check the card payment of a supplement now, rather than
+ * waiting for the periodic reconciliation. Never throws: the shipment detail
+ * stays the source of truth.
+ */
+export async function verifySupplementPayment(topupId: string, providerTransactionId: string): Promise<void> {
+  try {
+    await apiFetch(`/api/wallet/me/topups/${topupId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
+    })
+  }
+  catch {
+    // The reconciliation job settles it later anyway.
+  }
+}
+
+/** Takes one product out of the parcel instead of paying: it is refunded. */
+export async function removeTerroirSupplementLine(shipmentId: string, lineId: string): Promise<void> {
+  await sendJson(`/api/terroir/shipments/${shipmentId}/supplement`, 'POST', { choice: 'REMOVE_ITEM', lineId }, 'Impossible de retirer ce produit.')
 }
 
 // ---------------------------------------------------------------------------

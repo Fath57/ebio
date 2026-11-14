@@ -225,8 +225,9 @@ export class OrdersController {
       const supplier = await this.suppliersService.findByUserId(session.user.id)
       const result = await this.ordersService.findBySupplier(supplier.id, filters)
       const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
+      const collectBefore = await this.ordersService.exportCollectBefore(result.orders.map(o => o.id))
       return {
-        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null)),
+        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, {}, { collectBefore: collectBefore.get(order.id) ?? null })),
         total: result.total,
       }
     }
@@ -276,7 +277,8 @@ export class OrdersController {
     const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
     const deliveries = await this.ordersService.deliverySummaries([id])
     const payer = await this.giftView.payerView(order, session.user.id)
-    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer), hasReview, hasUnratedProducts }
+    const collectBefore = await this.ordersService.exportCollectBefore([id])
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer, { collectBefore: collectBefore.get(id) ?? null }), hasReview, hasUnratedProducts }
   }
 
   /** Rendered invoice of a delivered order, for the buyer or the shop. */
@@ -301,7 +303,8 @@ export class OrdersController {
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     const order = await this.ordersService.accept(id, supplier.id)
-    return OrderMapper.toResponse(order)
+    const collectBefore = await this.ordersService.exportCollectBefore([order.id])
+    return OrderMapper.toResponse(order, null, {}, { collectBefore: collectBefore.get(order.id) ?? null })
   }
 
   @Patch(':id/reject')
@@ -329,7 +332,8 @@ export class OrdersController {
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     const order = await this.ordersService.updateStatus(id, supplier.id, body.status as OrderStatus, body.prepMinutes)
-    return OrderMapper.toResponse(order)
+    const collectBefore = await this.ordersService.exportCollectBefore([order.id])
+    return OrderMapper.toResponse(order, null, {}, { collectBefore: collectBefore.get(order.id) ?? null })
   }
 
   @Patch(':id/confirm-delivery')

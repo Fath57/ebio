@@ -103,27 +103,27 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 **Test indépendant** : quickstart §4.
 
-- [ ] T036 [US4] Côté boutique : une commande `EXPORT` affiche « à remettre à eBio avant le … » ; l'action finale est « Prête pour la collecte » (`READY`) — app Fournisseur `supplier-dashboard/components/order-detail-screen.tsx` et API (date de collecte = échéance du départ − délai de collecte)
-- [ ] T037 [US4] `export-shipments.service.ts` `collect(shipmentId, supplierId)` : commande de la boutique → `DELIVERED` (heure de collecte), séquestre libéré immédiatement ; colis `COLLECTING` puis `PACKED` quand toutes les boutiques sont collectées
-- [ ] T038 [US4] `missing(shipmentId, orderItemId)` : ligne retirée, client remboursé du produit et de la part de transport recalculée ; colis continue
-- [ ] T039 [US4] `weigh(shipmentId, actualWeightG)` : complément via `supplementFor` ; au-delà du seuil, colis `REQUESTED` + notification ; `POST /terroir/shipments/:id/supplement` (payer via page INTRAM comme une recharge, ou retirer un produit) ; cron 48 h → `WAIVED`, perte portée par `EXPORT`
-- [ ] T040 [US4] Liste du départ `GET /admin/export/departures/:id/manifest` (HTML imprimable : colis, destinataire, ville, contenu, quantités, valeur déclarée en euros, poids)
-- [ ] T041 [US5] `addEvent(shipmentId, step?, message?, pickupPoint?)` et `addDepartureEvent(departureId, step, message?)` (tous les colis en une requête) ; `handedOver`, `lost(damaged)` (remboursement produits + transport, boutique non débitée, perte sur `EXPORT`, assurance suivie)
-- [ ] T042 [US5] `terroir-notifier.service.ts` : notification à chaque événement (push + e-mail) ; colis offert : destinataire par e-mail / SMS +229, sans prix (US10) ; `terroir.scheduler.ts` : rappel de retrait à 14 j
-- [ ] T043 [P] [US4] Test e2e `terroir/tests/shipment-flow.e2e-spec.ts` : collecte → portefeuille boutique crédité immédiatement de sa seule part ; manquant remboursé ; complément demandé au-delà de 10 % et absorbé à 48 h ; colis perdu remboursé, boutique non débitée ; étape de départ appliquée à tous les colis
+- [X] T036 [US4] Côté boutique : une commande `EXPORT` affiche « à remettre à eBio avant le … » ; l'action finale est « Prête pour la collecte » (`READY`) — app Fournisseur `supplier-dashboard/components/order-detail-screen.tsx` et API (date de collecte = échéance du départ − délai de collecte)
+- [X] T037 [US4] `export-shipments.service.ts` `collect(shipmentId, supplierId)` : commande de la boutique → `DELIVERED` (heure de collecte), séquestre libéré immédiatement ; colis `COLLECTING` puis `PACKED` quand toutes les boutiques sont collectées
+- [X] T038 [US4] `missing(shipmentId, orderItemId)` : ligne retirée, client remboursé du produit et de la part de transport recalculée ; colis continue
+- [X] T039 [US4] `weigh(shipmentId, actualWeightG)` : complément via `supplementFor` ; au-delà du seuil, colis `REQUESTED` + notification ; `POST /terroir/shipments/:id/supplement` (payer via page INTRAM comme une recharge, ou retirer un produit) ; cron 48 h → `WAIVED`, perte portée par `EXPORT`
+- [X] T040 [US4] Liste du départ `GET /admin/export/departures/:id/manifest` (HTML imprimable : colis, destinataire, ville, contenu, quantités, valeur déclarée en euros, poids)
+- [X] T041 [US5] `addEvent(shipmentId, step?, message?, pickupPoint?)` et `addDepartureEvent(departureId, step, message?)` (tous les colis en une requête) ; `handedOver`, `lost(damaged)` (remboursement produits + transport, boutique non débitée, perte sur `EXPORT`, assurance suivie)
+- [X] T042 [US5] `terroir-notifier.service.ts` : notification à chaque événement (push + e-mail) ; colis offert : destinataire par e-mail / SMS +229, sans prix (US10) ; `terroir.scheduler.ts` : rappel de retrait à 14 j
+- [X] T043 [P] [US4] Test e2e `terroir/tests/shipment-flow.e2e-spec.ts` : collecte → portefeuille boutique crédité immédiatement de sa seule part ; manquant remboursé ; complément demandé au-delà de 10 % et absorbé à 48 h ; colis perdu remboursé, boutique non débitée ; étape de départ appliquée à tous les colis
 - [ ] T044 [US4] Back-office `export-departure-detail-page.tsx` : jauge, liste de collecte par boutique (« Collecté »), pesée, étape pour tout le départ, liste imprimable ; `export-shipment-page.tsx` : événements, message libre, manquant, perte, remise
-- [ ] T045 [US5] App Client : complément de poids dans `shipment-screen.tsx` (payer ou retirer un produit, échéance)
+- [X] T045 [US5] App Client : complément de poids dans `shipment-screen.tsx` (payer ou retirer un produit, échéance)
 
 ---
 
 ## Phase 7 — US7 à US10 : calendrier, poids, origine, cadeau (P2)
 
-- [ ] T046 [US7] Alertes de départ : `POST/DELETE /terroir/departure-alerts` ; à l'ouverture d'un départ, envoi une fois aux inscrits du pays ; `terroir.scheduler.ts` : rappel 48 h avant l'échéance pour les aperçus non payés (`export_checkout_drafts`)
+- [X] T046 [US7] Alertes de départ : `POST/DELETE /terroir/departure-alerts` ; à l'ouverture d'un départ, envoi une fois aux inscrits du pays ; `terroir.scheduler.ts` : rappel 48 h avant l'échéance pour les aperçus non payés (`export_checkout_drafts`)
 - [X] T047 [US7] App Client : bandeau du prochain départ et liste des départs dans `terroir-home-screen.tsx` ; « Me prévenir du prochain départ » quand il n'y en a pas
 - [X] T048 [US8] App Client `components/terroir-cart-screen.tsx` : poids, minimum facturé, marge sans surcoût et suggestions (données de l'aperçu) ; prix du kilo supplémentaire au-delà
 - [X] T049 [US9] Origine et badge : déjà portés par T017/T024 ; affichage complet dans `terroir-product-screen.tsx` et origine de chaque produit d'un pack
 - [X] T050 [US10] Colis offert : champs `gift` du passage en caisse, départs vers le pays du destinataire, `GET /terroir/tracking/:token` public sans prix (`@Public`, limite de débit élevée — la landing appelle depuis son serveur), payeur prévenu à la remise
-- [ ] T051 [US10] Landing `apps/landing/app/routes/colis.tsx` : suivi public du colis offert (étapes, adresse de retrait, message du payeur, jamais de prix) ; route `colis/:token`
+- [X] T051 [US10] Landing `apps/landing/app/routes/colis.tsx` : suivi public du colis offert (étapes, adresse de retrait, message du payeur, jamais de prix) ; route `colis/:token`
 - [X] T052 [P] [US10] Test e2e `terroir/tests/gift-tracking.e2e-spec.ts` : la réponse publique ne contient aucune clé de prix ni de montant
 - [X] T053 [US10] App Client : « Offrir à quelqu'un » dans `terroir-checkout-screen.tsx` (nom, e-mail, téléphone, pays, message)
 
@@ -133,7 +133,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 - [X] T054 [US6] Livraison à domicile : proposée seulement si le tarif du départ a un supplément pour le pays ; adresse saisie ; étape `OUT_FOR_DELIVERY`
 - [X] T055 [US6] Assurance : case au passage en caisse avec son prix ; colis assuré perdu → remboursement intégral ; montants assurés et pertes suivis à part (vue back-office)
-- [ ] T056 [P] Test e2e `terroir/tests/insurance-home.e2e-spec.ts` : domicile indisponible refusé (`HOME_DELIVERY_UNAVAILABLE`), prix de l'assurance avec minimum, remboursement d'un colis assuré
+- [X] T056 [P] Test e2e `terroir/tests/insurance-home.e2e-spec.ts` : domicile indisponible refusé (`HOME_DELIVERY_UNAVAILABLE`), prix de l'assurance avec minimum, remboursement d'un colis assuré
 
 ---
 
@@ -141,7 +141,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 - [ ] T057 Carte « Terroir vers l'étranger » dans la section Livraison de la page Réglages (`settings-registry.tsx`) : interrupteur, emballage, délai de collecte, seuil de poids, assurance, catégories interdites, rappel de retrait
 - [ ] T058 Comptes plateforme : le compte `EXPORT` visible dans Argent → Comptes ; colonne de solde
-- [ ] T059 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : terroir, droits et taxes inclus, remboursement sans retour, assurance
+- [X] T059 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : terroir, droits et taxes inclus, remboursement sans retour, assurance
 - [ ] T060 `pnpm generate` (API temporaire sur un port libre) ; lint, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
 - [ ] T061 Dérouler `quickstart.md` ; `/design-review` des pages back-office et de la page `colis/:token`
 

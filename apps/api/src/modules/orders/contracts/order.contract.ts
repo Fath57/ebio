@@ -228,6 +228,8 @@ export const orderResponseSchema = z.object({
   display: orderDisplaySchema.nullable(),
   /** Payer only, on the order detail: the hand-over proof of a gift, once delivered. */
   proof: orderProofSchema.nullable(),
+  /** EXPORT order: last moment to hand the products to eBio (« à remettre à eBio avant le … »); null otherwise. */
+  collectBefore: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({

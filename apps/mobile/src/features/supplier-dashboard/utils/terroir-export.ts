@@ -100,6 +100,34 @@ export async function readExportError(res: Response): Promise<string> {
   return body?.aggregateErrors?.[0]?.message ?? body?.message ?? 'Une erreur est survenue'
 }
 
+/** Export orders end when eBio collects them, not on a delivery. */
+export const EXPORT_STATUS_LABELS: Record<string, string> = {
+  READY: 'Prête pour la collecte',
+  DELIVERED: 'Collectée par eBio',
+}
+
+const ORDER_ERROR_MESSAGES: Record<string, string> = {
+  EXPORT_ORDER: 'Cette commande part à l’étranger avec eBio : vous pouvez seulement la préparer puis la marquer prête pour la collecte.',
+}
+
+/** Readable message for a refused order action, known error codes first. */
+export async function readOrderError(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => null) as { code?: string, message?: string, aggregateErrors?: Array<{ message?: string }> } | null
+  if (body?.code && ORDER_ERROR_MESSAGES[body.code])
+    return ORDER_ERROR_MESSAGES[body.code]
+  return body?.aggregateErrors?.[0]?.message ?? body?.message ?? fallback
+}
+
+/** « 18 novembre à 10:00 » for the collection deadline of an export order. */
+export function formatCollectBefore(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime()))
+    return ''
+  const day = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `${day} à ${time}`
+}
+
 /** Positive integer from a numeric field, null when empty or invalid. */
 export function parsePositiveInt(text: string): number | null {
   const value = Number(text.trim())

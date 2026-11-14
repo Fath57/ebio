@@ -1,0 +1,32 @@
+<!--
+  Terroir parcel news (011) — to the buyer or to a gift's recipient.
+  Variables: heading, greeting, paragraphs (string[]), pickupPoint (string | null),
+    trackingUrl (string | null), buttonLabel
+  The recipient's version never carries a price: the sender passes none.
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+
+<%- include('partials/heading', { text: heading, level: 1 }) %>
+
+<p style="<%= cell %>"><%= greeting %></p>
+
+<% for (const paragraph of paragraphs) { %>
+  <p style="<%= cell %>"><%= paragraph %></p>
+<% } %>
+
+<% if (pickupPoint) { %>
+  <p style="<%= cell %> background-color: #F7F6F2; border-radius: 12px; padding: 12px 16px;">
+    <strong>Adresse de retrait</strong><br />
+    <%= pickupPoint %>
+  </p>
+<% } %>
+
+<% if (trackingUrl) { %>
+  <%- include('partials/button', { href: trackingUrl, label: buttonLabel, variant: 'primary' }) %>
+<% } %>
+
+<p style="<%= muted %>">
+  Une question sur ce colis ? Répondez à cet e-mail ou écrivez-nous depuis l'application eBio.
+</p>

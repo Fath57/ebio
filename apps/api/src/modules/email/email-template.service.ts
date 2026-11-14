@@ -23,6 +23,7 @@ export type TemplateName
     | 'sales-statement'
     | 'gift-delivered'
     | 'gift-delivery-failed'
+    | 'export-shipment-update'
     | 'order-invoice'
     | 'order-confirmation'
     | 'order-new-supplier'

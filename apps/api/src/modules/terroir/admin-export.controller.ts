@@ -2,10 +2,14 @@ import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type {
   CancelExportDeparture,
   CancelExportDepartureResult,
+  CollectExportShipment,
   CreateExportDeparture,
+  ExportAdminShipment,
   ExportAgencyInput,
   ExportAgencyResponse,
   ExportDepartureDetail,
+  ExportDepartureEventInput,
+  ExportDepartureEventResult,
   ExportDepartureResponse,
   ExportDeparturesQuery,
   ExportPackInput,
@@ -15,15 +19,19 @@ import type {
   ExportProfileResponse,
   ExportReviewsQuery,
   ExportReviewsResponse,
+  ExportShipmentEventInput,
+  LostExportShipment,
+  MissingExportItem,
   ReviewExportPack,
   ReviewExportProduct,
   UpdateExportAgency,
   UpdateExportDeparture,
   UpdateExportPack,
   UpdateExportPickupPoint,
+  WeighExportShipment,
 } from './contracts/terroir.contract'
 import { TypedBody, TypedQueryObject } from '@lonestone/nzoth/server'
-import { Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common'
+import { Controller, Delete, Get, Header, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
@@ -32,21 +40,28 @@ import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import {
   cancelExportDepartureSchema,
+  collectExportShipmentSchema,
   createExportDepartureSchema,
   exportAgencyInputSchema,
+  exportDepartureEventInputSchema,
   exportDeparturesQuerySchema,
   exportPackInputSchema,
   exportPickupPointInputSchema,
   exportReviewsQuerySchema,
+  exportShipmentEventInputSchema,
+  lostExportShipmentSchema,
+  missingExportItemSchema,
   reviewExportPackSchema,
   reviewExportProductSchema,
   updateExportAgencySchema,
   updateExportDepartureSchema,
   updateExportPackSchema,
   updateExportPickupPointSchema,
+  weighExportShipmentSchema,
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
 import { ExportLogisticsService } from './export-logistics.service'
+import { ExportShipmentsService } from './export-shipments.service'
 import { TerroirMapper } from './terroir.mapper'
 
 /**
@@ -61,6 +76,7 @@ export class AdminExportController {
   constructor(
     private readonly logistics: ExportLogisticsService,
     private readonly catalog: ExportCatalogService,
+    private readonly shipments: ExportShipmentsService,
   ) {}
 
   // ===== AGENCIES =====
@@ -157,6 +173,101 @@ export class AdminExportController {
   ): Promise<CancelExportDepartureResult> {
     const result = await this.logistics.cancel(id, body.reassignTo, session.user.id)
     return { departure: TerroirMapper.toDeparture(result.view), reassigned: result.reassigned, surcharge: result.surcharge }
+  }
+
+  /** The printable list for the agency (FR-021): HTML, opened in a tab and printed. */
+  @CanRead('Delivery')
+  @Get('departures/:id/manifest')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async manifest(@Param('id', ParseUUIDPipe) id: string): Promise<string> {
+    return this.shipments.manifestHtml(id)
+  }
+
+  /** One step for every parcel of the departure (FR-024). */
+  @CanManage('Delivery')
+  @Post('departures/:id/events')
+  @HttpCode(HttpStatus.OK)
+  async departureEvent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(exportDepartureEventInputSchema) body: ExportDepartureEventInput,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportDepartureEventResult> {
+    return this.shipments.addDepartureEvent(id, body, session.user.id)
+  }
+
+  // ===== PARCELS =====
+
+  @CanRead('Delivery')
+  @Get('shipments/:id')
+  async shipment(@Param('id', ParseUUIDPipe) id: string): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.adminDetail(id))
+  }
+
+  /** A shop's products collected: its order DELIVERED, its escrow released at once. */
+  @CanManage('Delivery')
+  @Post('shipments/:id/collect')
+  @HttpCode(HttpStatus.OK)
+  async collect(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(collectExportShipmentSchema) body: CollectExportShipment,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.collect(id, body.supplierId, session.user.id))
+  }
+
+  @CanManage('Delivery')
+  @Post('shipments/:id/missing')
+  @HttpCode(HttpStatus.OK)
+  async missing(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(missingExportItemSchema) body: MissingExportItem,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.missing(id, body.orderItemId, session.user.id))
+  }
+
+  @CanManage('Delivery')
+  @Post('shipments/:id/weigh')
+  @HttpCode(HttpStatus.OK)
+  async weigh(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(weighExportShipmentSchema) body: WeighExportShipment,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.weigh(id, body.actualWeightG, session.user.id))
+  }
+
+  @CanManage('Delivery')
+  @Post('shipments/:id/events')
+  @HttpCode(HttpStatus.OK)
+  async shipmentEvent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(exportShipmentEventInputSchema) body: ExportShipmentEventInput,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.addEvent(id, body, session.user.id))
+  }
+
+  @CanManage('Delivery')
+  @Post('shipments/:id/handed-over')
+  @HttpCode(HttpStatus.OK)
+  async handedOver(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.handedOver(id, session.user.id))
+  }
+
+  /** Lost (`damaged: false`) or damaged: refunded without return, the shops not debited. */
+  @CanManage('Delivery')
+  @Post('shipments/:id/lost')
+  @HttpCode(HttpStatus.OK)
+  async lost(
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(lostExportShipmentSchema) body: LostExportShipment,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportAdminShipment> {
+    return TerroirMapper.toAdminShipment(await this.shipments.lost(id, body.damaged, session.user.id))
   }
 
   // ===== REVIEWS =====

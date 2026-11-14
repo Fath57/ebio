@@ -194,6 +194,7 @@ export interface AdminDeliveryWindowInput {
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
+  private readonly exportCancelledListeners: Array<(orderId: string) => Promise<void>> = []
 
   constructor(
     private readonly em: EntityManager,
@@ -686,10 +687,37 @@ export class OrdersService {
    * reachable, without the supplier-side transition rules. The buyer gets the
    * same notifications as when the supplier moves the order.
    */
-  async adminUpdateStatus(orderId: string, newStatus: OrderStatus): Promise<Order> {
+  async adminUpdateStatus(orderId: string, newStatus: OrderStatus, options: { silent?: boolean } = {}): Promise<Order> {
     const order = await this.findById(orderId)
-    await this.applyStatus(order, newStatus)
+    await this.applyStatus(order, newStatus, options)
     return order
+  }
+
+  /**
+   * When each terroir order must be handed to eBio (011, T036): the
+   * departure's deposit deadline minus eBio's collection days. Only EXPORT
+   * orders whose parcel is known appear in the map.
+   */
+  async exportCollectBefore(orderIds: string[]): Promise<Map<string, Date>> {
+    if (orderIds.length === 0) {
+      return new Map()
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT o.id AS order_id, d.deposit_deadline
+       FROM orders o
+       JOIN export_shipments s ON s.checkout_id = o.checkout_id
+       JOIN export_departures d ON d.id = s.departure_id
+       WHERE o.pickup_mode = ? AND o.id IN (${orderIds.map(() => '?').join(', ')})`,
+      [PickupMode.EXPORT, ...orderIds],
+    ) as Array<{ order_id: string, deposit_deadline: Date | string }>
+    if (rows.length === 0) {
+      return new Map()
+    }
+    // The buyer's deadline is the deposit minus the collection days; the shop
+    // has until one day before the deposit, which leaves eBio a day to pack
+    // and weigh — an order placed at the buyer's last minute still gets the
+    // collection days to be prepared.
+    return new Map(rows.map(row => [row.order_id, new Date(new Date(row.deposit_deadline).getTime() - TWENTY_FOUR_HOURS_MS)]))
   }
 
   /**
@@ -1462,6 +1490,15 @@ export class OrdersService {
    * eBio wallet — never through the aggregator, whichever one took the money.
    * A unified-cart order also adjusts the fee of the shortened run.
    */
+  /**
+   * Told of every cancelled EXPORT order (shop refusal, admin cancellation),
+   * after the products were refunded. Lets the terroir module shrink or
+   * cancel the parcel without this module importing it back (011).
+   */
+  onExportOrderCancelled(listener: (orderId: string) => Promise<void>): void {
+    this.exportCancelledListeners.push(listener)
+  }
+
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
     await this.compensationService.compensateOrder(order.id, 'commande annulée')
@@ -1469,6 +1506,16 @@ export class OrdersService {
     // of the checkout is cancelled (the notifier checks both).
     if (order.checkout) {
       await this.giftNotifier.announceCancellation(order.checkout.id)
+    }
+    if (order.pickupMode === PickupMode.EXPORT) {
+      for (const listener of this.exportCancelledListeners) {
+        try {
+          await listener(order.id)
+        }
+        catch (error) {
+          this.logger.error(`Terroir parcel not updated after cancelling ${order.id}`, error instanceof Error ? error.stack : String(error))
+        }
+      }
     }
   }
 

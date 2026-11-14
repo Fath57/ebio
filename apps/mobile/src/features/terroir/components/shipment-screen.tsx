@@ -1,14 +1,16 @@
-import type { TerroirShipment } from '../terroir-api'
+import type { TerroirShipment, TerroirShipmentLine } from '../terroir-api'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
-import { formatXof } from '../../common/hooks/use-money'
-import { countryLabel, fetchTerroirShipment, formatDay, formatWindow, SHIPMENT_STATUS_LABELS } from '../terroir-api'
+import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { countryLabel, fetchTerroirShipment, formatDay, formatWindow, payTerroirSupplement, removeTerroirSupplementLine, SHIPMENT_STATUS_LABELS, verifySupplementPayment } from '../terroir-api'
 import { shipmentTotalLabel, StatusPill } from './shipments-list'
+import { SupplementCard } from './supplement-card'
 import { PickupAddress, terroirStyles } from './terroir-ui'
 
 function formatInstant(iso: string): string {
@@ -29,6 +31,9 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
   const [shipment, setShipment] = useState<TerroirShipment | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [busy, setBusy] = useState(false)
+  // Hosted payment page of the weight supplement, while it is open.
+  const [payment, setPayment] = useState<{ url: string, transactionId: string | null, topupId: string | null } | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -49,6 +54,78 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
     await load()
     setRefreshing(false)
   }, [load])
+
+  const startPayment = useCallback(async (): Promise<void> => {
+    setBusy(true)
+    try {
+      const result = await payTerroirSupplement(shipmentId)
+      if (!result.paymentUrl) {
+        appAlert('Paiement indisponible', 'La page de paiement n’a pas pu être ouverte. Réessayez dans un instant.')
+        return
+      }
+      setPayment({ url: result.paymentUrl, transactionId: result.providerTransactionId, topupId: result.topupId })
+    }
+    catch (payError) {
+      appAlert('Erreur', payError instanceof Error ? payError.message : 'Impossible de lancer le paiement du complément.')
+    }
+    finally {
+      setBusy(false)
+    }
+  }, [shipmentId])
+
+  // The card payment rides on a wallet top-up: verifying it settles the
+  // supplement at once; the shipment then says whether it is paid.
+  const pollSupplement = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
+    const fresh = await fetchTerroirShipment(shipmentId)
+    return fresh.supplement?.status === 'PAID' ? 'settled' : 'pending'
+  }, [shipmentId])
+
+  const finishPayment = useCallback(async (): Promise<void> => {
+    const current = payment
+    setPayment(null)
+    if (current?.topupId && current.transactionId)
+      await verifySupplementPayment(current.topupId, current.transactionId)
+    // The return URL alone proves nothing: the shipment says whether it was paid.
+    const paid = await pollSupplement().catch(() => 'pending' as const) === 'settled'
+    await load()
+    if (paid)
+      appAlert('Complément réglé', 'Merci ! Votre colis poursuit sa route.')
+    else
+      appAlert('Paiement en cours de vérification', 'Nous confirmons votre paiement. Tirez l’écran vers le bas dans un instant pour voir le complément réglé.')
+  }, [load, pollSupplement, payment])
+
+  const closePayment = useCallback(() => {
+    setPayment(null)
+    void load()
+  }, [load])
+
+  const removeLine = useCallback(async (line: TerroirShipmentLine & { id: string }): Promise<void> => {
+    setBusy(true)
+    try {
+      await removeTerroirSupplementLine(shipmentId, line.id)
+      await load()
+      appAlert('Produit retiré', `« ${line.name} » ne partira pas : il vous sera remboursé.`)
+    }
+    catch (removeError) {
+      appAlert('Erreur', removeError instanceof Error ? removeError.message : 'Impossible de retirer ce produit.')
+    }
+    finally {
+      setBusy(false)
+    }
+  }, [shipmentId, load])
+
+  if (payment) {
+    return (
+      <PaymentWebView
+        url={payment.url}
+        transactionId={payment.transactionId}
+        title="Complément de poids"
+        onSettled={finishPayment}
+        onCancel={closePayment}
+        pollStatus={pollSupplement}
+      />
+    )
+  }
 
   if (!shipment) {
     return (
@@ -104,12 +181,17 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
         </View>
 
         {shipment.supplement && (
-          <View style={[terroirStyles.card, { backgroundColor: colors.earth[50] }]}>
-            <Text style={[terroirStyles.cardTitle, { color: colors.earth[800] }]}>Complément de poids</Text>
-            <Text style={[styles.line, { color: colors.earth[800] }]}>
-              {`Votre colis pèse plus que prévu : ${formatXof(shipment.supplement.amount)} à régler${shipment.supplement.deadline ? ` avant le ${formatDay(shipment.supplement.deadline)}` : ''}.`}
-            </Text>
-          </View>
+          <SupplementCard
+            supplement={shipment.supplement}
+            lines={shipment.lines}
+            busy={busy}
+            onPay={() => {
+              void startPayment()
+            }}
+            onRemoveLine={(line) => {
+              void removeLine(line)
+            }}
+          />
         )}
 
         <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>

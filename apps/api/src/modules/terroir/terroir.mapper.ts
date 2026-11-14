@@ -1,17 +1,21 @@
 import type { Order } from '../orders/entities/order.entity'
 import type { ProductVariant } from '../products/entities/product-variant.entity'
-import type { ExportAgencyResponse, ExportCountry, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirTracking } from './contracts/terroir.contract'
+import type { ExportAdminShipment, ExportAgencyResponse, ExportCountry, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
 import type { ExportAgency } from './entities/export-agency.entity'
 import type { ExportDeparture } from './entities/export-departure.entity'
 import type { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import type { ExportProfile } from './entities/export-profile.entity'
+import type { ExportShipment } from './entities/export-shipment.entity'
 import type { ClientCatalog, ClientPackView, PackView, ReviewQueue } from './export-catalog.service'
 import type { DepartureDetailView, DepartureView } from './export-logistics.service'
-import type { ShipmentView } from './export-shipments.service'
+import type { AdminShipmentView, ShipmentView } from './export-shipments.service'
+import type { SupplementOutcome } from './export-supplement.service'
 import type { TerroirCheckoutCreated, TerroirQuote } from './terroir-checkout.service'
 import type { OfferedDeparture } from './terroir-math'
 import { toDisplayAmount } from '../currency/fx-math'
+import { ExportSupplementStatus } from './contracts/terroir.contract'
 import { lineWeight, packLinePrice } from './export-catalog.service'
+import { SUPPLEMENT_WINDOW_HOURS } from './export-shipments.service'
 import { fillRatio, orderDeadline } from './terroir-math'
 import { addDays, shortName } from './terroir-texts'
 
@@ -31,8 +35,10 @@ function arrivalOf(departure: Pick<ExportDeparture, 'departsOn' | 'transitMinDay
   }
 }
 
-function shipmentLines(orders: Order[]) {
-  return orders.flatMap(order => order.items.getItems().map(item => ({
+function shipmentLines(orders: Order[], removedItemIds: string[] = []) {
+  const removed = new Set(removedItemIds)
+  return orders.flatMap(order => order.items.getItems().filter(item => !removed.has(item.id)).map(item => ({
+    id: item.id,
     name: item.variant ? `${item.product.name} — ${(item.variant as ProductVariant).label}` : item.product.name,
     quantity: item.quantity,
     imageUrl: item.product.photos?.[0] ?? null,
@@ -43,6 +49,19 @@ function shipmentLines(orders: Order[]) {
 function pickupPointOf(view: ShipmentView) {
   const point = view.shipment.pickupPoint
   return point ? { city: point.city, address: point.address, openingHours: point.openingHours ?? null } : null
+}
+
+/** The supplement as the buyer reads it, its 48 h deadline while it is asked. */
+function supplementOf(shipment: ExportShipment) {
+  const requestedAt = shipment.supplementRequestedAt ?? null
+  return {
+    status: shipment.supplementStatus,
+    amount: shipment.supplementAmount == null ? null : Number(shipment.supplementAmount),
+    requestedAt: requestedAt?.toISOString() ?? null,
+    deadline: requestedAt && shipment.supplementStatus === ExportSupplementStatus.REQUESTED
+      ? new Date(requestedAt.getTime() + SUPPLEMENT_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
+      : null,
+  }
 }
 
 function eventsOf(view: ShipmentView) {
@@ -406,7 +425,7 @@ export const TerroirMapper = {
 
   toShipmentSummary(view: ShipmentView): TerroirShipmentSummary {
     const { shipment } = view
-    const lines = shipmentLines(view.orders)
+    const lines = shipmentLines(view.orders, view.shipment.removedItemIds)
     return {
       id: shipment.id,
       status: shipment.status,
@@ -438,11 +457,11 @@ export const TerroirMapper = {
       reception: shipment.reception,
       pickupPoint: pickupPointOf(view),
       homeAddress: shipment.homeAddress ?? null,
-      lines: shipmentLines(view.orders),
+      lines: shipmentLines(view.orders, shipment.removedItemIds),
       events: eventsOf(view),
       supplement: shipment.supplementAmount == null
         ? null
-        : { amount: Number(shipment.supplementAmount), status: shipment.supplementStatus, requestedAt: shipment.supplementRequestedAt?.toISOString() ?? null },
+        : { ...supplementOf(shipment), amount: Number(shipment.supplementAmount) },
       estimatedWeightG: shipment.estimatedWeightG,
       actualWeightG: shipment.actualWeightG ?? null,
       itemsTotal: Number(checkout.itemsTotal),
@@ -473,9 +492,80 @@ export const TerroirMapper = {
       departure: { agency: shipment.departure.agency.name, departsOn: shipment.departure.departsOn, arrival: arrivalOf(shipment.departure) },
       reception: shipment.reception,
       pickupPoint: pickupPointOf(view),
-      lines: shipmentLines(view.orders).map(line => ({ name: line.name, quantity: line.quantity, imageUrl: line.imageUrl })),
+      lines: shipmentLines(view.orders, shipment.removedItemIds).map(line => ({ name: line.name, quantity: line.quantity, imageUrl: line.imageUrl })),
       events: eventsOf(view),
       updatedAt: shipment.updatedAt.toISOString(),
+    }
+  },
+
+  toSupplementResult(outcome: SupplementOutcome): TerroirSupplementResult {
+    const { shipment } = outcome
+    return {
+      supplementStatus: shipment.supplementStatus,
+      amount: shipment.supplementAmount == null ? null : Number(shipment.supplementAmount),
+      topupId: outcome.topupId,
+      paymentUrl: outcome.paymentUrl,
+      providerTransactionId: outcome.providerTransactionId,
+    }
+  },
+
+  toAdminShipment(view: AdminShipmentView): ExportAdminShipment {
+    const { shipment } = view
+    const removed = new Set(shipment.removedItemIds)
+    const point = shipment.pickupPoint
+    return {
+      id: shipment.id,
+      status: shipment.status,
+      country: shipment.country,
+      buyer: { id: shipment.buyer.id, name: shipment.buyer.name, email: shipment.buyer.email ?? null, phone: shipment.buyer.phone ?? null },
+      gift: shipment.giftRecipientName
+        ? { name: shipment.giftRecipientName, email: shipment.giftRecipientEmail ?? null, phone: shipment.giftRecipientPhone ?? null, message: shipment.giftMessage ?? null }
+        : null,
+      departure: {
+        id: shipment.departure.id,
+        agency: shipment.departure.agency.name,
+        departsOn: shipment.departure.departsOn,
+        status: shipment.departure.status,
+        depositDeadline: shipment.departure.depositDeadline.toISOString(),
+      },
+      reception: shipment.reception,
+      pickupPoint: point ? { id: point.id, city: point.city, address: point.address, openingHours: point.openingHours ?? null } : null,
+      homeAddress: shipment.homeAddress ?? null,
+      estimatedWeightG: shipment.estimatedWeightG,
+      actualWeightG: shipment.actualWeightG ?? null,
+      shippingPrice: Number(shipment.shippingPrice),
+      homeDeliveryFee: Number(shipment.homeDeliveryFee),
+      insured: shipment.insured,
+      insurancePrice: Number(shipment.insurancePrice),
+      declaredValue: Number(shipment.declaredValue),
+      supplement: supplementOf(shipment),
+      orders: view.orders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        supplierId: order.supplier.id,
+        shopName: order.supplier.shopName,
+        status: order.status,
+        collected: order.status === 'DELIVERED',
+        totalAmount: Number(order.totalAmount),
+        lines: order.items.getItems().map(item => ({
+          id: item.id,
+          name: item.variant ? `${item.product.name} — ${(item.variant as ProductVariant).label}` : item.product.name,
+          quantity: item.quantity,
+          totalPrice: Number(item.totalPrice),
+          imageUrl: item.product.photos?.[0] ?? null,
+          removed: removed.has(item.id),
+        })),
+      })),
+      events: view.events.map(event => ({
+        id: event.id,
+        step: event.step ?? null,
+        message: event.message ?? null,
+        pickupPoint: event.pickupPointSnapshot ?? null,
+        author: event.author?.name ?? null,
+        at: event.createdAt.toISOString(),
+      })),
+      trackingToken: shipment.trackingToken,
+      createdAt: shipment.createdAt.toISOString(),
     }
   },
 }

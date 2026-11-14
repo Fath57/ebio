@@ -5,6 +5,8 @@ import type {
   TerroirCheckoutInput,
   TerroirCheckoutPreview,
   TerroirCheckoutResult,
+  TerroirDepartureAlertInput,
+  TerroirDepartureAlertResponse,
   TerroirDeparturesQuery,
   TerroirDeparturesResponse,
   TerroirDisplayQuery,
@@ -12,10 +14,12 @@ import type {
   TerroirProductDetail,
   TerroirShipmentDetail,
   TerroirShipmentSummary,
+  TerroirSupplementInput,
+  TerroirSupplementResult,
   TerroirTracking,
 } from './contracts/terroir.contract'
 import { TypedBody, TypedQueryObject } from '@lonestone/nzoth/server'
-import { Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common'
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common'
 import { CanCreate } from '../../common/decorators/check-permissions.decorator'
 import { RateLimit } from '../../common/decorators/rate-limit.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
@@ -24,16 +28,21 @@ import { Public, Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { ExchangeRatesService } from '../currency/exchange-rates.service'
 import {
+  exportCountryEnum,
   terroirCatalogQuerySchema,
   terroirCheckoutInputSchema,
+  terroirDepartureAlertInputSchema,
   terroirDeparturesQuerySchema,
   terroirDisplayQuerySchema,
+  terroirSupplementInputSchema,
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
+import { ExportSupplementService } from './export-supplement.service'
 import { TerroirCheckoutService } from './terroir-checkout.service'
 import { TerroirEnabledGuard } from './terroir-enabled.guard'
+import { terroirError } from './terroir-texts'
 import { TerroirMapper } from './terroir.mapper'
 
 const MINUTE_MS = 60_000
@@ -53,6 +62,7 @@ export class TerroirClientController {
     private readonly checkout: TerroirCheckoutService,
     private readonly shipments: ExportShipmentsService,
     private readonly exchangeRates: ExchangeRatesService,
+    private readonly supplements: ExportSupplementService,
   ) {}
 
   // ===== CATALOGUE AND DEPARTURES =====
@@ -103,6 +113,32 @@ export class TerroirClientController {
     return TerroirMapper.toDepartures(offers, departures, points, rate, query.currency, alertSubscribed)
   }
 
+  /** « Me prévenir du prochain départ » (FR-032): sent once, at the next opening. */
+  @UseGuards(TerroirEnabledGuard)
+  @Post('departure-alerts')
+  @HttpCode(HttpStatus.OK)
+  async subscribeAlert(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(terroirDepartureAlertInputSchema) body: TerroirDepartureAlertInput,
+  ): Promise<TerroirDepartureAlertResponse> {
+    await this.logistics.subscribeAlert(session.user.id, body.country)
+    return { country: body.country, subscribed: true }
+  }
+
+  @UseGuards(TerroirEnabledGuard)
+  @Delete('departure-alerts/:country')
+  async unsubscribeAlert(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('country') country: string,
+  ): Promise<TerroirDepartureAlertResponse> {
+    const parsed = exportCountryEnum.safeParse(country.toUpperCase())
+    if (!parsed.success) {
+      throw terroirError(HttpStatus.BAD_REQUEST, 'TERROIR_COUNTRY', 'Seules la France et la Belgique sont desservies.')
+    }
+    await this.logistics.unsubscribeAlert(session.user.id, parsed.data)
+    return { country: parsed.data, subscribed: false }
+  }
+
   // ===== CHECKOUT =====
 
   @UseGuards(TerroirEnabledGuard)
@@ -138,6 +174,21 @@ export class TerroirClientController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TerroirShipmentDetail> {
     return TerroirMapper.toShipmentDetail(await this.shipments.detailForBuyer(session.user.id, id))
+  }
+
+  /**
+   * The buyer's answer to a weight supplement: PAY (wallet, or card through
+   * a wallet top-up whose page comes back here) or REMOVE_ITEM (refunded).
+   * Not behind the switch: a paid parcel is followed to the end.
+   */
+  @Post('shipments/:id/supplement')
+  @HttpCode(HttpStatus.OK)
+  async supplement(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id', ParseUUIDPipe) id: string,
+    @TypedBody(terroirSupplementInputSchema) body: TerroirSupplementInput,
+  ): Promise<TerroirSupplementResult> {
+    return TerroirMapper.toSupplementResult(await this.supplements.choose(session.user.id, id, body))
   }
 
   /**

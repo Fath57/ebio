@@ -102,6 +102,11 @@ export const exportShipmentStatusEnum = z.enum(ExportShipmentStatus).meta({
   description: 'Étape d\'un colis terroir',
 })
 
+export const exportSupplementStatusEnum = z.enum(ExportSupplementStatus).meta({
+  title: 'ExportSupplementStatus',
+  description: 'Complément de poids : aucun, demandé, payé, pris en charge par eBio, produit retiré',
+})
+
 export const exportReviewDecisionEnum = z.enum(['APPROVE', 'REJECT']).meta({
   title: 'ExportReviewDecision',
   description: 'Décision d\'eBio sur un produit ou un pack',
@@ -308,6 +313,8 @@ export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend(
     lines: z.array(z.object({
       shipmentId: z.string().uuid(),
       orderId: z.string().uuid(),
+      /** For POST /admin/export/shipments/:id/missing. */
+      orderItemId: z.string().uuid(),
       name: z.string(),
       quantity: z.number(),
     })),
@@ -877,6 +884,8 @@ const shipmentEventSchema = z.object({
 })
 
 const shipmentLineSchema = z.object({
+  /** The order line: `lineId` of a REMOVE_ITEM supplement choice. */
+  id: z.string().uuid(),
   name: z.string(),
   quantity: z.number(),
   imageUrl: z.string().nullable(),
@@ -909,8 +918,14 @@ export const terroirShipmentDetailSchema = z.object({
   homeAddress: z.string().nullable(),
   lines: z.array(shipmentLineSchema),
   events: z.array(shipmentEventSchema),
-  /** A weight supplement asked of the buyer (next wave); null otherwise. */
-  supplement: z.object({ amount: z.number(), status: z.string(), requestedAt: z.string().datetime().nullable() }).nullable(),
+  /** A weight supplement asked of the buyer; null when the parcel weighed what was paid for. */
+  supplement: z.object({
+    amount: z.number(),
+    status: exportSupplementStatusEnum,
+    requestedAt: z.string().datetime().nullable(),
+    /** Without an answer by then, eBio absorbs the gap (REQUESTED only). */
+    deadline: z.string().datetime().nullable(),
+  }).nullable(),
   estimatedWeightG: z.number(),
   actualWeightG: z.number().nullable(),
   itemsTotal: z.number(),
@@ -953,3 +968,179 @@ export const terroirTrackingSchema = z.object({
 })
 
 export type TerroirTracking = z.infer<typeof terroirTrackingSchema>
+
+// ===== §1 CLIENT — DEPARTURE ALERTS =====
+
+export const terroirDepartureAlertInputSchema = z.object({
+  country: exportCountryEnum,
+}).meta({
+  title: 'TerroirDepartureAlertInput',
+  description: '« Me prévenir du prochain départ » vers un pays',
+})
+
+export type TerroirDepartureAlertInput = z.infer<typeof terroirDepartureAlertInputSchema>
+
+export const terroirDepartureAlertResponseSchema = z.object({
+  country: exportCountryEnum,
+  /** A pending alert exists after the call. */
+  subscribed: z.boolean(),
+}).meta({
+  title: 'TerroirDepartureAlert',
+  description: 'Alerte de prochain départ d\'un client',
+})
+
+export type TerroirDepartureAlertResponse = z.infer<typeof terroirDepartureAlertResponseSchema>
+
+// ===== §3 CLIENT — WEIGHT SUPPLEMENT =====
+
+export const terroirSupplementChoiceEnum = z.enum(['PAY', 'REMOVE_ITEM']).meta({
+  title: 'TerroirSupplementChoice',
+  description: 'Réponse au complément de poids : payer, ou retirer un produit (remboursé)',
+})
+
+export const terroirSupplementInputSchema = z.object({
+  choice: terroirSupplementChoiceEnum,
+  /** REMOVE_ITEM: the `id` of a line of the parcel. */
+  lineId: z.string().uuid().nullable().optional(),
+  /** PAY: card (INTRAM page, through a wallet top-up) or the eBio wallet. */
+  paymentMethod: terroirPaymentMethodEnum.default('FEDAPAY'),
+}).refine(input => input.choice !== 'REMOVE_ITEM' || Boolean(input.lineId), {
+  message: 'Choisissez le produit à retirer',
+  path: ['lineId'],
+}).meta({
+  title: 'TerroirSupplementInput',
+  description: 'Choix du client face au complément de poids',
+})
+
+export type TerroirSupplementInput = z.infer<typeof terroirSupplementInputSchema>
+
+export const terroirSupplementResultSchema = z.object({
+  supplementStatus: exportSupplementStatusEnum,
+  /** What is still asked (REQUESTED), or what was paid; null once nothing is due. */
+  amount: z.number().nullable(),
+  /**
+   * PAY by card: the wallet top-up opened for the amount. The app opens
+   * `paymentUrl` (INTRAM hosted page) — or the widget when null — then calls
+   * POST /wallet/me/topups/:topupId/verify; once credited, the supplement is
+   * debited from the wallet and the parcel goes on. Null otherwise.
+   */
+  topupId: z.string().uuid().nullable(),
+  paymentUrl: z.string().nullable(),
+  providerTransactionId: z.string().nullable(),
+}).meta({
+  title: 'TerroirSupplementResult',
+  description: 'Complément de poids après le choix du client',
+})
+
+export type TerroirSupplementResult = z.infer<typeof terroirSupplementResultSchema>
+
+// ===== §5 BACK-OFFICE — PARCELS =====
+
+export const collectExportShipmentSchema = z.object({
+  supplierId: z.string().uuid(),
+}).meta({ title: 'CollectExportShipment', description: 'Collecte des produits d\'une boutique pour un colis' })
+
+export type CollectExportShipment = z.infer<typeof collectExportShipmentSchema>
+
+export const missingExportItemSchema = z.object({
+  orderItemId: z.string().uuid(),
+}).meta({ title: 'MissingExportItem', description: 'Produit manquant à la collecte : retiré du colis et remboursé' })
+
+export type MissingExportItem = z.infer<typeof missingExportItemSchema>
+
+export const weighExportShipmentSchema = z.object({
+  actualWeightG: z.number().int().positive().max(200_000),
+}).meta({ title: 'WeighExportShipment', description: 'Poids réel du colis, en grammes' })
+
+export type WeighExportShipment = z.infer<typeof weighExportShipmentSchema>
+
+export const exportShipmentEventInputSchema = z.object({
+  step: exportShipmentStatusEnum.nullable().optional(),
+  message: z.string().trim().min(1).max(1000).nullable().optional(),
+  /** Address and hours shown with the step; READY_FOR_PICKUP defaults to the parcel's pickup point. */
+  pickupPoint: z.string().trim().min(1).max(500).nullable().optional(),
+}).refine(input => Boolean(input.step || input.message), {
+  message: 'Indiquez une étape ou un message',
+}).meta({ title: 'ExportShipmentEventInput', description: 'Étape et / ou message libre sur un colis' })
+
+export type ExportShipmentEventInput = z.infer<typeof exportShipmentEventInputSchema>
+
+export const exportDepartureEventInputSchema = z.object({
+  step: exportShipmentStatusEnum,
+  message: z.string().trim().min(1).max(1000).nullable().optional(),
+}).meta({ title: 'ExportDepartureEventInput', description: 'Étape appliquée à tous les colis d\'un départ' })
+
+export type ExportDepartureEventInput = z.infer<typeof exportDepartureEventInputSchema>
+
+export const exportDepartureEventResultSchema = z.object({
+  /** Parcels the step was applied to (settled ones and the wrong reception mode left out). */
+  applied: z.number(),
+}).meta({ title: 'ExportDepartureEventResult', description: 'Nombre de colis mis à jour' })
+
+export type ExportDepartureEventResult = z.infer<typeof exportDepartureEventResultSchema>
+
+export const lostExportShipmentSchema = z.object({
+  damaged: z.boolean(),
+}).meta({ title: 'LostExportShipment', description: 'Colis perdu (false) ou abîmé (true) : remboursé sans retour' })
+
+export type LostExportShipment = z.infer<typeof lostExportShipmentSchema>
+
+export const exportAdminShipmentSchema = z.object({
+  id: z.string().uuid(),
+  status: exportShipmentStatusEnum,
+  country: exportCountryEnum,
+  buyer: z.object({ id: z.string().uuid(), name: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
+  gift: z.object({ name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), message: z.string().nullable() }).nullable(),
+  departure: z.object({ id: z.string().uuid(), agency: z.string(), departsOn: z.string(), status: exportDepartureStatusEnum, depositDeadline: z.string().datetime() }),
+  reception: exportReceptionEnum,
+  pickupPoint: z.object({ id: z.string().uuid(), city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
+  homeAddress: z.string().nullable(),
+  estimatedWeightG: z.number(),
+  actualWeightG: z.number().nullable(),
+  shippingPrice: z.number(),
+  homeDeliveryFee: z.number(),
+  insured: z.boolean(),
+  insurancePrice: z.number(),
+  /** Value of the products still in the parcel. */
+  declaredValue: z.number(),
+  supplement: z.object({
+    status: exportSupplementStatusEnum,
+    amount: z.number().nullable(),
+    requestedAt: z.string().datetime().nullable(),
+    deadline: z.string().datetime().nullable(),
+  }),
+  orders: z.array(z.object({
+    id: z.string().uuid(),
+    orderNumber: z.string(),
+    supplierId: z.string().uuid(),
+    shopName: z.string(),
+    status: z.string(),
+    /** Handed to eBio (the order is DELIVERED). */
+    collected: z.boolean(),
+    totalAmount: z.number(),
+    lines: z.array(z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+      quantity: z.number(),
+      totalPrice: z.number(),
+      imageUrl: z.string().nullable(),
+      /** Taken out of the parcel after the shop was paid. */
+      removed: z.boolean(),
+    })),
+  })),
+  events: z.array(z.object({
+    id: z.string().uuid(),
+    step: exportShipmentStatusEnum.nullable(),
+    message: z.string().nullable(),
+    pickupPoint: z.string().nullable(),
+    author: z.string().nullable(),
+    at: z.string().datetime(),
+  })),
+  trackingToken: z.string(),
+  createdAt: z.string().datetime(),
+}).meta({
+  title: 'ExportAdminShipment',
+  description: 'Colis terroir côté back-office : commandes par boutique, poids, complément, historique',
+})
+
+export type ExportAdminShipment = z.infer<typeof exportAdminShipmentSchema>

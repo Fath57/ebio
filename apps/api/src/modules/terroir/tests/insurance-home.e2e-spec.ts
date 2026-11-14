@@ -4,18 +4,22 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
+import { Order } from '../../orders/entities/order.entity'
+import { OrdersService } from '../../orders/orders.service'
 import { Checkout } from '../../payments/entities/checkout.entity'
-import { ExportCountry, ExportReception } from '../contracts/terroir.contract'
+import { ExportCountry, ExportReception, ExportShipmentStatus } from '../contracts/terroir.contract'
 import { ExportShipment } from '../entities/export-shipment.entity'
+import { ExportShipmentsService } from '../export-shipments.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
 import { TerroirModule } from '../terroir.module'
-import { exportMovements, seedTerroirWorld, terroirCart } from './terroir-checkout.fixture'
+import { balanceOfShop, balanceOfUser, exportMovements, seedTerroirWorld, terroirCart } from './terroir-checkout.fixture'
 import { refusalOf } from './terroir.fixture'
 
 /**
  * T056 (US6): door delivery only where the departure offers it; insurance at
- * its rate with a floor, booked apart on the EXPORT account. The refund of an
- * insured lost parcel comes with the parcel operations (next wave).
+ * its rate with a floor, booked apart on the EXPORT account; an insured
+ * parcel lost is refunded in full, door delivery included, the shop never
+ * debited.
  */
 describe('terroir — domicile et assurance (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
@@ -81,5 +85,33 @@ describe('terroir — domicile et assurance (e2e)', { timeout: 30_000 }, () => {
     expect(Number(shipment.declaredValue)).toBe(60_000)
     const movements = await exportMovements(em)
     expect(movements.filter(movement => movement.type === 'EXPORT_INSURANCE_INCOME')).toEqual([{ type: 'EXPORT_INSURANCE_INCOME', amount: 1800 }])
+  })
+
+  it('colis assuré perdu : remboursé intégralement (produits, transport, domicile), boutique non débitée', async (context) => {
+    const { em, app } = context as { em: EntityManager, app: INestApplication }
+    const world = await seedTerroirWorld(app, em, { balance: 200_000 })
+    const created = await app.get(TerroirCheckoutService).create(world.buyerId, terroirCart([{ productId: world.shopA.productIds[0], quantity: 1 }], {
+      departureId: world.departureId,
+      insured: true,
+      reception: ExportReception.HOME,
+      homeAddress: '8 rue des Poissonniers, 75018 Paris',
+    }))
+    app.get(EntityManager).clear()
+    em.clear()
+    const [order] = await em.find(Order, { checkout: created.checkout.id })
+    await app.get(OrdersService).accept(order.id, world.shopA.supplierId)
+    const shipments = app.get(ExportShipmentsService)
+    await shipments.collect(created.shipment.id, world.shopA.supplierId, world.agentId)
+    await shipments.addEvent(created.shipment.id, { step: ExportShipmentStatus.DEPARTED }, world.agentId)
+    const shop = await balanceOfShop(em, world.shopA.supplierId)
+    const buyer = await balanceOfUser(em, world.buyerId)
+
+    await shipments.lost(created.shipment.id, false, world.agentId)
+
+    expect(await balanceOfUser(em, world.buyerId)).toBe(buyer + 3000 + 42_500 + 3900)
+    expect(await balanceOfShop(em, world.shopA.supplierId)).toBe(shop)
+    const movements = await exportMovements(em)
+    expect(movements.filter(movement => movement.type === 'EXPORT_INSURANCE_INCOME')).toEqual([{ type: 'EXPORT_INSURANCE_INCOME', amount: 1000 }])
+    expect(movements.filter(movement => movement.type === 'EXPORT_LOSS')).toEqual([{ type: 'EXPORT_LOSS', amount: -49_400 }])
   })
 })

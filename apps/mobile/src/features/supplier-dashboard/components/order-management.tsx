@@ -21,6 +21,8 @@ import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { askPrepMinutes } from '../utils/prep-minutes'
+import { EXPORT_STATUS_LABELS, readOrderError } from '../utils/terroir-export'
+import { ExportCollectNotice, ExportOrderBadge } from './export-order-badge'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED'
 
@@ -37,7 +39,9 @@ interface SupplierOrder {
   items: OrderItem[]
   total: number
   status: OrderStatus
-  pickupMode: 'ON_SITE' | 'DELIVERY'
+  pickupMode: 'ON_SITE' | 'DELIVERY' | 'EXPORT'
+  /** Export orders only: when eBio collects the parcel from the shop. */
+  collectBefore: string | null
   /** Shop estimate of when the parcel will be ready (PREPARING delivery orders). */
   estimatedReadyAt: string | null
   createdAt: string
@@ -104,6 +108,12 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: str
   PREPARING: { status: 'READY', label: 'Prête' },
 }
 
+/** Export orders: the shop only prepares them, eBio collects them. */
+const EXPORT_NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: string }>> = {
+  ACCEPTED: { status: 'PREPARING', label: 'Commencer la préparation' },
+  PREPARING: { status: 'READY', label: 'Prête pour la collecte' },
+}
+
 /** One row of `GET /api/orders` (shop view), shaped for the list. */
 function toSupplierOrder(o: Record<string, unknown>): SupplierOrder {
   return {
@@ -117,7 +127,8 @@ function toSupplierOrder(o: Record<string, unknown>): SupplierOrder {
     })),
     total: (o.totalAmount as number) ?? (o.total as number) ?? 0,
     status: o.status as OrderStatus,
-    pickupMode: o.pickupMode === 'DELIVERY' ? 'DELIVERY' : 'ON_SITE',
+    pickupMode: o.pickupMode === 'DELIVERY' || o.pickupMode === 'EXPORT' ? o.pickupMode : 'ON_SITE',
+    collectBefore: (o.collectBefore as string | null) ?? null,
     estimatedReadyAt: (o.estimatedReadyAt as string | null) ?? null,
     createdAt: o.createdAt as string,
   }
@@ -306,8 +317,7 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
         )
       }
       else {
-        const data = await res.json().catch(() => ({})) as { message?: string }
-        showError('Erreur', data.message ?? 'Impossible de mettre à jour le statut.')
+        showError('Erreur', await readOrderError(res, 'Impossible de mettre à jour le statut.'))
       }
     }
     catch {
@@ -335,7 +345,9 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
       const itemsSummary = item.items
         .map(i => `${i.quantity}x ${i.name}`)
         .join(', ')
-      const nextStep = NEXT_STATUS[item.status]
+      const isExport = item.pickupMode === 'EXPORT'
+      const nextStep = isExport ? EXPORT_NEXT_STATUS[item.status] : NEXT_STATUS[item.status]
+      const statusLabel = (isExport ? EXPORT_STATUS_LABELS[item.status] : undefined) ?? STATUS_LABELS[item.status]
 
       return (
         <View style={styles.card}>
@@ -353,13 +365,19 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
             </View>
 
             <View style={styles.badgeRow}>
-              <Text style={styles.statusBadge}>{STATUS_LABELS[item.status]}</Text>
+              <Text style={styles.statusBadge}>{statusLabel}</Text>
+              {isExport && <ExportOrderBadge />}
               {item.status === 'PREPARING' && item.estimatedReadyAt && (
                 <Text style={styles.readyAt}>{`Prête vers ${formatTime(item.estimatedReadyAt)}`}</Text>
               )}
             </View>
 
             <Text style={styles.buyerName}>{item.buyerName}</Text>
+            {isExport && !['DELIVERED', 'CANCELLED'].includes(item.status) && (
+              <View style={styles.exportNotice}>
+                <ExportCollectNotice collectBefore={item.collectBefore} />
+              </View>
+            )}
             <Text style={styles.itemsSummary} numberOfLines={2}>
               {itemsSummary}
             </Text>
@@ -407,7 +425,7 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
               onPress={() => handleNextStep(item, nextStep.status)}
               disabled={isProcessing}
               accessibilityRole="button"
-              accessibilityLabel={`Marquer comme ${nextStep.label}`}
+              accessibilityLabel={isExport ? nextStep.label : `Marquer comme ${nextStep.label}`}
             >
               {isProcessing
                 ? (
@@ -415,15 +433,13 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
                   )
                 : (
                     <Text style={styles.statusButtonText}>
-                      Marquer :
-                      {' '}
-                      {nextStep.label}
+                      {isExport ? nextStep.label : `Marquer : ${nextStep.label}`}
                     </Text>
                   )}
             </TouchableOpacity>
           )}
 
-          {item.status === 'IN_DELIVERY' && (
+          {item.status === 'IN_DELIVERY' && !isExport && (
             <TouchableOpacity
               style={[styles.statusButton, isProcessing && styles.buttonDisabled]}
               onPress={() => handleConfirmDelivery(item.id)}
@@ -617,6 +633,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
+  exportNotice: { marginTop: spacing[2] },
   statusBadge: {
     ...typography.caption,
     fontFamily: fonts.sansSb,
