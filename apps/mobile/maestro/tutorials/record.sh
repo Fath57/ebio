@@ -31,19 +31,38 @@ adb -s "$device" shell cmd notification set_dnd priority >/dev/null
 adb -s "$device" shell settings put secure autofill_service null
 
 "$api_dir/scripts/demo/reset-demo.sh"
-systemctl --user restart ebio-api-demo
+# The demo API exits when its database is dropped under it, and the unit can
+# be gone by then: recreated as in apps/api/scripts/demo/README.md.
+if ! systemctl --user restart ebio-api-demo 2>/dev/null; then
+  systemd-run --user --unit=ebio-api-demo --collect -p WorkingDirectory="$api_dir" \
+    -p StandardOutput=append:"$HOME/.cache/ebio-logs/api-demo.log" -p StandardError=append:"$HOME/.cache/ebio-logs/api-demo.log" \
+    --setenv=PATH="$(dirname "$(which node)")":/usr/bin:/bin \
+    --setenv=DATABASE_NAME=ebio_demo --setenv=API_PORT=3020 \
+    --setenv=REDIS_URL=redis://localhost:6379/5 \
+    --setenv=WIREPICK_USER= --setenv=WIREPICK_PASSWORD= \
+    node --enable-source-maps dist/main.js
+fi
 until curl -sf http://localhost:3020/api/search/categories >/dev/null; do sleep 2; done
 if [ "$scenario" != none ]; then
   (cd "$api_dir" && DATABASE_NAME=ebio_demo npx dotenvx run -q -- npx tsx scripts/demo/scenario.ts "$scenario")
+fi
+
+# SETUP_FLOW: a flow played before filming, unfilmed, when the starting state
+# is easier to reach through the app than by script (accounts signed up).
+if [ -n "${SETUP_FLOW:-}" ]; then
+  ./run.sh "$variant" "$SETUP_FLOW"
 fi
 
 # The app is opened first and filming starts once it is on screen: started
 # earlier, the take began on the phone's home screen — apps, wallpaper.
 LAUNCH_ONLY=1 ./run.sh "$variant" "$flow"
 sleep 2
-# screenrecord stops by itself after 3 minutes, Android's limit.
+# screenrecord stops by itself after 3 minutes, unless the device's
+# screenrecord accepts « --time-limit 0 » (no limit, recent Android).
+time_limit=()
+if adb -s "$device" shell screenrecord --help 2>&1 | grep -q 'Set to 0'; then time_limit=(--time-limit 0); fi
 adb -s "$device" shell rm -f /sdcard/take.mp4
-adb -s "$device" shell screenrecord --bit-rate 8000000 /sdcard/take.mp4 &
+adb -s "$device" shell screenrecord --bit-rate 8000000 "${time_limit[@]}" /sdcard/take.mp4 &
 recorder=$!
 # Wall-clock start of the video: produce.py lines Maestro's taps up with it.
 sleep 0.5

@@ -22,7 +22,8 @@ import { createMikroOrmOptions } from '../../src/config/mikro-orm.config'
 import { Account, User, UserRole } from '../../src/modules/auth/auth.entity'
 import { CourierProfile, VehicleType } from '../../src/modules/deliveries/entities/courier-profile.entity'
 import { ValidationStatus } from '../../src/modules/suppliers/supplier.entity'
-import { DEMO_DELIVERY_CODE, DEMO_PASSWORD } from './demo-accounts'
+import { DEMO_DELIVERY_CODE, DEMO_DIASPORA_BUYER, DEMO_OTP_CODE, DEMO_PASSWORD } from './demo-accounts'
+import { seedValise } from './seed-valise'
 
 const TERMS_VERSION = '2026-09'
 const SNAPSHOT_DIR = join(__dirname, 'snapshot')
@@ -129,6 +130,26 @@ async function seedCourierHistory(em: EntityManager, fullName: string, lines: Hi
   await connection.execute(`UPDATE wallets SET balance = ? WHERE id = ?`, [balance, wallet.id])
 }
 
+/**
+ * The buyer of the « Valise du pays » video, living in France: prices in
+ * euros, and a wallet topped up enough to pay a suitcase without the card page.
+ */
+async function seedDiasporaBuyer(em: EntityManager, passwordHash: string): Promise<void> {
+  const user = await createPerson(em, { ...DEMO_DIASPORA_BUYER, role: UserRole.BUYER }, passwordHash)
+  const connection = em.getConnection()
+  await connection.execute(`UPDATE users SET display_currency = 'EUR' WHERE id = ?`, [user.id])
+  const [wallet] = await connection.execute(
+    `INSERT INTO wallets (user_id, balance, "createdAt", "updatedAt") VALUES (?, ?, NOW() - INTERVAL '3 days', NOW()) RETURNING id`,
+    [user.id, DEMO_DIASPORA_BUYER.walletBalance],
+  ) as Array<{ id: string }>
+  // Same type and wording as a card top-up confirmed by the API.
+  await connection.execute(
+    `INSERT INTO wallet_transactions (wallet_id, type, amount, balance_after, description, "createdAt")
+     VALUES (?, 'TOPUP', ?, ?, 'Recharge du portefeuille', NOW() - INTERVAL '3 days')`,
+    [wallet.id, DEMO_DIASPORA_BUYER.walletBalance, DEMO_DIASPORA_BUYER.walletBalance],
+  )
+}
+
 function slug(text: string): string {
   return text
     .normalize('NFD')
@@ -182,6 +203,8 @@ async function seed(em: EntityManager): Promise<void> {
   for (const buyer of BUYERS) {
     await createPerson(em, buyer, passwordHash)
   }
+  await seedDiasporaBuyer(em, passwordHash)
+  await seedValise(em)
   await createPerson(em, ADMIN, passwordHash)
 
   for (const spec of COURIERS) {
@@ -261,7 +284,24 @@ async function seed(em: EntityManager): Promise<void> {
     `INSERT INTO platform_settings (key, value) VALUES ('courier_offer_timeout_s', '600')
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
   )
-  console.info(`buyers: ${BUYERS.length}, couriers: ${COURIERS.length}, admin: 1`)
+  // Demo only: every one-time code drawn (SMS sign-up and login, e-mail
+  // sign-up, password reset, address change) becomes DEMO_OTP_CODE, so that
+  // a scripted take types it; no SMS or e-mail leaves the demo. The codes are
+  // stored in plain text in `verification`, under these prefixes only: the
+  // registration tokens (`reg:`) and Better Auth's own rows are left alone.
+  await em.getConnection().execute(`
+    CREATE OR REPLACE FUNCTION demo_fixed_otp_code() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.identifier LIKE 'otp:%' OR NEW.identifier LIKE 'reset:%' OR NEW.identifier LIKE 'email-change:%' THEN
+        NEW.value := '${DEMO_OTP_CODE}';
+      END IF;
+      RETURN NEW;
+    END $$ LANGUAGE plpgsql`)
+  await em.getConnection().execute(`DROP TRIGGER IF EXISTS demo_fixed_otp_code ON verification`)
+  await em.getConnection().execute(`
+    CREATE TRIGGER demo_fixed_otp_code BEFORE INSERT ON verification
+    FOR EACH ROW EXECUTE FUNCTION demo_fixed_otp_code()`)
+  console.info(`buyers: ${BUYERS.length + 1}, couriers: ${COURIERS.length}, admin: 1`)
   console.info(`Password for every demo account: ${DEMO_PASSWORD}`)
 }
 

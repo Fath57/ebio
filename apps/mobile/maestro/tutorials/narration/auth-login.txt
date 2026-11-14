@@ -1,0 +1,16 @@
+# Voix off : « Se connecter, et retrouver son mot de passe ».
+# Calée sur les repères que produce.py affiche pour le montage (toucher par
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
+# Vocabulaire eBio : acheteur, boutique.
+00:00 | Voici comment vous connecter à eBio, et retrouver votre mot de passe si vous l'avez oublié.
+00:08 [Se connecter par téléphone] | Ouvrez Profil, puis touchez « Se connecter ».
+00:16 | Avec un numéro béninois, saisissez votre numéro de téléphone, puis votre mot de passe.
+00:34 | Touchez « Se connecter » : votre profil s'affiche.
+00:41 | Pour la suite, déconnectez-vous depuis le bas du profil.
+00:56 [Mot de passe oublié] | Mot de passe oublié ? Touchez le lien sous le mot de passe.
+01:04 | Choisissez Email, saisissez votre adresse, puis touchez « Envoyer le code ».
+01:17 | Saisissez le code à six chiffres reçu par e-mail.
+01:22 [Nouveau mot de passe] | Choisissez un nouveau mot de passe, confirmez-le, puis touchez « Réinitialiser ».
+01:43 [Se reconnecter] | Votre mot de passe est changé : connectez-vous avec votre e-mail et ce nouveau mot de passe.
+02:05 | Vous voilà connecté. C'est tout !

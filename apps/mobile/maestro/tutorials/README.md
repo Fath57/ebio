@@ -8,6 +8,16 @@ tutorial videos, against the demo database (see
 |---|---|
 | Fournisseur : traiter une commande | `./record.sh supplier supplier-orders.yaml supplier-order` |
 | Livreur : livrer une course | `./record.sh courier courier-run.yaml courier-run` |
+| La Valise du pays (acheteur) | `NO_LOCATION=1 ./record.sh client client-valise.yaml valise-client` |
+| Fournisseur : une commande pour l’étranger | `./record.sh supplier supplier-valise.yaml valise-supplier` (then `TAIL=16 python3 produce.py …`: it ends on scrolls) |
+| Créer son compte | `./record.sh client auth-signup.yaml auth` |
+| Se connecter, mot de passe oublié | `SETUP_FLOW=auth-signup.yaml ./record.sh client auth-login.yaml auth` |
+
+Options: `NO_LOCATION=1` refuses location to the app (no prompt), which then
+searches around Cotonou: a personal phone abroad found no shop within the
+search radius. `SETUP_FLOW=<flow>` plays a flow unfilmed before the take
+(accounts signed up through the app). `TAIL=<s>` (produce.py) keeps more after
+the last tap. On a recent Android, screenrecord runs without its 3-minute limit.
 
 Three steps per video:
 

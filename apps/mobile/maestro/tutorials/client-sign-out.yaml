@@ -1,0 +1,19 @@
+# Signs out from the Client app's Profile tab. Shared by the auth flows.
+appId: com.ebio.mobile
+---
+- tapOn: Profil
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: Se déconnecter
+    direction: DOWN
+- waitForAnimationToEnd
+- tapOn: Se déconnecter
+- extendedWaitUntil:
+    visible: Se déconnecter \?
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: Se déconnecter
+- extendedWaitUntil:
+    visible: Bienvenue
+    timeout: 15000
+- waitForAnimationToEnd

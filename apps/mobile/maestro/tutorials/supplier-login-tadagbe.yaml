@@ -1,0 +1,30 @@
+# Signs in as FARINE TADAGBE, by e-mail, in the Supplier app just opened (and
+# cleared) by run.sh. The phone's time zone is in Europe, so the login screen
+# opens on the e-mail field. Demo kit: apps/api/scripts/demo/README.md
+appId: com.ebio.supplier
+---
+- extendedWaitUntil:
+    visible: Bon retour !|Passer|Tableau de bord
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: E-mail
+    commands:
+      - tapOn: E-mail
+# Each field waits for the keyboard to settle: typed while it slides in, the
+# text went nowhere.
+- tapOn: Adresse e-mail
+- waitForAnimationToEnd
+- inputText: farine-tadagbe@demo.e-bio.org
+- tapOn: Mot de passe
+- waitForAnimationToEnd
+- inputText: Demo2026!
+- assertVisible: '•+'
+- hideKeyboard
+- tapOn: Se connecter

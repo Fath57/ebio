@@ -27,6 +27,15 @@ adb -s "$device" shell pm clear "$package" >/dev/null
 for permission in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION POST_NOTIFICATIONS CAMERA; do
   adb -s "$device" shell pm grant "$package" "android.permission.$permission" 2>/dev/null || true
 done
+# NO_LOCATION=1: location refused for good (no prompt), the app falls back on
+# Cotonou. A personal phone reports where its owner is: in France, the search
+# found no shop within its radius.
+if [ "${NO_LOCATION:-0}" = 1 ]; then
+  for permission in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION; do
+    adb -s "$device" shell pm revoke "$package" "android.permission.$permission" 2>/dev/null || true
+    adb -s "$device" shell pm set-permission-flags "$package" "android.permission.$permission" user-fixed 2>/dev/null || true
+  done
+fi
 if [ "${MODE:-release}" = dev ]; then
   adb -s "$device" shell am start -p "$package" -a android.intent.action.VIEW \
     -d "exp+ebio-mobile://expo-development-client/?url=http%3A%2F%2Flocalhost%3A$port" >/dev/null

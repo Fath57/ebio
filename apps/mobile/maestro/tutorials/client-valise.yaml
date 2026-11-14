@@ -1,0 +1,178 @@
+# Tutorial « La Valise du pays : faire sa valise depuis l'étranger ».
+# Start state: scenario.ts valise-client (Valise open towards France and
+# Belgium, Sika Mensah's wallet at 150 000 FCFA), the app cleared by run.sh so
+# the suitcase is empty. Location refused (NO_LOCATION=1): searches run around
+# Cotonou, a phone in France found no shop within the search radius.
+#   NO_LOCATION=1 ./record.sh client client-valise.yaml valise-client
+appId: com.ebio.mobile
+---
+- runFlow: client-login-sika.yaml
+- tapOn: Accueil
+- extendedWaitUntil:
+    visible: La Valise du pays
+    timeout: 20000
+- waitForAnimationToEnd
+
+# The boarding pass, folded: unfold it.
+- extendedWaitUntil:
+    visible: Faire ma valise
+    timeout: 10000
+- tapOn: Afficher les détails du départ
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: Aussi vers
+    timeout: 5000
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+
+# The departures board, opened from « Aussi vers Belgique ».
+- tapOn: Aussi vers la Belgique.*
+- extendedWaitUntil:
+    visible: Tableau des départs
+    timeout: 10000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Fermer le tableau des départs
+- waitForAnimationToEnd
+
+# Into the Valise mode: let the entry effect play.
+- tapOn: Faire ma valise
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: Valise vers la France
+    timeout: 10000
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+
+# A fresh juice: not exportable, and why.
+- tapOn: 'Jus de fruits '
+- extendedWaitUntil:
+    visible: Jus de baobab
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Jus de baobab
+- extendedWaitUntil:
+    visible: Cette boutique ne propose pas encore ce produit.*
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Retour
+- waitForAnimationToEnd
+- tapOn: Retour
+- waitForAnimationToEnd
+
+# The flours: « Exportable » stamps.
+- repeat:
+    times: 4
+    commands:
+      - tapOn: Catégories suivantes
+      - waitForAnimationToEnd
+- tapOn: Poudres, farines et granulés
+- extendedWaitUntil:
+    visible: FARINE DE SOUCHET AU CURCUMA
+    timeout: 15000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%,75%
+    end: 50%,48%
+    duration: 1500
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2000
+    timeout: 2000
+    optional: true
+- tapOn: FARINE DE SOUCHET NATURE
+- extendedWaitUntil:
+    visible: Ajouter à ma valise
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Augmenter la quantité
+- tapOn: Ajouter à ma valise
+- extendedWaitUntil:
+    visible: Ajouté à votre valise
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: Continuer
+- waitForAnimationToEnd
+- tapOn: Retour
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: POUDRE DE BAOBAB
+    direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn: POUDRE DE BAOBAB
+- extendedWaitUntil:
+    visible: Ajouter à ma valise
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Ajouter à ma valise
+- extendedWaitUntil:
+    visible: Ajouté à votre valise
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Ma valise: the gauge, and a suggestion that still fits.
+- tapOn: Voir ma valise
+- extendedWaitUntil:
+    visible: .*kg sur 5 kg payés
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- swipe:
+    start: 50%,62%
+    end: 50%,42%
+    duration: 1200
+- waitForAnimationToEnd
+- tapOn: Ajouter Miel à ma valise
+- waitForAnimationToEnd
+- swipe:
+    start: 50%,66%
+    end: 50%,38%
+    duration: 1500
+- waitForAnimationToEnd
+- tapOn: Commander
+
+# Checkout: the departure, pickup in Paris, wallet.
+- extendedWaitUntil:
+    visible: Atlantique Fret
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- swipe:
+    start: 50%,70%
+    end: 50%,30%
+    duration: 1500
+- waitForAnimationToEnd
+- tapOn: Mon portefeuille
+- waitForAnimationToEnd
+- tapOn: Payer avec le portefeuille.*
+- extendedWaitUntil:
+    visible: Ma valise envoyée
+    timeout: 20000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Commandes
+- extendedWaitUntil:
+    visible: .*Valise vers la France
+    timeout: 15000
+- waitForAnimationToEnd

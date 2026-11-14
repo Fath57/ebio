@@ -1,0 +1,119 @@
+# Tutorial « Créer son compte » (first half of « Créer son compte et se
+# connecter »): sign-up by phone (Codjo Ahouandjinou), then by e-mail (Nadia
+# Kpadé). The demo replaces every one-time code by 246810 (apps/api/scripts/demo).
+# Start state: scenario.ts auth (neither account exists).
+#   ./record.sh client auth-signup.yaml auth
+appId: com.ebio.mobile
+---
+- extendedWaitUntil:
+    visible: Passer|Suivant|Rechercher un produit.*
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- waitForAnimationToEnd
+- tapOn: Profil
+- extendedWaitUntil:
+    visible: Se connecter
+    timeout: 15000
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Créer un compte
+- extendedWaitUntil:
+    visible: Recevoir le code
+    timeout: 15000
+- waitForAnimationToEnd
+
+# By phone. Abroad (the phone's time zone), the form opens on the e-mail.
+- runFlow:
+    when:
+      visible: J'ai un numéro béninois
+    commands:
+      - tapOn: J'ai un numéro béninois
+      - waitForAnimationToEnd
+- tapOn: '\+229 XX XX XX XX'
+- waitForAnimationToEnd
+- inputText: '0197000000'
+- hideKeyboard
+- extendedWaitUntil:
+    visible: PAUSE_1500
+    timeout: 1500
+    optional: true
+- tapOn: J.accepte les conditions.*
+- tapOn: Recevoir le code
+- extendedWaitUntil:
+    visible: Vérification
+    timeout: 15000
+- waitForAnimationToEnd
+- inputText: '246810'
+- extendedWaitUntil:
+    visible: Nom complet
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Nom complet
+- waitForAnimationToEnd
+- inputText: Codjo Ahouandjinou
+- tapOn: Mot de passe.*
+- waitForAnimationToEnd
+- inputText: Demo2026!
+- hideKeyboard
+- tapOn: Créer mon compte
+- extendedWaitUntil:
+    notVisible: Créer mon compte
+    timeout: 20000
+- waitForAnimationToEnd
+- runFlow: client-sign-out.yaml
+
+# By e-mail.
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Créer un compte
+- extendedWaitUntil:
+    visible: Recevoir le code
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: S'inscrire avec un e-mail
+    commands:
+      - tapOn: S'inscrire avec un e-mail
+      - waitForAnimationToEnd
+- tapOn: Nom complet
+- waitForAnimationToEnd
+- inputText: Nadia Kpadé
+- tapOn: Adresse e-mail
+- waitForAnimationToEnd
+- inputText: nadia@demo.e-bio.org
+- tapOn: Mot de passe
+- waitForAnimationToEnd
+- inputText: Demo2026!
+- hideKeyboard
+- tapOn: J.accepte les conditions.*
+- tapOn: Recevoir le code
+- extendedWaitUntil:
+    visible: Vérification
+    timeout: 15000
+- waitForAnimationToEnd
+- inputText: '246810'
+- extendedWaitUntil:
+    notVisible: Vérification
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn: Profil
+- extendedWaitUntil:
+    visible: Nadia Kpadé
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- runFlow: client-sign-out.yaml

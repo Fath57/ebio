@@ -1,0 +1,125 @@
+# Tutorial « Se connecter » (second half of « Créer son compte et se
+# connecter »): login by phone and password (Codjo Ahouandjinou), then a
+# forgotten password reset by e-mail (Nadia Kpadé) and a login with the new one.
+# The demo replaces every one-time code by 246810 (apps/api/scripts/demo).
+# Start state: both accounts signed up by auth-signup.yaml, played unfilmed:
+#   SETUP_FLOW=auth-signup.yaml ./record.sh client auth-login.yaml auth
+appId: com.ebio.mobile
+---
+- extendedWaitUntil:
+    visible: Passer|Suivant|Rechercher un produit.*
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- waitForAnimationToEnd
+- tapOn: Profil
+- extendedWaitUntil:
+    visible: Se connecter
+    timeout: 15000
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- waitForAnimationToEnd
+
+# By phone and password. Abroad (the phone's time zone), the screen opens on
+# the e-mail.
+- runFlow:
+    when:
+      visible: J'ai un numéro béninois
+    commands:
+      - tapOn: J'ai un numéro béninois
+      - waitForAnimationToEnd
+- tapOn: '\+229.*'
+- waitForAnimationToEnd
+- inputText: '0197000000'
+- tapOn: Mot de passe
+- waitForAnimationToEnd
+- inputText: Demo2026!
+- hideKeyboard
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Codjo Ahouandjinou
+    timeout: 20000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- runFlow: client-sign-out.yaml
+
+# Forgotten password, by e-mail.
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Mot de passe oublié \?
+- extendedWaitUntil:
+    visible: Envoyer le code
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Email
+- waitForAnimationToEnd
+- tapOn: votre@email.com
+- waitForAnimationToEnd
+- inputText: nadia@demo.e-bio.org
+- hideKeyboard
+- tapOn: Envoyer le code
+- extendedWaitUntil:
+    visible: Vérification
+    timeout: 15000
+- waitForAnimationToEnd
+- inputText: '246810'
+- extendedWaitUntil:
+    visible: Confirmer le mot de passe
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Nouveau mot de passe
+- waitForAnimationToEnd
+- inputText: Nadia2026!
+- tapOn: Confirmer le mot de passe
+- waitForAnimationToEnd
+- inputText: Nadia2026!
+- hideKeyboard
+- tapOn: Réinitialiser
+- extendedWaitUntil:
+    visible: Mot de passe réinitialisé
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2000
+    timeout: 2000
+    optional: true
+- tapOn: Se connecter
+
+# Login with the new password.
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: E-mail
+    commands:
+      - tapOn: E-mail
+      - waitForAnimationToEnd
+- tapOn: Adresse e-mail
+- waitForAnimationToEnd
+- inputText: nadia@demo.e-bio.org
+- tapOn: Mot de passe
+- waitForAnimationToEnd
+- inputText: Nadia2026!
+- hideKeyboard
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Nadia Kpadé
+    timeout: 20000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true

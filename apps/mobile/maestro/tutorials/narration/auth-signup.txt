@@ -1,0 +1,18 @@
+# Voix off : « Créer son compte » (par téléphone, puis par e-mail).
+# Calée sur les repères que produce.py affiche pour le montage (toucher par
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
+# Vocabulaire eBio : acheteur, boutique.
+00:00 | Voici comment créer votre compte eBio, avec votre téléphone ou votre e-mail.
+00:08 [Ouvrir l'inscription] | Ouvrez Profil, touchez « Se connecter », puis « Créer un compte ».
+00:21 [Par téléphone] | Avec un numéro béninois, saisissez votre numéro de téléphone.
+00:32 | Acceptez les conditions, puis touchez « Recevoir le code ».
+00:37 | Saisissez le code à six chiffres reçu par SMS.
+00:42 [Finaliser le compte] | Indiquez votre nom complet, puis choisissez un mot de passe d'au moins huit caractères.
+00:56 | Touchez « Créer mon compte » : c'est fait, vous êtes connecté.
+01:03 | Votre profil d'acheteur s'affiche. Pour la suite, déconnectez-vous depuis le bas du profil.
+01:17 [Par e-mail] | Pour vous inscrire avec une adresse e-mail, revenez sur « Créer un compte ».
+01:28 | Saisissez votre nom, votre adresse e-mail et un mot de passe.
+01:49 | Acceptez les conditions, puis touchez « Recevoir le code ».
+01:54 | Saisissez le code à six chiffres reçu par e-mail.
+02:00 [Compte créé] | Votre compte est prêt : votre nom et votre e-mail apparaissent dans le profil. C'est tout !

@@ -14,6 +14,7 @@ recording started) and take.mp4.maestro.log (the flow's log). From them:
 
 Output: take-montage.mp4. The voice-over is laid afterwards by narrate.sh.
 """
+import os
 import re
 import subprocess
 import sys
@@ -37,7 +38,8 @@ LEAD_IN_SECONDS = 2.5
 # Longest stretch kept between two taps, once compressed; and what is kept
 # after the last tap.
 IDLE_TARGET_SECONDS = 6
-TAIL_SECONDS = 5
+# TAIL=12 keeps more: a flow that ends on scrolls, not on a tap.
+TAIL_SECONDS = float(os.environ.get('TAIL', '5'))
 
 TIME = r'(\d{2}):(\d{2}):(\d{2})\.(\d{3})'
 TAP_COMMAND = re.compile(TIME + r'.*Tap on (?:"(.*)"|point .*) RUNNING')

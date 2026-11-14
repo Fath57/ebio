@@ -1,0 +1,20 @@
+# Voix off : « Fournisseur : une commande pour l'étranger ».
+# Calée sur les repères que produce.py affiche pour le montage (toucher par
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
+# Vocabulaire eBio : fournisseur, boutique, acheteur, Valise du pays.
+00:00 | Voici comment traiter une commande pour l'étranger avec eBio Fournisseur.
+00:05 [Se connecter] | Connectez-vous avec votre adresse e-mail et votre mot de passe.
+00:26 | Une commande vous attend sur le tableau de bord.
+00:32 [La commande export] | Dans Commandes, le badge « Commande export » signale une valise du pays, avec la date limite pour la remettre à eBio.
+00:40 | Ouvrez-la pour voir les articles.
+00:46 [Préparer la commande] | Touchez « Accepter », puis commencez la préparation.
+00:57 [Prête pour la collecte] | Quand le colis est prêt, touchez « Prête pour la collecte ».
+01:01 | Un livreur eBio vient le chercher pour l'apporter au point eBio. Votre boutique est payée à la collecte.
+01:08 [Vendre un produit à l'étranger] | Pour proposer un autre produit à l'étranger, ouvrez Mes produits.
+01:18 | Ouvrez le produit, puis « Vendre à l'étranger ».
+01:25 | La liste des critères se met à jour en direct : ici, il manque deux éléments.
+01:32 | Indiquez comment le produit se conserve : à température ambiante.
+01:40 | Plus qu'un élément.
+01:46 | Ajoutez la photo de l'étiquette, de face, avec les dates bien lisibles. Le produit apparaît alors tout seul dans la Valise du pays.
+01:54 [Le guide] | En cas de doute, ouvrez le guide : ce qui peut voyager, comment emballer et comment étiqueter. C'est tout !

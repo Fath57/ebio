@@ -1,0 +1,158 @@
+# Tutorial « Fournisseur : une commande pour l'étranger ».
+# Start state: scenario.ts valise-supplier (Sika Mensah's suitcase towards
+# France paid; the FARINE TADAGBE order waits, pickup mode EXPORT).
+#   ./record.sh supplier supplier-valise.yaml valise-supplier
+# The label photo is not added: the picker opens the phone's gallery, another
+# app, so the take shows the criterion and stops there, nothing saved.
+appId: com.ebio.supplier
+---
+- runFlow: supplier-login-tadagbe.yaml
+- extendedWaitUntil:
+    visible: Tableau de bord
+    timeout: 30000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2000
+    timeout: 2000
+    optional: true
+
+# The export order: badge, deadline to hand it over.
+# Bottom tab « Commandes » (the dashboard also has a « Commandes » shortcut).
+- tapOn:
+    point: 37%,93%
+- extendedWaitUntil:
+    visible: Commande export
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Sika Mensah
+- extendedWaitUntil:
+    visible: Accepter
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- tapOn: Accepter
+- extendedWaitUntil:
+    visible: Commencer la préparation
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Commencer la préparation
+- extendedWaitUntil:
+    visible: Prête pour la collecte
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2000
+    timeout: 2000
+    optional: true
+- tapOn: Prête pour la collecte
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Retour
+- waitForAnimationToEnd
+
+# A product to prepare for export.
+- tapOn:
+    point: 12%,93%
+- extendedWaitUntil:
+    visible: Mes produits
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Mes produits
+- extendedWaitUntil:
+    visible: FARINE DE SOUCHET AU CLOU DE GIROFLE
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: FARINE DE SOUCHET AU CLOU DE GIROFLE
+- extendedWaitUntil:
+    visible: Description
+    timeout: 15000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: Il manque 2 éléments
+    direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn: Vendre à l.étranger
+- extendedWaitUntil:
+    visible: CE QU.IL FAUT POUR PARTIR
+    timeout: 15000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%,70%
+    end: 50%,45%
+    duration: 1500
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- tapOn: Se conserve à température ambiante.*
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_1500
+    timeout: 1500
+    optional: true
+- tapOn: Température ambiante
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_1500
+    timeout: 1500
+    optional: true
+- scrollUntilVisible:
+    element: Il vous manque 1 élément
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- tapOn: 'Photo de l.étiquette : à compléter'
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+
+# The guide.
+- scrollUntilVisible:
+    element: Lire le guide.*
+    direction: UP
+- waitForAnimationToEnd
+- tapOn: Lire le guide.*
+- extendedWaitUntil:
+    visible: Ce qui peut voyager
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_3000
+    timeout: 3000
+    optional: true
+- swipe:
+    start: 50%,75%
+    end: 50%,40%
+    duration: 2000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true
+- swipe:
+    start: 50%,75%
+    end: 50%,40%
+    duration: 2000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: PAUSE_2500
+    timeout: 2500
+    optional: true

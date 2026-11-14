@@ -1,0 +1,41 @@
+# Signs in as Sika Mensah, the buyer in France, in the Client app just opened
+# (and cleared) by run.sh. The phone's time zone is in Europe, so the login
+# screen opens on the e-mail field. Demo kit: apps/api/scripts/demo/README.md
+appId: com.ebio.mobile
+---
+- extendedWaitUntil:
+    visible: Passer|Suivant|Rechercher un produit.*
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- waitForAnimationToEnd
+- tapOn: Profil
+- extendedWaitUntil:
+    visible: Se connecter
+    timeout: 15000
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Bon retour !
+    timeout: 15000
+- runFlow:
+    when:
+      visible: E-mail
+    commands:
+      - tapOn: E-mail
+# Each field waits for the keyboard to settle: typed while it slides in, the
+# text went nowhere.
+- tapOn: Adresse e-mail
+- waitForAnimationToEnd
+- inputText: sika@demo.e-bio.org
+- tapOn: Mot de passe
+- waitForAnimationToEnd
+- inputText: Demo2026!
+- assertVisible: '•+'
+- hideKeyboard
+- tapOn: Se connecter
+- extendedWaitUntil:
+    visible: Sika Mensah
+    timeout: 20000

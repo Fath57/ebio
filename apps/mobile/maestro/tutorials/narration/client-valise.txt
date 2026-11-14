@@ -1,0 +1,25 @@
+# Voix off : « La Valise du pays : faire sa valise depuis l'étranger ».
+# Calée sur les repères que produce.py affiche pour le montage (toucher par
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
+# Vocabulaire eBio : acheteur, boutique, Valise du pays.
+00:00 | Voici comment faire votre valise du pays avec eBio, depuis l'étranger.
+00:05 [Se connecter] | Ouvrez Profil, puis connectez-vous avec votre adresse e-mail et votre mot de passe.
+00:38 [La carte d'embarquement] | Sur l'accueil, la Valise du pays se présente comme une carte d'embarquement.
+00:44 | Dépliez-la : départ de Cotonou, retrait à Paris, la date du départ et la date limite pour commander.
+00:51 [Le tableau des départs] | Touchez « Aussi vers Belgique » : le tableau des départs affiche chaque destination et son prix au kilo.
+00:59 | Ici, nous restons sur la France.
+01:02 [Faire ma valise] | Touchez « Faire ma valise » : l'application passe en mode Valise.
+01:05 | L'étiquette en haut rappelle la destination et le départ.
+01:08 [Exportable ou non] | Ouvrez une catégorie, par exemple les jus de fruits.
+01:16 | Un jus frais ne voyage pas : il est marqué « Non exportable », et la raison est écrite en bas.
+01:28 [Choisir ses produits] | Revenez à l'accueil, et faites défiler les catégories jusqu'aux poudres et farines.
+01:52 | Les produits qui peuvent partir portent le tampon « Exportable ».
+01:58 | Ouvrez la farine de souchet nature, choisissez deux sachets, puis ajoutez-les à votre valise.
+02:11 | Continuez vos achats : ajoutez aussi la poudre de baobab.
+02:32 [Ma valise] | Ouvrez « Ma valise » : la jauge montre le poids du colis, sur les cinq kilos payés au minimum.
+02:39 | eBio vous suggère des produits qui tiennent encore sans frais en plus : ajoutons le miel.
+02:46 [Commander] | Touchez « Commander » : le départ et le point de retrait à Paris sont déjà choisis.
+02:53 | Choisissez de payer avec votre portefeuille, puis validez.
+02:59 [Suivre sa valise] | Votre valise est payée : vous voyez son suivi, son contenu et le total.
+03:05 | Elle apparaît aussi dans Mes commandes. Bon voyage aux saveurs du pays !
