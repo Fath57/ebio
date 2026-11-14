@@ -1,24 +1,22 @@
 import type { GestureResponderEvent } from 'react-native'
-import type { TerroirCountry, TerroirExportability } from '../terroir-api'
+import type { TerroirExportability } from '../terroir-api'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
-import Check from 'lucide-react-native/dist/esm/icons/check'
-import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
+import Luggage from 'lucide-react-native/dist/esm/icons/luggage'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Plane from 'lucide-react-native/dist/esm/icons/plane'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
-import X from 'lucide-react-native/dist/esm/icons/x'
 import { use, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { DragSheet } from '../../common/components/drag-sheet'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
-import { countryChipLabel } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
-import { useValiseMode } from '../valise-mode-context'
 import { terroirStyles } from './terroir-ui'
+import { LuggageTag } from './valise/luggage-tag'
+import { useValisePalette } from './valise/valise-palette'
+
+export { ValiseModeBanner } from './valise/valise-banner'
 
 const MAX_QUANTITY = 20
 
@@ -29,107 +27,61 @@ interface ExportChipProps {
   item: TerroirExportability
 }
 
-/** The product's export label: green when it can travel, neutral while checked, muted otherwise. */
+/**
+ * The product's export label. « Exportable » is a small rubber stamp, tilted
+ * as if inked by hand at the agency; while checked it is a quiet blue tag;
+ * otherwise a muted dashed tag that does not compete with the product.
+ */
 export function ExportChip({ item }: ExportChipProps) {
-  const { semantic } = useTheme()
-  const palette = item.status === 'EXPORTABLE'
-    ? { backgroundColor: colors.green[50], borderColor: colors.green[200], color: colors.green[800] }
-    : item.status === 'PENDING'
-      ? { backgroundColor: colors.blue[50], borderColor: colors.blue[100], color: colors.blue[800] }
-      : { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal, color: semantic.textSecondary }
+  const { semantic, isDark } = useTheme()
+  if (item.status === 'EXPORTABLE') {
+    const ink = isDark ? colors.blue[200] : colors.blue[600]
+    return (
+      <View
+        style={[styles.stamp, { borderColor: ink, backgroundColor: isDark ? colors.blue[900] : colors.blue[50] }]}
+        accessibilityRole="text"
+        accessibilityLabel={item.label}
+      >
+        <View style={[styles.stampInner, { borderColor: ink }]}>
+          <Plane size={10} color={ink} strokeWidth={2.4} />
+          <Text style={[styles.stampText, { color: ink }]} numberOfLines={1}>{item.label}</Text>
+        </View>
+      </View>
+    )
+  }
+  const pending = item.status === 'PENDING'
+  const palette = pending
+    ? { borderColor: isDark ? colors.blue[400] : colors.blue[200], color: isDark ? colors.blue[100] : colors.blue[800] }
+    : { borderColor: semantic.borderNormal, color: semantic.textSecondary }
   return (
     <View
-      style={[styles.chip, { backgroundColor: palette.backgroundColor, borderColor: palette.borderColor }]}
+      style={[styles.chip, { borderColor: palette.borderColor }]}
       accessibilityRole="text"
       accessibilityLabel={item.label}
     >
-      {item.status === 'EXPORTABLE' && <Plane size={11} color={palette.color} strokeWidth={2.4} />}
       <Text style={[styles.chipText, { color: palette.color }]} numberOfLines={1}>{item.label}</Text>
     </View>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Mode banner and country sheet
-
-interface CountrySheetProps {
-  visible: boolean
-  onClose: () => void
+interface ExportReasonTagProps {
+  label: string
+  reason: string | null
 }
 
-function CountrySheet({ visible, onClose }: CountrySheetProps) {
-  const { semantic } = useTheme()
-  const { countries, country, setCountry } = useTerroirCart()
-  const pick = (code: TerroirCountry): void => {
-    setCountry(code)
-    onClose()
-  }
+/** Why a product stays home, written on a luggage tag. */
+export function ExportReasonTag({ label, reason }: ExportReasonTagProps) {
+  const palette = useValisePalette()
   return (
-    <DragSheet visible={visible} onClose={onClose}>
-      <View style={styles.sheet}>
-        <Text style={[styles.sheetTitle, { color: semantic.textPrimary }]}>Où envoyer votre valise ?</Text>
-        <Text style={[styles.sheetHint, { color: semantic.textSecondary }]}>
-          Les produits, les prix et les départs s’adaptent au pays choisi.
-        </Text>
-        {countries === null && <ActivityIndicator color={colors.green[400]} />}
-        <View accessibilityRole="radiogroup">
-          {(countries ?? []).map((entry) => {
-            const selected = entry.code === country
-            return (
-              <TouchableOpacity
-                key={entry.code}
-                style={[styles.sheetRow, { borderBottomColor: semantic.borderLight }]}
-                onPress={() => pick(entry.code)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`Valise ${entry.toPhrase}`}
-              >
-                <View style={styles.sheetRowText}>
-                  <Text style={[styles.sheetRowName, { color: semantic.textPrimary }]}>{countryChipLabel(entry)}</Text>
-                  <Text style={[styles.sheetRowSub, { color: semantic.textSecondary }]}>{`Valise ${entry.toPhrase}`}</Text>
-                </View>
-                {selected && <Check size={20} color={colors.green[600]} strokeWidth={2.4} />}
-              </TouchableOpacity>
-            )
-          })}
-        </View>
-      </View>
-    </DragSheet>
-  )
-}
-
-/**
- * « ✈ Valise vers la France », at the top of the shopping screens while the
- * mode is on: a tap changes the country, the cross leaves the mode.
- */
-export function ValiseModeBanner() {
-  const { active, countryInfo, exit } = useValiseMode()
-  const [open, setOpen] = useState(false)
-  if (!active || !countryInfo)
-    return null
-  const title = `${countryInfo.flagEmoji ? `${countryInfo.flagEmoji} ` : ''}Valise ${countryInfo.toPhrase}`
-  return (
-    <View style={styles.banner}>
-      <Pressable
-        style={styles.bannerMain}
-        onPress={() => setOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`Valise ${countryInfo.toPhrase}. Changer de pays`}
-      >
-        <Plane size={18} color={colors.earth[800]} strokeWidth={2.2} />
-        <Text style={styles.bannerText} numberOfLines={1}>{title}</Text>
-        <ChevronDown size={16} color={colors.earth[800]} strokeWidth={2.4} />
-      </Pressable>
-      <Pressable
-        style={styles.bannerClose}
-        onPress={exit}
-        accessibilityRole="button"
-        accessibilityLabel="Quitter le mode Valise"
-      >
-        <X size={20} color={colors.earth[800]} strokeWidth={2.4} />
-      </Pressable>
-      <CountrySheet visible={open} onClose={() => setOpen(false)} />
-    </View>
+    <LuggageTag
+      colors={{ fill: palette.paper, stroke: palette.paperEdge, hole: palette.page, ring: palette.leather, string: palette.inkSoft }}
+      dashed
+      style={styles.reasonTag}
+      contentStyle={styles.reasonContent}
+    >
+      <Text style={[styles.reasonLabel, { color: palette.ink }]}>{label}</Text>
+      {reason && <Text style={[styles.reasonText, { color: palette.inkSoft }]}>{reason}</Text>}
+    </LuggageTag>
   )
 }
 
@@ -248,12 +200,10 @@ export function ValiseAddBar({ exportability, unitPrice, outOfStock, onAdd }: Va
     const reason = outOfStock && exportability.status === 'EXPORTABLE'
       ? 'Ce produit est en rupture pour le moment.'
       : exportability.reason
+    const label = exportability.status === 'EXPORTABLE' ? 'Indisponible' : exportability.label
     return (
       <View style={[barStyle, styles.addBarColumn]}>
-        {exportability.status === 'EXPORTABLE'
-          ? <ExportChip item={{ ...exportability, status: 'UNAVAILABLE', label: 'Indisponible' }} />
-          : <ExportChip item={exportability} />}
-        {reason && <Text style={[styles.barNote, { color: semantic.textSecondary }]}>{reason}</Text>}
+        <ExportReasonTag label={label} reason={reason} />
       </View>
     )
   }
@@ -290,7 +240,7 @@ export function ValiseAddBar({ exportability, unitPrice, outOfStock, onAdd }: Va
         accessibilityRole="button"
         accessibilityLabel={`Ajouter ${quantity} à ma valise, ${total.primary}`}
       >
-        <ShoppingBasket size={18} color={colors.neutral[0]} strokeWidth={2.2} />
+        <Luggage size={18} color={colors.neutral[0]} strokeWidth={2.2} />
         <View style={styles.addButtonText}>
           <Text style={terroirStyles.primaryButtonText} numberOfLines={1}>Ajouter à ma valise</Text>
           <Text style={styles.addPrice} numberOfLines={1}>{total.secondary ? `${total.primary} · ${total.secondary}` : total.primary}</Text>
@@ -301,15 +251,41 @@ export function ValiseAddBar({ exportability, unitPrice, outOfStock, onAdd }: Va
 }
 
 const styles = StyleSheet.create({
+  stamp: {
+    alignSelf: 'flex-start',
+    borderWidth: 1.5,
+    borderRadius: radius.xs,
+    padding: 1.5,
+    marginVertical: 2,
+    marginLeft: 2,
+    transform: [{ rotate: '-4deg' }],
+    maxWidth: '100%',
+  },
+  stampInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    minHeight: 18,
+    paddingHorizontal: spacing[1],
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  stampText: {
+    fontFamily: fonts.sansBd,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    flexShrink: 1,
+  },
   chip: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[1],
     minHeight: 22,
     paddingHorizontal: spacing[2],
-    borderRadius: radius.pill,
+    borderRadius: radius.xs,
     borderWidth: 1,
+    borderStyle: 'dashed',
     maxWidth: '100%',
   },
   chipText: {
@@ -317,62 +293,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     flexShrink: 1,
   },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing[4],
-    marginTop: spacing[3],
-    paddingLeft: spacing[3],
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.earth[200],
-    backgroundColor: colors.earth[50],
+  reasonTag: {
+    alignSelf: 'stretch',
   },
-  bannerMain: {
-    flex: 1,
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  bannerText: {
-    flexShrink: 1,
-    fontFamily: fonts.sansBd,
-    fontSize: 14,
-    color: colors.earth[800],
-  },
-  bannerClose: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheet: {
-    gap: spacing[3],
-  },
-  sheetTitle: {
-    ...typography.h3,
-  },
-  sheetHint: {
-    ...typography.bodyS,
-  },
-  sheetRow: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  sheetRowText: {
-    flex: 1,
+  reasonContent: {
+    paddingVertical: spacing[3],
+    paddingRight: spacing[4],
     gap: 2,
   },
-  sheetRowName: {
-    fontFamily: fonts.sansSb,
-    fontSize: 15,
+  reasonLabel: {
+    fontFamily: fonts.sansBd,
+    fontSize: 14,
   },
-  sheetRowSub: {
-    ...typography.caption,
+  reasonText: {
+    ...typography.bodyS,
   },
   pressed: {
     opacity: 0.85,

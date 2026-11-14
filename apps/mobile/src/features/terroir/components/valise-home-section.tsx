@@ -5,9 +5,9 @@ import Calendar from 'lucide-react-native/dist/esm/icons/calendar'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
 import Package from 'lucide-react-native/dist/esm/icons/package'
-import Plane from 'lucide-react-native/dist/esm/icons/plane'
+import PlaneTakeoff from 'lucide-react-native/dist/esm/icons/plane-takeoff'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -28,6 +28,9 @@ import {
 import { guessTerroirCountry } from '../terroir-cart-context'
 import { useValiseMode } from '../valise-mode-context'
 import { CountryChips, TerroirBadge, terroirStyles } from './terroir-ui'
+import { AirmailBand, DottedLine, VALISE_IMAGES, WAITING_RATIO } from './valise/valise-art'
+import { useValisePalette } from './valise/valise-palette'
+import { primeValiseDepartures } from './valise/valise-stores'
 
 interface AlertButtonProps {
   subscribed: boolean
@@ -74,6 +77,7 @@ interface DeparturesBlockProps {
 /** The next departure and its order deadline, or the alert when there is none (US7). */
 function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAlert }: DeparturesBlockProps) {
   const { semantic } = useTheme()
+  const palette = useValisePalette()
   const { formatMoney } = useTerroirMoney()
   const [expanded, setExpanded] = useState(false)
 
@@ -91,6 +95,7 @@ function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAle
   if (!next && items.length === 0) {
     return (
       <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
+        <Image source={VALISE_IMAGES.waiting} style={styles.waitingSmall} resizeMode="contain" accessibilityIgnoresInvertColors />
         <View style={styles.bannerRow}>
           <Calendar size={18} color={semantic.textSecondary} strokeWidth={2.2} />
           <Text style={[styles.bannerText, { color: semantic.textPrimary }]}>
@@ -104,11 +109,12 @@ function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAle
 
   const headline = next ?? (items[0] ? { city: null, departsOn: items[0].departsOn, orderBefore: items[0].orderBefore } : null)
   return (
-    <View style={[styles.departureBanner, { borderColor: colors.blue[100], backgroundColor: colors.blue[50] }]}>
+    <View style={[styles.departureBanner, { borderColor: palette.paperEdge, backgroundColor: palette.skyPaper }]}>
+      <AirmailBand height={5} colorA={palette.stripeA} colorB={palette.stripeB} />
       {headline && (
-        <View style={styles.bannerRow}>
-          <Plane size={18} color={colors.blue[800]} strokeWidth={2.2} />
-          <Text style={[styles.bannerText, { color: colors.blue[800] }]}>
+        <View style={[styles.bannerRow, styles.departureInset]}>
+          <PlaneTakeoff size={18} color={palette.skyInk} strokeWidth={2.2} />
+          <Text style={[styles.bannerText, { color: palette.skyInk }]}>
             {`Prochain envoi ${headline.city ? `vers ${headline.city}` : toPhrase} : ${formatDay(headline.departsOn)}`}
             {headline.orderBefore ? `, commandez avant le ${formatDay(headline.orderBefore)}` : ''}
           </Text>
@@ -116,21 +122,22 @@ function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAle
       )}
       {items.length > 0 && (
         <TouchableOpacity
-          style={styles.expandButton}
+          style={[styles.expandButton, styles.departureInset]}
           onPress={() => setExpanded(value => !value)}
           accessibilityRole="button"
           accessibilityState={{ expanded }}
         >
-          <Text style={[styles.expandText, { color: colors.blue[800] }]}>
+          <Text style={[styles.expandText, { color: palette.skyInk }]}>
             {expanded ? 'Masquer les départs' : `Voir les prochains départs (${items.length})`}
           </Text>
           {expanded
-            ? <ChevronUp size={16} color={colors.blue[800]} strokeWidth={2.4} />
-            : <ChevronDown size={16} color={colors.blue[800]} strokeWidth={2.4} />}
+            ? <ChevronUp size={16} color={palette.skyInk} strokeWidth={2.4} />
+            : <ChevronDown size={16} color={palette.skyInk} strokeWidth={2.4} />}
         </TouchableOpacity>
       )}
       {expanded && items.map(item => (
         <View key={item.departureId} style={[styles.departureRow, { backgroundColor: semantic.bgCard }]}>
+          <DottedLine color={palette.paperEdge} variant="dashes" style={styles.departureTear} />
           <Text style={[styles.departureAgency, { color: semantic.textPrimary }]}>{item.agency}</Text>
           <Text style={[styles.departureLine, { color: semantic.textSecondary }]}>
             {`Départ le ${formatDay(item.departsOn)}${item.orderBefore ? ` · commandez avant le ${formatDay(item.orderBefore)}` : ''}`}
@@ -308,6 +315,8 @@ export function ValiseHomeSection({ onOpenPack, onRequireLogin }: ValiseHomeSect
         return
       setPacks(catalogResult.status === 'fulfilled' ? catalogResult.value.items.filter(item => item.kind === 'PACK') : [])
       setDepartures(departuresResult.status === 'fulfilled' ? departuresResult.value : null)
+      if (departuresResult.status === 'fulfilled')
+        primeValiseDepartures(target, displayCurrency, departuresResult.value)
       setDeparturesLoading(false)
     }
     load()
@@ -361,7 +370,7 @@ export function ValiseHomeSection({ onOpenPack, onRequireLogin }: ValiseHomeSect
       {packs.length > 0 && (
         <View style={styles.packsBlock}>
           <View style={styles.packsHeader}>
-            <Package size={14} color={colors.earth[600]} strokeWidth={2.4} />
+            <Package size={14} color={semantic.textSecondary} strokeWidth={2.4} />
             <Text style={[styles.overline, { color: semantic.textSecondary }]}>Packs du pays</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.packsRail}>
@@ -391,8 +400,20 @@ const styles = StyleSheet.create({
   departureBanner: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    padding: spacing[4],
+    paddingBottom: spacing[4],
     gap: spacing[3],
+    overflow: 'hidden',
+  },
+  departureInset: {
+    marginHorizontal: spacing[4],
+  },
+  departureTear: {
+    marginBottom: spacing[2],
+  },
+  waitingSmall: {
+    alignSelf: 'center',
+    width: 140,
+    height: Math.round(140 * WAITING_RATIO),
   },
   bannerRow: {
     flexDirection: 'row',
@@ -417,6 +438,7 @@ const styles = StyleSheet.create({
   departureRow: {
     borderRadius: radius.md,
     padding: spacing[3],
+    marginHorizontal: spacing[4],
     gap: 2,
   },
   departureAgency: {

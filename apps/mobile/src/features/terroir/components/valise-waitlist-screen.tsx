@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { colors, spacing, typography } from '../../../theme/theme'
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
@@ -9,6 +9,7 @@ import { useTerroirCart } from '../terroir-cart-context'
 import { useValiseMode } from '../valise-mode-context'
 import { terroirStyles } from './terroir-ui'
 import { NoDepartureState } from './valise-home-section'
+import { VALISE_IMAGES, WAITING_RATIO } from './valise/valise-art'
 
 interface ValiseWaitlistScreenProps {
   onBack: () => void
@@ -47,9 +48,13 @@ export function ValiseWaitlistScreen({ onBack, onEntered, onRequireLogin }: Vali
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="La Valise du pays" onBack={onBack} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomClearance + spacing[6] }]}>
-        <Text style={[styles.intro, { color: semantic.textSecondary }]}>
-          Des produits validés par eBio pour voyager, envoyés en un seul colis par une agence partenaire.
-        </Text>
+        <View style={styles.hero}>
+          <Image source={VALISE_IMAGES.waiting} style={styles.heroImage} resizeMode="contain" accessibilityIgnoresInvertColors />
+          <Text style={[styles.title, { color: semantic.textPrimary }]}>Votre valise attend son vol</Text>
+          <Text style={[styles.intro, { color: semantic.textSecondary }]}>
+            Des produits validés par eBio pour voyager, envoyés depuis Cotonou en un seul colis par une agence partenaire.
+          </Text>
+        </View>
         {(countries === null && !countriesError) || offered
           ? <ActivityIndicator style={styles.loader} color={colors.green[400]} />
           : null}
@@ -80,8 +85,23 @@ const styles = StyleSheet.create({
     paddingTop: spacing[2],
     gap: spacing[4],
   },
+  hero: {
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  heroImage: {
+    width: 220,
+    height: Math.round(220 * WAITING_RATIO),
+  },
+  title: {
+    fontFamily: fonts.display,
+    fontSize: 28,
+    lineHeight: 34,
+    textAlign: 'center',
+  },
   intro: {
     ...typography.bodyS,
+    textAlign: 'center',
   },
   loader: {
     marginTop: spacing[8],

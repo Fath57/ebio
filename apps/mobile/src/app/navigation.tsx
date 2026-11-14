@@ -12,6 +12,7 @@ import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from 
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import Home from 'lucide-react-native/dist/esm/icons/house'
+import Luggage from 'lucide-react-native/dist/esm/icons/luggage'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
@@ -1206,9 +1207,10 @@ function CartTabIcon({ size, color, focused }: { size: number, color: string, fo
 
   return (
     <View>
-      <TabBarIcon Icon={ShoppingBagIcon} size={size} color={color} focused={focused === true} />
+      {/* In Valise mode the tab is a suitcase: the shopping is for the trip. */}
+      <TabBarIcon Icon={valise ? Luggage : ShoppingBagIcon} size={size} color={color} focused={focused === true} />
       {count > 0 && (
-        <View style={badgeStyles.badge}>
+        <View style={[badgeStyles.badge, valise && badgeStyles.badgeValise]}>
           <Text style={badgeStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
         </View>
       )}
@@ -1228,6 +1230,9 @@ const badgeStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+  },
+  badgeValise: {
+    backgroundColor: colors.blue[600],
   },
   badgeText: {
     fontFamily: fonts.sansBd,

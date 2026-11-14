@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as React from 'react'
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState } from 'react-native'
+import { playValiseTransition, ValiseTransitionHost } from './components/valise/valise-transition'
 import { readTerroirSwitch } from './terroir-api'
 import { useTerroirCart } from './terroir-cart-context'
 
@@ -121,14 +122,27 @@ export function ValiseModeProvider({ children }: { children: React.ReactNode }) 
     }
   }, [wanted])
 
+  // What the mode is heading to, ahead of the state: the effect flips the
+  // state only once it covers the screen, and a second tap must not replay it.
+  const wantedRef = useRef(false)
+  useEffect(() => {
+    wantedRef.current = wanted
+  }, [wanted])
+
   const enter = useCallback((target?: TerroirCountry) => {
     if (target)
       setCountry(target)
-    setWanted(true)
+    if (wantedRef.current)
+      return
+    wantedRef.current = true
+    playValiseTransition('enter', () => setWanted(true))
   }, [setCountry])
 
   const exit = useCallback(() => {
-    setWanted(false)
+    if (!wantedRef.current)
+      return
+    wantedRef.current = false
+    playValiseTransition('exit', () => setWanted(false))
   }, [])
 
   const active = wanted && countryInfo !== null
@@ -143,6 +157,8 @@ export function ValiseModeProvider({ children }: { children: React.ReactNode }) 
   return (
     <ValiseModeContext value={value}>
       {children}
+      {/* Above everything the app draws: the entry and exit effect. */}
+      <ValiseTransitionHost />
     </ValiseModeContext>
   )
 }

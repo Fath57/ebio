@@ -4,10 +4,9 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Scale from 'lucide-react-native/dist/esm/icons/scale'
-import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { use, useMemo } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { use, useEffect, useMemo } from 'react'
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -20,6 +19,11 @@ import { formatKg } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
 import { terroirStyles } from './terroir-ui'
 import { ValiseModeBanner } from './valise-ui'
+import { LuggageTag } from './valise/luggage-tag'
+import { SuitcaseGauge } from './valise/suitcase-gauge'
+import { OPEN_RATIO, VALISE_IMAGES } from './valise/valise-art'
+import { useValisePalette } from './valise/valise-palette'
+import { setValiseFill } from './valise/valise-stores'
 
 /** The server's pricing of a basket line, matched by product and format, or by pack. */
 function previewLineFor(line: TerroirCartLine, preview: TerroirPreview | null): TerroirPreviewLine | null {
@@ -95,40 +99,10 @@ interface WeightCardProps {
   onOpenProduct: (productId: string) => void
 }
 
-interface FillGaugeProps {
-  weightKg: number
-  billedKg: number
-}
-
-/** « 3,2 kg sur 5 kg payés », and a bar that stays green while the parcel is under what is paid. */
-function FillGauge({ weightKg, billedKg }: FillGaugeProps) {
-  const { semantic } = useTheme()
-  const ratio = billedKg > 0 ? Math.min(1, weightKg / billedKg) : 0
-  const within = weightKg <= billedKg
-  const percent = Math.round(ratio * 100)
-  return (
-    <View style={styles.gauge}>
-      <View style={styles.weightHeader}>
-        <Scale size={18} color={colors.blue[600]} strokeWidth={2.2} />
-        <Text style={[terroirStyles.cardTitle, styles.flex, { color: semantic.textPrimary }]}>
-          {`${formatKg(weightKg)} sur ${formatKg(billedKg)} payés`}
-        </Text>
-      </View>
-      <View
-        style={[styles.gaugeTrack, { backgroundColor: semantic.borderLight }]}
-        accessibilityRole="progressbar"
-        accessibilityLabel="Remplissage de votre valise"
-        accessibilityValue={{ min: 0, max: 100, now: percent }}
-      >
-        <View style={[styles.gaugeFill, { width: `${percent}%`, backgroundColor: within ? colors.green[400] : colors.earth[400] }]} />
-      </View>
-    </View>
-  )
-}
-
 /** The fill gauge, the free margin and what fits in it (US8). */
 function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps) {
   const { semantic } = useTheme()
+  const palette = useValisePalette()
   const { formatMoney } = useTerroirMoney()
   const weightKg = preview.estimatedWeightG / 1000
   const departure = preview.departures[0] ?? null
@@ -136,7 +110,7 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
   return (
     <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
       {preview.billedKg > 0
-        ? <FillGauge weightKg={weightKg} billedKg={preview.billedKg} />
+        ? <SuitcaseGauge weightKg={weightKg} billedKg={preview.billedKg} />
         : (
             <View style={styles.weightHeader}>
               <Scale size={18} color={colors.blue[600]} strokeWidth={2.2} />
@@ -154,9 +128,23 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
         </Text>
       )}
       {underMinimum && (
-        <Text style={[styles.marginText, { color: colors.green[600] }]}>
-          {`Ajoutez jusqu’à ${formatKg(preview.marginKg)} sans frais de transport en plus.`}
-        </Text>
+        <LuggageTag
+          colors={{
+            fill: palette.paper,
+            stroke: palette.paperEdge,
+            hole: semantic.bgCard,
+            ring: palette.leather,
+            string: palette.inkSoft,
+            stripeA: palette.stripeA,
+            stripeB: palette.stripeB,
+          }}
+          stripes
+          contentStyle={styles.marginTag}
+        >
+          <Text style={[styles.marginText, { color: palette.positive }]}>
+            {`Ajoutez jusqu’à ${formatKg(preview.marginKg)} sans frais de transport en plus.`}
+          </Text>
+        </LuggageTag>
       )}
       {!underMinimum && departure && departure.pricePerKg > 0 && (
         <Text style={[styles.weightText, { color: semantic.textSecondary }]}>
@@ -165,10 +153,15 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
       )}
       {underMinimum && preview.suggestions.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestions}>
-          {preview.suggestions.map((suggestion) => {
+          {preview.suggestions.map((suggestion, index) => {
             const money = formatMoney(suggestion.price)
+            // Stickers, slightly askew, ready to slip into the valise.
+            const tilt = index % 2 === 0 ? '-2deg' : '1.5deg'
             return (
-              <View key={suggestion.productId} style={[styles.suggestion, { borderColor: semantic.borderLight }]}>
+              <View
+                key={suggestion.productId}
+                style={[styles.suggestion, { backgroundColor: semantic.bgCard, borderColor: palette.paperEdge, transform: [{ rotate: tilt }] }]}
+              >
                 <TouchableOpacity
                   onPress={() => onOpenProduct(suggestion.productId)}
                   accessibilityRole="button"
@@ -230,6 +223,13 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
         displayCurrency,
       }, [lines.length, country, toInput, displayCurrency])
   const { preview, loading, error } = useTerroirPreview(previewInput)
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0)
+
+  // The mode banner shows how full the valise is from these figures.
+  useEffect(() => {
+    if (preview && !loading)
+      setValiseFill({ itemCount, weightKg: preview.estimatedWeightG / 1000, billedKg: preview.billedKg })
+  }, [preview, loading, itemCount])
 
   const unavailableKeys = useMemo(() => {
     const keys = new Set<string>()
@@ -271,10 +271,10 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
         <ScreenHeader title="Ma valise" onBack={onBack} />
         <ValiseModeBanner />
         <View style={terroirStyles.centered}>
-          <ShoppingBasket size={32} color={colors.green[400]} />
-          <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Votre valise est vide</Text>
+          <Image source={VALISE_IMAGES.open} style={styles.emptyImage} resizeMode="contain" accessibilityIgnoresInvertColors />
+          <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>Votre valise est vide</Text>
           <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>
-            Choisissez des produits du pays à recevoir dans l’un des pays desservis.
+            Beurre de karité, gari, piment, moringa : choisissez les produits du pays à recevoir là où vous vivez.
           </Text>
           <TouchableOpacity style={terroirStyles.primaryButton} onPress={onBrowse} accessibilityRole="button">
             <Text style={terroirStyles.primaryButtonText}>Remplir ma valise</Text>
@@ -393,18 +393,6 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  gauge: {
-    gap: spacing[2],
-  },
-  gaugeTrack: {
-    height: 8,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-  },
-  gaugeFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-  },
   weightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -413,19 +401,41 @@ const styles = StyleSheet.create({
   weightText: {
     ...typography.bodyS,
   },
+  marginTag: {
+    paddingVertical: spacing[3],
+    paddingRight: spacing[4],
+  },
   marginText: {
     fontFamily: fonts.sansSb,
     fontSize: 14,
+    lineHeight: 20,
+  },
+  emptyImage: {
+    width: 180,
+    height: Math.round(180 * OPEN_RATIO),
+  },
+  emptyTitle: {
+    fontFamily: fonts.display,
+    fontSize: 26,
+    lineHeight: 30,
+    textAlign: 'center',
   },
   suggestions: {
     gap: spacing[3],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[1],
   },
   suggestion: {
     width: 140,
-    borderWidth: 1,
+    borderWidth: 3,
     borderRadius: radius.md,
     padding: spacing[2],
     gap: spacing[1],
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
   },
   suggestionImage: {
     width: '100%',
