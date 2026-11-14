@@ -1,6 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, Enum, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
-import { ExportCountry } from '../contracts/terroir.contract'
+import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { ExportAgency } from './export-agency.entity'
 
 /** Where a buyer collects their parcel abroad: city, address, opening hours. */
@@ -15,8 +14,9 @@ export class ExportPickupPoint {
   @ManyToOne(() => ExportAgency, { fieldName: 'agency_id' })
   agency!: Rel<ExportAgency>
 
-  @Enum({ items: () => ExportCountry, columnType: 'varchar(2)' })
-  country!: ExportCountry
+  /** References `export_countries.code`. */
+  @Property({ type: 'string', length: 2, columnType: 'varchar(2)' })
+  country!: string
 
   @Property({ type: 'string', length: 80 })
   city!: string

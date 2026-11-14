@@ -1,6 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { INestApplication } from '@nestjs/common'
-import type { ExportCountry } from '../contracts/terroir.contract'
 import { randomBytes } from 'node:crypto'
 import { vi } from 'vitest'
 import { SmsService } from '../../../common/sms.service'
@@ -34,6 +33,19 @@ export function muteOutbound(app: INestApplication): void {
   vi.spyOn(app.get(SmsService), 'send').mockResolvedValue(undefined)
   vi.spyOn(app.get(EmailService), 'sendEmail').mockResolvedValue(undefined)
   vi.spyOn(app.get(EmailService), 'sendTemplatedEmail').mockResolvedValue(undefined)
+}
+
+/**
+ * France and Belgium, as the migration seeds them. The test schema is built
+ * from the entities: the rows have to be written by hand.
+ */
+export async function seedExportCountries(em: EntityManager): Promise<void> {
+  await em.getConnection().execute(
+    `INSERT INTO export_countries (code, name, to_phrase, in_phrase, display_currency, sort_order, is_active, created_at, updated_at)
+     VALUES ('FR', 'France', 'vers la France', 'en France', 'EUR', 10, true, NOW(), NOW()),
+            ('BE', 'Belgique', 'vers la Belgique', 'en Belgique', 'EUR', 20, true, NOW(), NOW())
+     ON CONFLICT (code) DO NOTHING`,
+  )
 }
 
 /** A day `days` from now, `YYYY-MM-DD`. */
@@ -85,7 +97,7 @@ export async function seedShipment(em: EntityManager, input: {
   buyerId: string
   departureId: string
   pickupPointId: string
-  country: ExportCountry
+  country: string
   estimatedWeightG: number
   shippingPrice: number
   pricePerKg: number

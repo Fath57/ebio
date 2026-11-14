@@ -7,12 +7,12 @@ import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { PlatformAccount } from '../../wallet/entities/wallet.entity'
 import { WalletService } from '../../wallet/wallet.service'
-import { ExportCountry, ExportDepartureStatus, ExportShipmentStatus } from '../contracts/terroir.contract'
+import { ExportDepartureStatus, ExportShipmentStatus } from '../contracts/terroir.contract'
 import { ExportShipment } from '../entities/export-shipment.entity'
 import { ExportLogisticsService } from '../export-logistics.service'
 import { TerroirMapper } from '../terroir.mapper'
 import { TerroirModule } from '../terroir.module'
-import { dayFromNow, instantFromNow, muteOutbound, refusalOf, seedShipment } from './terroir.fixture'
+import { dayFromNow, instantFromNow, muteOutbound, refusalOf, seedExportCountries, seedShipment } from './terroir.fixture'
 
 interface Agency {
   agencyId: string
@@ -22,8 +22,8 @@ interface Agency {
 
 async function seedAgency(service: ExportLogisticsService, actorId: string, name = 'Bénin Express'): Promise<Agency> {
   const agency = await service.createAgency({ name, contactName: 'Koffi', contactPhone: '+33 6 12 34 56 78' }, actorId)
-  const paris = await service.createPickupPoint(agency.id, { country: ExportCountry.FR, city: 'Paris', address: '12 rue Myrha, 75018 Paris', openingHours: 'mar.–sam. 10 h–19 h' }, actorId)
-  const bruxelles = await service.createPickupPoint(agency.id, { country: ExportCountry.BE, city: 'Bruxelles', address: '4 chaussée d\'Ixelles, 1050 Ixelles' }, actorId)
+  const paris = await service.createPickupPoint(agency.id, { country: 'FR', city: 'Paris', address: '12 rue Myrha, 75018 Paris', openingHours: 'mar.–sam. 10 h–19 h' }, actorId)
+  const bruxelles = await service.createPickupPoint(agency.id, { country: 'BE', city: 'Bruxelles', address: '4 chaussée d\'Ixelles, 1050 Ixelles' }, actorId)
   return { agencyId: agency.id, parisId: paris.id, bruxellesId: bruxelles.id }
 }
 
@@ -37,8 +37,8 @@ async function seedDeparture(service: ExportLogisticsService, actorId: string, a
     transitMaxDays: 11,
     capacityKg: overrides.capacityKg === undefined ? 100 : overrides.capacityKg,
     rates: [
-      { country: ExportCountry.FR, pricePerKg: overrides.pricePerKg ?? 8500, minBilledKg: 5, maxWeightKg: 30, homeDeliveryFee: 3900 },
-      { country: ExportCountry.BE, pricePerKg: 9000, minBilledKg: 5 },
+      { country: 'FR', pricePerKg: overrides.pricePerKg ?? 8500, minBilledKg: 5, maxWeightKg: 30, homeDeliveryFee: 3900 },
+      { country: 'BE', pricePerKg: 9000, minBilledKg: 5 },
     ],
   }, actorId)
   return view.departure.id
@@ -61,6 +61,7 @@ describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
     muteOutbound(app)
     context.app = app
     context.em = orm.em.fork()
+    await seedExportCountries(context.em as EntityManager)
   })
 
   it('crée un départ avec ses tarifs France et Belgique, tracé dans le journal', async (context) => {
@@ -100,12 +101,12 @@ describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
     expect(await refusalOf(service.createDeparture({
       ...base,
       depositDeadline: instantFromNow(11),
-      rates: [{ country: ExportCountry.FR, pricePerKg: 8500, minBilledKg: 5 }],
+      rates: [{ country: 'FR', pricePerKg: 8500, minBilledKg: 5 }],
     }, staff.id))).toEqual({ status: 400, code: 'EXPORT_DEPARTURE_INVALID' })
     expect(await refusalOf(service.createDeparture({
       ...base,
       depositDeadline: instantFromNow(7),
-      rates: [{ country: ExportCountry.FR, pricePerKg: 8500, minBilledKg: 5 }, { country: ExportCountry.FR, pricePerKg: 9000, minBilledKg: 5 }],
+      rates: [{ country: 'FR', pricePerKg: 8500, minBilledKg: 5 }, { country: 'FR', pricePerKg: 9000, minBilledKg: 5 }],
     }, staff.id))).toEqual({ status: 400, code: 'EXPORT_DEPARTURE_INVALID' })
   })
 
@@ -120,27 +121,27 @@ describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
     const soon = await seedDeparture(service, staff.id, agency.agencyId, { inDays: 9, capacityKg: 10 })
     const later = await seedDeparture(service, staff.id, agency.agencyId, { inDays: 16 })
 
-    let { offers } = await service.offerableDepartures(ExportCountry.FR, 3000)
+    let { offers } = await service.offerableDepartures('FR', 3000)
     expect(offers.map(offer => offer.departure.id)).toEqual([soon, later])
     expect(offers[0].shippingPrice).toBe(42_500)
     expect(offers.map(offer => offer.departure.id)).not.toContain(tooLate)
 
     // 8 kg reserved on a 10 kg departure: alerted at 80 %, and a 3 kg parcel no longer fits.
-    await seedShipment(em, { buyerId: buyer.id, departureId: soon, pickupPointId: agency.parisId, country: ExportCountry.FR, estimatedWeightG: 8000, shippingPrice: 68_000, pricePerKg: 8500, minBilledKg: 5 })
+    await seedShipment(em, { buyerId: buyer.id, departureId: soon, pickupPointId: agency.parisId, country: 'FR', estimatedWeightG: 8000, shippingPrice: 68_000, pricePerKg: 8500, minBilledKg: 5 })
     await service.refreshFill(soon)
     fresh(app)
-    ;({ offers } = await service.offerableDepartures(ExportCountry.FR, 3000))
+    ;({ offers } = await service.offerableDepartures('FR', 3000))
     expect(offers.map(offer => offer.departure.id)).toEqual([later])
     expect((await service.view(soon)).departure.fillAlertedAt).not.toBeNull()
 
     // 10 kg: full, closed for everyone.
-    await seedShipment(em, { buyerId: buyer.id, departureId: soon, pickupPointId: agency.parisId, country: ExportCountry.FR, estimatedWeightG: 2000, shippingPrice: 42_500, pricePerKg: 8500, minBilledKg: 5 })
+    await seedShipment(em, { buyerId: buyer.id, departureId: soon, pickupPointId: agency.parisId, country: 'FR', estimatedWeightG: 2000, shippingPrice: 42_500, pricePerKg: 8500, minBilledKg: 5 })
     await service.refreshFill(soon)
     fresh(app)
     const closed = await service.view(soon)
     expect(closed.departure.status).toBe(ExportDepartureStatus.FULL)
     expect(TerroirMapper.toDeparture(closed).fill).toEqual({ reservedKg: 10, capacityKg: 10, ratio: 1 })
-    ;({ offers } = await service.offerableDepartures(ExportCountry.FR, 500))
+    ;({ offers } = await service.offerableDepartures('FR', 500))
     expect(offers.map(offer => offer.departure.id)).toEqual([later])
   })
 
@@ -158,7 +159,7 @@ describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
       buyerId: buyer.id,
       departureId: cancelled,
       pickupPointId: first.parisId,
-      country: ExportCountry.FR,
+      country: 'FR',
       estimatedWeightG: 3000,
       shippingPrice: 42_500,
       pricePerKg: 8500,
@@ -214,9 +215,9 @@ describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
       depositDeadline: instantFromNow(10),
       transitMinDays: 7,
       transitMaxDays: 11,
-      rates: [{ country: ExportCountry.BE, pricePerKg: 9000, minBilledKg: 5 }],
+      rates: [{ country: 'BE', pricePerKg: 9000, minBilledKg: 5 }],
     }, staff.id)
-    await seedShipment(em, { buyerId: buyer.id, departureId: cancelled, pickupPointId: agency.parisId, country: ExportCountry.FR, estimatedWeightG: 3000, shippingPrice: 42_500, pricePerKg: 8500, minBilledKg: 5 })
+    await seedShipment(em, { buyerId: buyer.id, departureId: cancelled, pickupPointId: agency.parisId, country: 'FR', estimatedWeightG: 3000, shippingPrice: 42_500, pricePerKg: 8500, minBilledKg: 5 })
 
     expect(await refusalOf(service.cancel(cancelled, belgiumOnly.departure.id, staff.id))).toEqual({ status: 409, code: 'DEPARTURE_UNAVAILABLE' })
     fresh(app)

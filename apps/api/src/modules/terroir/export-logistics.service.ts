@@ -9,7 +9,7 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
-import { ExportCountry, ExportDepartureStatus, ExportReception, ExportShipmentStatus } from './contracts/terroir.contract'
+import { ExportDepartureStatus, ExportReception, ExportShipmentStatus } from './contracts/terroir.contract'
 import { ExportAgency } from './entities/export-agency.entity'
 import { ExportDepartureAlert } from './entities/export-departure-alert.entity'
 import { ExportDepartureRate } from './entities/export-departure-rate.entity'
@@ -17,6 +17,7 @@ import { ExportDeparture } from './entities/export-departure.entity'
 import { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import { ExportShipmentEvent } from './entities/export-shipment-event.entity'
 import { ExportShipment } from './entities/export-shipment.entity'
+import { ExportCountriesService } from './export-countries.service'
 import { availableDepartures, FILL_ALERT_RATIO, fillRatio, orderDeadline, shippingPrice } from './terroir-math'
 import { TerroirNotifierService } from './terroir-notifier.service'
 import { addDays, spokenDay, terroirError } from './terroir-texts'
@@ -77,6 +78,7 @@ export class ExportLogisticsService {
     private readonly platformSettings: PlatformSettingsService,
     private readonly notifier: TerroirNotifierService,
     private readonly audit: AuditService,
+    private readonly countries: ExportCountriesService,
   ) {}
 
   // ===== AGENCIES =====
@@ -123,6 +125,8 @@ export class ExportLogisticsService {
 
   async createPickupPoint(agencyId: string, input: ExportPickupPointInput, actorUserId: string): Promise<ExportPickupPoint> {
     const agency = await this.getAgency(agencyId)
+    // An inactive country is fine: eBio prepares an opening.
+    await this.countries.require(input.country)
     const point = this.em.create(ExportPickupPoint, {
       agency,
       country: input.country,
@@ -140,6 +144,9 @@ export class ExportLogisticsService {
     const point = await this.em.findOne(ExportPickupPoint, { id: pointId, agency: agencyId })
     if (!point) {
       throw terroirError(HttpStatus.NOT_FOUND, 'EXPORT_PICKUP_POINT_NOT_FOUND', 'Point de retrait introuvable.')
+    }
+    if (input.country !== undefined) {
+      await this.countries.require(input.country)
     }
     this.em.assign(point, input)
     await this.em.flush()
@@ -170,7 +177,7 @@ export class ExportLogisticsService {
       throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_AGENCY_INACTIVE', 'Cette agence est désactivée.')
     }
     this.assertDates(input.departsOn, new Date(input.depositDeadline), input.transitMinDays, input.transitMaxDays)
-    this.assertRates(input.rates)
+    await this.assertRates(input.rates)
 
     const departure = this.em.create(ExportDeparture, {
       agency,
@@ -221,7 +228,7 @@ export class ExportLogisticsService {
     // Rates already paid are frozen on the parcels: replacing them here only
     // changes what future buyers see.
     if (input.rates !== undefined) {
-      this.assertRates(input.rates)
+      await this.assertRates(input.rates)
       departure.rates.removeAll()
       for (const rate of input.rates) {
         departure.rates.add(this.em.create(ExportDepartureRate, { departure, ...this.rateColumns(rate) }))
@@ -427,7 +434,8 @@ export class ExportLogisticsService {
   // ===== DEPARTURE ALERTS =====
 
   /** « Me prévenir du prochain départ » (FR-032): one pending alert per buyer and country. */
-  async subscribeAlert(userId: string, country: ExportCountry): Promise<void> {
+  async subscribeAlert(userId: string, code: string): Promise<void> {
+    const { code: country } = await this.countries.requireActive(code)
     await this.em.getConnection().execute(
       `INSERT INTO export_departure_alerts (id, user_id, country, created_at, sent_at)
        VALUES (gen_random_uuid(), ?, ?, NOW(), NULL)
@@ -436,7 +444,7 @@ export class ExportLogisticsService {
     )
   }
 
-  async unsubscribeAlert(userId: string, country: ExportCountry): Promise<void> {
+  async unsubscribeAlert(userId: string, country: string): Promise<void> {
     await this.em.getConnection().execute(
       `DELETE FROM export_departure_alerts WHERE user_id = ? AND country = ? AND sent_at IS NULL`,
       [userId, country],
@@ -460,7 +468,9 @@ export class ExportLogisticsService {
       return 0
     }
     let sent = 0
-    for (const rate of departure.rates.getItems()) {
+    const active = await this.countries.activeCodes()
+    // A rate prepared towards a country not open yet tells nobody.
+    for (const rate of departure.rates.getItems().filter(candidate => active.has(candidate.country))) {
       const rows = await this.em.getConnection().execute(
         `UPDATE export_departure_alerts SET sent_at = NOW() WHERE country = ? AND sent_at IS NULL RETURNING user_id`,
         [rate.country],
@@ -625,11 +635,13 @@ export class ExportLogisticsService {
     }
   }
 
-  private assertRates(rates: ExportDepartureRateInput[]): void {
+  /** One rate per country, each towards a known country (inactive ones too: an opening is prepared). */
+  private async assertRates(rates: ExportDepartureRateInput[]): Promise<void> {
     const countries = rates.map(rate => rate.country)
     if (new Set(countries).size !== countries.length) {
       throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_DEPARTURE_INVALID', 'Un seul tarif par pays.')
     }
+    await this.countries.requireAll(countries)
   }
 
   private rateColumns(rate: ExportDepartureRateInput) {

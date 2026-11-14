@@ -5,6 +5,9 @@
 -- désynchronisé, donc `migration:up` sans `--only` échoue sur les anciennes.
 -- Une fois ce fichier joué, enregistrer le nom avec
 -- `migration:up --only Migration20261117090000` (les ordres sont idempotents).
+-- Contient aussi Migration20261118090000 et Migration20261119090000 (table
+-- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères),
+-- à enregistrer de la même façon.
 --
 -- Purement additif : onze tables (catalogue d'export, agences, départs,
 -- colis), une colonne `orders.export_pack_id`, un troisième mode de retrait
@@ -267,5 +270,41 @@ ALTER TABLE "export_shipments" ADD COLUMN IF NOT EXISTS "supplement_topup_id" uu
 ALTER TABLE "export_shipments" ADD COLUMN IF NOT EXISTS "removed_item_ids" jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE "export_shipments" ADD COLUMN IF NOT EXISTS "removed_order_ids" jsonb NOT NULL DEFAULT '[]';
 CREATE INDEX IF NOT EXISTS "export_shipments_supplement_topup_idx" ON "export_shipments" ("supplement_topup_id") WHERE "supplement_topup_id" IS NOT NULL;
+
+-- Migration20261119090000 : pays de destination en base (export_countries), clés étrangères à la place des CHECK (FR, BE).
+CREATE TABLE IF NOT EXISTS "export_countries" (
+  "code" varchar(2) NOT NULL,
+  "name" varchar(80) NOT NULL,
+  "to_phrase" varchar(120) NOT NULL,
+  "in_phrase" varchar(120) NOT NULL,
+  "display_currency" varchar(3) NOT NULL DEFAULT 'EUR',
+  "flag_emoji" varchar(16) NULL,
+  "sort_order" int NOT NULL DEFAULT 0,
+  "is_active" boolean NOT NULL DEFAULT true,
+  "created_at" timestamptz NOT NULL DEFAULT NOW(),
+  "updated_at" timestamptz NOT NULL DEFAULT NOW(),
+  CONSTRAINT "export_countries_pkey" PRIMARY KEY ("code")
+);
+ALTER TABLE "export_countries" DROP CONSTRAINT IF EXISTS "export_countries_code_check";
+ALTER TABLE "export_countries" ADD CONSTRAINT "export_countries_code_check" CHECK ("code" ~ '^[A-Z]{2}$');
+INSERT INTO "export_countries" ("code", "name", "to_phrase", "in_phrase", "display_currency", "flag_emoji", "sort_order", "is_active")
+  VALUES ('FR', 'France', 'vers la France', 'en France', 'EUR', '🇫🇷', 10, true),
+         ('BE', 'Belgique', 'vers la Belgique', 'en Belgique', 'EUR', '🇧🇪', 20, true)
+  ON CONFLICT ("code") DO NOTHING;
+ALTER TABLE "export_pickup_points" DROP CONSTRAINT IF EXISTS "export_pickup_points_country_check";
+ALTER TABLE "export_pickup_points" DROP CONSTRAINT IF EXISTS "export_pickup_points_country_foreign";
+ALTER TABLE "export_pickup_points" ADD CONSTRAINT "export_pickup_points_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE "export_departure_rates" DROP CONSTRAINT IF EXISTS "export_departure_rates_country_check";
+ALTER TABLE "export_departure_rates" DROP CONSTRAINT IF EXISTS "export_departure_rates_country_foreign";
+ALTER TABLE "export_departure_rates" ADD CONSTRAINT "export_departure_rates_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE "export_departure_alerts" DROP CONSTRAINT IF EXISTS "export_departure_alerts_country_check";
+ALTER TABLE "export_departure_alerts" DROP CONSTRAINT IF EXISTS "export_departure_alerts_country_foreign";
+ALTER TABLE "export_departure_alerts" ADD CONSTRAINT "export_departure_alerts_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE "export_checkout_drafts" DROP CONSTRAINT IF EXISTS "export_checkout_drafts_country_check";
+ALTER TABLE "export_checkout_drafts" DROP CONSTRAINT IF EXISTS "export_checkout_drafts_country_foreign";
+ALTER TABLE "export_checkout_drafts" ADD CONSTRAINT "export_checkout_drafts_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE "export_shipments" DROP CONSTRAINT IF EXISTS "export_shipments_country_check";
+ALTER TABLE "export_shipments" DROP CONSTRAINT IF EXISTS "export_shipments_country_foreign";
+ALTER TABLE "export_shipments" ADD CONSTRAINT "export_shipments_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
 
 COMMIT;

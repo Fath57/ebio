@@ -7,6 +7,8 @@ import type {
   ExportAdminShipment,
   ExportAgencyInput,
   ExportAgencyResponse,
+  ExportCountryAdmin,
+  ExportCountryInput,
   ExportDepartureDetail,
   ExportDepartureEventInput,
   ExportDepartureEventResult,
@@ -25,6 +27,7 @@ import type {
   ReviewExportPack,
   ReviewExportProduct,
   UpdateExportAgency,
+  UpdateExportCountry,
   UpdateExportDeparture,
   UpdateExportPack,
   UpdateExportPickupPoint,
@@ -43,6 +46,7 @@ import {
   collectExportShipmentSchema,
   createExportDepartureSchema,
   exportAgencyInputSchema,
+  exportCountryInputSchema,
   exportDepartureEventInputSchema,
   exportDeparturesQuerySchema,
   exportPackInputSchema,
@@ -54,12 +58,14 @@ import {
   reviewExportPackSchema,
   reviewExportProductSchema,
   updateExportAgencySchema,
+  updateExportCountrySchema,
   updateExportDepartureSchema,
   updateExportPackSchema,
   updateExportPickupPointSchema,
   weighExportShipmentSchema,
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
+import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { TerroirMapper } from './terroir.mapper'
@@ -77,7 +83,37 @@ export class AdminExportController {
     private readonly logistics: ExportLogisticsService,
     private readonly catalog: ExportCatalogService,
     private readonly shipments: ExportShipmentsService,
+    private readonly countries: ExportCountriesService,
   ) {}
+
+  // ===== DESTINATION COUNTRIES =====
+
+  /** Every country, active or not, with its pickup points, open departures and parcels in transit. */
+  @CanRead('Delivery')
+  @Get('countries')
+  async listCountries(): Promise<ExportCountryAdmin[]> {
+    return (await this.countries.listForAdmin()).map(TerroirMapper.toAdminCountry)
+  }
+
+  @CanManage('Delivery')
+  @Post('countries')
+  async createCountry(
+    @TypedBody(exportCountryInputSchema) body: ExportCountryInput,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportCountryAdmin> {
+    return TerroirMapper.toAdminCountry(await this.countries.create(body, session.user.id))
+  }
+
+  /** Everything but the code. `isActive: false` closes it to new parcels; a country is never deleted. */
+  @CanManage('Delivery')
+  @Patch('countries/:code')
+  async updateCountry(
+    @Param('code') code: string,
+    @TypedBody(updateExportCountrySchema) body: UpdateExportCountry,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportCountryAdmin> {
+    return TerroirMapper.toAdminCountry(await this.countries.update(code, body, session.user.id))
+  }
 
   // ===== AGENCIES =====
 

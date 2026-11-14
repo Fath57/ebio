@@ -7,7 +7,7 @@ import { RolesModule } from '../../auth/roles/roles.module'
 import { Order } from '../../orders/entities/order.entity'
 import { OrdersService } from '../../orders/orders.service'
 import { Checkout } from '../../payments/entities/checkout.entity'
-import { ExportCountry, ExportReception, ExportShipmentStatus } from '../contracts/terroir.contract'
+import { ExportReception, ExportShipmentStatus } from '../contracts/terroir.contract'
 import { ExportShipment } from '../entities/export-shipment.entity'
 import { ExportShipmentsService } from '../export-shipments.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
@@ -35,7 +35,7 @@ describe('terroir, domicile et assurance (e2e)', { timeout: 30_000 }, () => {
     const world = await seedTerroirWorld(app, em, { balance: 200_000 })
     const service = app.get(TerroirCheckoutService)
     const cart = terroirCart([{ productId: world.shopA.productIds[0], quantity: 1 }], {
-      country: ExportCountry.BE,
+      country: 'BE',
       departureId: world.departureId,
       reception: ExportReception.HOME,
       homeAddress: '4 avenue Louise, 1050 Bruxelles',

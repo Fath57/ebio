@@ -1,6 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, Enum, ManyToOne, OptionalProps, PrimaryKeyProp, Property } from '@mikro-orm/core'
-import { ExportCountry } from '../contracts/terroir.contract'
+import { Entity, ManyToOne, OptionalProps, PrimaryKey, PrimaryKeyProp, Property } from '@mikro-orm/core'
 import { ExportDeparture } from './export-departure.entity'
 
 /**
@@ -15,8 +14,9 @@ export class ExportDepartureRate {
   @ManyToOne(() => ExportDeparture, { primary: true, fieldName: 'departure_id', deleteRule: 'cascade' })
   departure!: Rel<ExportDeparture>
 
-  @Enum({ items: () => ExportCountry, primary: true, columnType: 'varchar(2)' })
-  country!: ExportCountry
+  /** References `export_countries.code`. */
+  @PrimaryKey({ type: 'string', length: 2, columnType: 'varchar(2)' })
+  country!: string
 
   /** FCFA per kilo, duties and taxes included. */
   @Property({ fieldName: 'price_per_kg', columnType: 'numeric(12,2)' })

@@ -8,7 +8,8 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { formatFcfa } from '../orders/order-format'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
-import { ExportCountry, ExportShipmentStatus } from './contracts/terroir.contract'
+import { ExportShipmentStatus } from './contracts/terroir.contract'
+import { ExportCountry } from './entities/export-country.entity'
 import { ExportShipment } from './entities/export-shipment.entity'
 import { addDays, shortName, spokenDay } from './terroir-texts'
 
@@ -22,10 +23,13 @@ export interface ShipmentNews {
   refunded?: number
 }
 
-const COUNTRY_NAMES: Record<ExportCountry, string> = {
-  [ExportCountry.FR]: 'France',
-  [ExportCountry.BE]: 'Belgique',
+/** « vers la France » / « en France », read from `export_countries`; a neutral wording when the row is missing. */
+interface CountryPhrases {
+  to: string
+  in: string
 }
+
+const UNKNOWN_COUNTRY: CountryPhrases = { to: 'vers sa destination', in: 'à destination' }
 
 /** Only a Beninese number gets an SMS: the gateway sends nowhere else. */
 const BENIN_PREFIX = '+229'
@@ -71,7 +75,7 @@ export class TerroirNotifierService {
       if (!shipment) {
         return
       }
-      const text = this.stepText(shipment, news)
+      const text = this.stepText(shipment, news, await this.phrasesOf(shipment.country))
       const url = this.trackingUrl(shipment.trackingToken)
       await this.push(shipment.buyer.id, NotificationType.EXPORT_SHIPMENT_UPDATE, text.title, text.buyer, { shipmentId: shipment.id, step: news.step })
       await this.mail(shipment.buyer.email, text.title, {
@@ -201,9 +205,13 @@ export class TerroirNotifierService {
     }
   }
 
-  private stepText(shipment: ExportShipment, news: ShipmentNews): StepText {
+  private async phrasesOf(code: string): Promise<CountryPhrases> {
+    const country = await this.em.fork().findOne(ExportCountry, { code })
+    return country ? { to: country.toPhrase, in: country.inPhrase } : UNKNOWN_COUNTRY
+  }
+
+  private stepText(shipment: ExportShipment, news: ShipmentNews, country: CountryPhrases): StepText {
     const sender = shortName(shipment.buyer.name)
-    const country = COUNTRY_NAMES[shipment.country] ?? 'destination'
     const agency = shipment.departure.agency.name
     const arrival = `entre le ${spokenDay(addDays(shipment.departure.departsOn, shipment.departure.transitMinDays))} et le ${spokenDay(addDays(shipment.departure.departsOn, shipment.departure.transitMaxDays))}`
     const refunded = news.refunded ? ` ${formatFcfa(news.refunded)} vous sont remboursés sur votre portefeuille eBio.` : ''
@@ -217,9 +225,9 @@ export class TerroirNotifierService {
       case ExportShipmentStatus.DROPPED_AT_AGENCY:
         return { title: 'Colis remis à l\'agence', buyer: `Votre colis a été déposé chez ${agency}.${extra}`, recipient: `Le colis que ${sender} vous envoie a été déposé chez ${agency}.${extra}` }
       case ExportShipmentStatus.DEPARTED:
-        return { title: 'Colis parti', buyer: `Votre colis est parti vers la ${country}. Arrivée estimée ${arrival}.${extra}`, recipient: `Le colis que ${sender} vous envoie est parti. Arrivée estimée ${arrival}.${extra}` }
+        return { title: 'Colis parti', buyer: `Votre colis est parti ${country.to}. Arrivée estimée ${arrival}.${extra}`, recipient: `Le colis que ${sender} vous envoie est parti. Arrivée estimée ${arrival}.${extra}` }
       case ExportShipmentStatus.ARRIVED:
-        return { title: 'Colis arrivé', buyer: `Votre colis est arrivé en ${country}.${extra}`, recipient: `Le colis que ${sender} vous envoie est arrivé en ${country}.${extra}` }
+        return { title: 'Colis arrivé', buyer: `Votre colis est arrivé ${country.in}.${extra}`, recipient: `Le colis que ${sender} vous envoie est arrivé ${country.in}.${extra}` }
       case ExportShipmentStatus.READY_FOR_PICKUP: {
         const where = news.pickupPoint ? ` : ${agency}, ${news.pickupPoint}` : ` chez ${agency}`
         return {

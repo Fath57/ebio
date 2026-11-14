@@ -1,7 +1,6 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, Enum, ManyToOne, OneToOne, OptionalProps, PrimaryKeyProp, Property } from '@mikro-orm/core'
+import { Entity, ManyToOne, OneToOne, OptionalProps, PrimaryKeyProp, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
-import { ExportCountry } from '../contracts/terroir.contract'
 import { ExportDeparture } from './export-departure.entity'
 
 /**
@@ -19,8 +18,9 @@ export class ExportCheckoutDraft {
   @ManyToOne(() => ExportDeparture, { fieldName: 'departure_id', nullable: true, deleteRule: 'set null' })
   departure?: Rel<ExportDeparture> | null
 
-  @Enum({ items: () => ExportCountry, columnType: 'varchar(2)' })
-  country!: ExportCountry
+  /** References `export_countries.code`. */
+  @Property({ type: 'string', length: 2, columnType: 'varchar(2)' })
+  country!: string
 
   @Property({ fieldName: 'updated_at', type: 'Date', onUpdate: () => new Date() })
   updatedAt: Date = new Date()

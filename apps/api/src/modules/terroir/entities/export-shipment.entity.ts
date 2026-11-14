@@ -2,7 +2,7 @@ import type { Rel } from '@mikro-orm/core'
 import { Entity, Enum, Index, ManyToOne, OneToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Checkout } from '../../payments/entities/checkout.entity'
-import { ExportCountry, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from '../contracts/terroir.contract'
+import { ExportReception, ExportShipmentStatus, ExportSupplementStatus } from '../contracts/terroir.contract'
 import { ExportDeparture } from './export-departure.entity'
 import { ExportPickupPoint } from './export-pickup-point.entity'
 
@@ -33,8 +33,9 @@ export class ExportShipment {
   @ManyToOne(() => ExportDeparture, { fieldName: 'departure_id' })
   departure!: Rel<ExportDeparture>
 
-  @Enum({ items: () => ExportCountry, columnType: 'varchar(2)' })
-  country!: ExportCountry
+  /** References `export_countries.code`. */
+  @Property({ type: 'string', length: 2, columnType: 'varchar(2)' })
+  country!: string
 
   @Enum({ items: () => ExportReception, columnType: 'varchar(8)', default: ExportReception.PICKUP })
   reception: ExportReception = ExportReception.PICKUP

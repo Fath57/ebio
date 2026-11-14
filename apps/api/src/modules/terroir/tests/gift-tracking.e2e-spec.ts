@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
-import { ExportCountry } from '../contracts/terroir.contract'
 import { ExportShipmentsService } from '../export-shipments.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
 import { TerroirMapper } from '../terroir.mapper'
@@ -41,7 +40,7 @@ describe('terroir, suivi public d\'un colis offert (e2e)', { timeout: 30_000 }, 
     const created = await app.get(TerroirCheckoutService).create(world.buyerId, terroirCart(
       [{ productId: world.shopA.productIds[0], quantity: 2 }],
       {
-        country: ExportCountry.BE,
+        country: 'BE',
         departureId: world.departureId,
         insured: true,
         gift: { name: 'Mireille', email: 'mireille@example.be', phone: '+32470123456', message: 'Joyeux anniversaire, un peu du pays' },

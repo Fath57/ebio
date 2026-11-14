@@ -1,12 +1,13 @@
 import type { Order } from '../orders/entities/order.entity'
 import type { ProductVariant } from '../products/entities/product-variant.entity'
-import type { ExportAdminShipment, ExportAgencyResponse, ExportCountry, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
+import type { ExportAdminShipment, ExportAgencyResponse, ExportCountryAdmin, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirCountry, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
 import type { ExportAgency } from './entities/export-agency.entity'
 import type { ExportDeparture } from './entities/export-departure.entity'
 import type { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import type { ExportProfile } from './entities/export-profile.entity'
 import type { ExportShipment } from './entities/export-shipment.entity'
 import type { ClientCatalog, ClientPackView, PackView, ReviewQueue } from './export-catalog.service'
+import type { AdminCountryView, ClientCountryView } from './export-countries.service'
 import type { DepartureDetailView, DepartureView } from './export-logistics.service'
 import type { AdminShipmentView, ShipmentView } from './export-shipments.service'
 import type { SupplementOutcome } from './export-supplement.service'
@@ -75,6 +76,36 @@ function eventsOf(view: ShipmentView) {
 
 /** Entities → contracts, field by field: getters and populated relations are not serialised. */
 export const TerroirMapper = {
+  toAdminCountry(view: AdminCountryView): ExportCountryAdmin {
+    const { country } = view
+    return {
+      code: country.code,
+      name: country.name,
+      toPhrase: country.toPhrase,
+      inPhrase: country.inPhrase,
+      displayCurrency: country.displayCurrency,
+      flagEmoji: country.flagEmoji ?? null,
+      sortOrder: country.sortOrder,
+      isActive: country.isActive,
+      counts: view.counts,
+      createdAt: country.createdAt.toISOString(),
+      updatedAt: country.updatedAt.toISOString(),
+    }
+  },
+
+  toClientCountry(view: ClientCountryView): TerroirCountry {
+    const { country } = view
+    return {
+      code: country.code,
+      name: country.name,
+      toPhrase: country.toPhrase,
+      inPhrase: country.inPhrase,
+      displayCurrency: country.displayCurrency,
+      flagEmoji: country.flagEmoji ?? null,
+      hasOpenDeparture: view.hasOpenDeparture,
+    }
+  },
+
   toPickupPoint(point: ExportPickupPoint): ExportPickupPointResponse {
     return {
       id: point.id,
@@ -230,7 +261,7 @@ export const TerroirMapper = {
 
   // ===== BUYERS ABROAD =====
 
-  toCatalog(catalog: ClientCatalog, country: ExportCountry, page: number, currency: string, rate: number | null): TerroirCatalogResponse {
+  toCatalog(catalog: ClientCatalog, country: string, page: number, currency: string, rate: number | null): TerroirCatalogResponse {
     return {
       country,
       currency: rate === null ? 'XOF' : currency,

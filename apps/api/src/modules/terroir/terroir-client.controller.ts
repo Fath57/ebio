@@ -5,6 +5,8 @@ import type {
   TerroirCheckoutInput,
   TerroirCheckoutPreview,
   TerroirCheckoutResult,
+  TerroirCountriesQuery,
+  TerroirCountry,
   TerroirDepartureAlertInput,
   TerroirDepartureAlertResponse,
   TerroirDeparturesQuery,
@@ -28,15 +30,17 @@ import { Public, Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { ExchangeRatesService } from '../currency/exchange-rates.service'
 import {
-  exportCountryEnum,
+  exportCountryCodeSchema,
   terroirCatalogQuerySchema,
   terroirCheckoutInputSchema,
+  terroirCountriesQuerySchema,
   terroirDepartureAlertInputSchema,
   terroirDeparturesQuerySchema,
   terroirDisplayQuerySchema,
   terroirSupplementInputSchema,
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
+import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { ExportSupplementService } from './export-supplement.service'
@@ -63,17 +67,31 @@ export class TerroirClientController {
     private readonly shipments: ExportShipmentsService,
     private readonly exchangeRates: ExchangeRatesService,
     private readonly supplements: ExportSupplementService,
+    private readonly countries: ExportCountriesService,
   ) {}
 
   // ===== CATALOGUE AND DEPARTURES =====
+
+  /**
+   * Destination countries, by `sortOrder`: those an open departure serves,
+   * or with `all=true` every active one (to subscribe to a departure alert).
+   */
+  @Public()
+  @UseGuards(TerroirEnabledGuard)
+  @Get('countries')
+  async getCountries(@TypedQueryObject(terroirCountriesQuerySchema) query: TerroirCountriesQuery): Promise<TerroirCountry[]> {
+    return (await this.countries.forClients(query.all === 'true')).map(TerroirMapper.toClientCountry)
+  }
 
   @Public()
   @UseGuards(TerroirEnabledGuard)
   @Get('catalog')
   async getCatalog(@TypedQueryObject(terroirCatalogQuerySchema) query: TerroirCatalogQuery): Promise<TerroirCatalogResponse> {
+    const country = await this.countries.requireActive(query.country)
+    const currency = query.currency ?? country.displayCurrency
     const catalog = await this.catalog.clientCatalog({ category: query.category, search: query.search, page: query.page })
-    const rate = await this.exchangeRates.effectiveRate(query.currency)
-    return TerroirMapper.toCatalog(catalog, query.country, query.page, query.currency, rate)
+    const rate = await this.exchangeRates.effectiveRate(currency)
+    return TerroirMapper.toCatalog(catalog, country.code, query.page, currency, rate)
   }
 
   @Public()
@@ -106,11 +124,13 @@ export class TerroirClientController {
     @Session() session: BetterAuthSession,
     @TypedQueryObject(terroirDeparturesQuerySchema) query: TerroirDeparturesQuery,
   ): Promise<TerroirDeparturesResponse> {
-    const { offers, departures } = await this.logistics.offerableDepartures(query.country, query.weightG)
-    const points = await this.logistics.pickupPointsFor(offers, departures, query.country)
-    const rate = await this.exchangeRates.effectiveRate(query.currency)
-    const alertSubscribed = await this.logistics.hasPendingAlert(session?.user?.id, query.country)
-    return TerroirMapper.toDepartures(offers, departures, points, rate, query.currency, alertSubscribed)
+    const country = await this.countries.requireActive(query.country)
+    const currency = query.currency ?? country.displayCurrency
+    const { offers, departures } = await this.logistics.offerableDepartures(country.code, query.weightG)
+    const points = await this.logistics.pickupPointsFor(offers, departures, country.code)
+    const rate = await this.exchangeRates.effectiveRate(currency)
+    const alertSubscribed = await this.logistics.hasPendingAlert(session?.user?.id, country.code)
+    return TerroirMapper.toDepartures(offers, departures, points, rate, currency, alertSubscribed)
   }
 
   /** « Me prévenir du prochain départ » (FR-032): sent once, at the next opening. */
@@ -131,9 +151,10 @@ export class TerroirClientController {
     @Session() session: LoggedInBetterAuthSession,
     @Param('country') country: string,
   ): Promise<TerroirDepartureAlertResponse> {
-    const parsed = exportCountryEnum.safeParse(country.toUpperCase())
+    // Format only: an alert towards a country closed since can still be withdrawn.
+    const parsed = exportCountryCodeSchema.safeParse(country)
     if (!parsed.success) {
-      throw terroirError(HttpStatus.BAD_REQUEST, 'TERROIR_COUNTRY', 'Seules la France et la Belgique sont desservies.')
+      throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_COUNTRY_UNKNOWN', 'Ce pays de destination n\'existe pas.')
     }
     await this.logistics.unsubscribeAlert(session.user.id, parsed.data)
     return { country: parsed.data, subscribed: false }

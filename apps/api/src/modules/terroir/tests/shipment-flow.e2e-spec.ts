@@ -11,7 +11,7 @@ import { OrdersService } from '../../orders/orders.service'
 import { PaymentGatewayFactory } from '../../payments/gateways/payment-gateway.factory'
 import { PaymentProvider } from '../../payments/payment.entity'
 import { TopupService } from '../../wallet/topup.service'
-import { ExportCountry, ExportDepartureStatus, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from '../contracts/terroir.contract'
+import { ExportDepartureStatus, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from '../contracts/terroir.contract'
 import { ExportDepartureAlert } from '../entities/export-departure-alert.entity'
 import { ExportDeparture } from '../entities/export-departure.entity'
 import { ExportShipmentEvent } from '../entities/export-shipment-event.entity'
@@ -303,8 +303,8 @@ describe('terroir, colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60
     const ctx = context as unknown as Context
     const world = await seedTerroirWorld(ctx.app, ctx.em)
     const logistics = ctx.app.get(ExportLogisticsService)
-    await logistics.subscribeAlert(world.buyerId, ExportCountry.FR)
-    await logistics.subscribeAlert(world.buyerId, ExportCountry.FR)
+    await logistics.subscribeAlert(world.buyerId, 'FR')
+    await logistics.subscribeAlert(world.buyerId, 'FR')
 
     await seedDeparture(ctx.app, world.agentId, world.agencyId)
     fresh(ctx)

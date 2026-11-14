@@ -6,7 +6,6 @@ import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { ProductsController } from '../../products/products.controller'
 import { ProductsService } from '../../products/products.service'
-import { ExportCountry } from '../contracts/terroir.contract'
 import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
 import { TerroirMapper } from '../terroir.mapper'
@@ -34,7 +33,7 @@ describe('terroir, catalogue et départs côté client (e2e)', { timeout: 30_000
     em.clear()
     app.get(EntityManager).clear()
 
-    const response = TerroirMapper.toCatalog(await catalog.clientCatalog({ page: 1 }), ExportCountry.FR, 1, 'EUR', 655.957)
+    const response = TerroirMapper.toCatalog(await catalog.clientCatalog({ page: 1 }), 'FR', 1, 'EUR', 655.957)
     expect(response.products.map(product => product.id)).not.toContain(world.shopB.productIds[1])
     expect(response.products).toHaveLength(5)
     expect(response.products.every(product => product.badge)).toBe(true)
@@ -51,9 +50,9 @@ describe('terroir, catalogue et départs côté client (e2e)', { timeout: 30_000
     const world = await seedTerroirWorld(app, em)
     const logistics = app.get(ExportLogisticsService)
 
-    const { offers, departures } = await logistics.offerableDepartures(ExportCountry.FR, 6200)
-    const points = await logistics.pickupPointsFor(offers, departures, ExportCountry.FR)
-    const response = TerroirMapper.toDepartures(offers, departures, points, null, 'XOF', await logistics.hasPendingAlert(world.buyerId, ExportCountry.FR))
+    const { offers, departures } = await logistics.offerableDepartures('FR', 6200)
+    const points = await logistics.pickupPointsFor(offers, departures, 'FR')
+    const response = TerroirMapper.toDepartures(offers, departures, points, null, 'XOF', await logistics.hasPendingAlert(world.buyerId, 'FR'))
 
     expect(response.next).toMatchObject({ departureId: world.departureId, agency: 'Bénin Express', city: 'Paris' })
     expect(response.alertSubscribed).toBe(false)

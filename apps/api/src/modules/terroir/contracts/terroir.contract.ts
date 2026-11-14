@@ -1,12 +1,7 @@
 import { z } from 'zod'
+import { foreignCurrencyEnum } from '../../currency/contracts/currency.contract'
 
 // ===== ENUMS =====
-
-/** Countries a terroir parcel can be sent to (v1). */
-export enum ExportCountry {
-  FR = 'FR',
-  BE = 'BE',
-}
 
 /** eBio's answer on a product a shop asked to export. */
 export enum ExportProfileStatus {
@@ -77,9 +72,14 @@ export const EXPORT_CHECKLIST_KEYS = [
 export type ExportChecklistKey = typeof EXPORT_CHECKLIST_KEYS[number]
 export type ExportChecklist = Partial<Record<ExportChecklistKey, boolean>>
 
-export const exportCountryEnum = z.enum(ExportCountry).meta({
-  title: 'ExportCountry',
-  description: 'Pays de destination d\'une valise',
+/**
+ * A destination country, ISO 3166-1 alpha-2. The list is data
+ * (`export_countries`, edited in the back office): services check the code
+ * exists, and is active for anything new a buyer starts.
+ */
+export const exportCountryCodeSchema = z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, 'Code pays ISO à deux lettres attendu (FR, BE, CA…)').meta({
+  title: 'ExportCountryCode',
+  description: 'Code ISO à deux lettres du pays de destination d\'une valise',
 })
 
 export const exportProfileStatusEnum = z.enum(ExportProfileStatus).meta({
@@ -140,7 +140,7 @@ export const updateExportAgencySchema = exportAgencyInputSchema.partial().meta({
 export type UpdateExportAgency = z.infer<typeof updateExportAgencySchema>
 
 export const exportPickupPointInputSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   city: z.string().trim().min(2).max(80),
   address: z.string().trim().min(5).max(500),
   openingHours: optionalText(300),
@@ -162,7 +162,7 @@ export type UpdateExportPickupPoint = z.infer<typeof updateExportPickupPointSche
 export const exportPickupPointResponseSchema = z.object({
   id: z.string().uuid(),
   agencyId: z.string().uuid(),
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   city: z.string(),
   address: z.string(),
   openingHours: z.string().nullable(),
@@ -193,7 +193,7 @@ export type ExportPickupPointResponse = z.infer<typeof exportPickupPointResponse
 // ===== §5 BACK-OFFICE, DEPARTURES =====
 
 export const exportDepartureRateInputSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   /** FCFA per kilo, duties and taxes included (FR-014). */
   pricePerKg: amount,
   minBilledKg: z.number().min(0).max(1_000),
@@ -255,7 +255,7 @@ export const exportDeparturesQuerySchema = z.object({
 export type ExportDeparturesQuery = z.infer<typeof exportDeparturesQuerySchema>
 
 export const exportDepartureRateResponseSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   pricePerKg: z.number(),
   minBilledKg: z.number(),
   maxWeightKg: z.number().nullable(),
@@ -301,7 +301,7 @@ export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend(
   shipments: z.array(z.object({
     id: z.string().uuid(),
     buyer: z.string(),
-    country: exportCountryEnum,
+    country: exportCountryCodeSchema,
     status: exportShipmentStatusEnum,
     estimatedWeightG: z.number(),
     actualWeightG: z.number().nullable(),
@@ -549,12 +549,15 @@ export const terroirUnavailableReasonEnum = z.enum(['NOT_FOUND', 'NOT_EXPORTABLE
 
 const displayCurrencyField = z.enum(['XOF', 'EUR', 'USD', 'CAD']).default('EUR')
 
+/** Absent: the destination country's own display currency. */
+const countryCurrencyField = z.enum(['XOF', 'EUR', 'USD', 'CAD']).optional()
+
 export const terroirCatalogQuerySchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   category: z.string().uuid().optional(),
   search: z.string().trim().max(100).optional(),
   page: z.coerce.number().int().min(1).max(500).default(1),
-  currency: displayCurrencyField,
+  currency: countryCurrencyField,
 }).meta({
   title: 'TerroirCatalogQuery',
   description: 'Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d\'affichage',
@@ -614,7 +617,7 @@ export const terroirCatalogPackSchema = z.object({
 })
 
 export const terroirCatalogResponseSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   currency: z.string(),
   products: z.array(terroirCatalogProductSchema),
   /** Every orderable pack matching the search, on the first page only. */
@@ -693,9 +696,9 @@ export const terroirPackDetailSchema = z.object({
 export type TerroirPackDetail = z.infer<typeof terroirPackDetailSchema>
 
 export const terroirDeparturesQuerySchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   weightG: z.coerce.number().int().min(0).max(1_000_000).default(0),
-  currency: displayCurrencyField,
+  currency: countryCurrencyField,
 }).meta({
   title: 'TerroirDeparturesQuery',
   description: 'Départs proposables vers un pays, pour un poids de colis',
@@ -774,7 +777,7 @@ export const terroirGiftSchema = z.object({
 
 export const terroirCheckoutInputSchema = z.object({
   /** The destination, the recipient's country for a gift. */
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   lines: z.array(terroirCartLineSchema).min(1, 'Votre valise est vide').max(40),
   /** Preview: the soonest offered departure when absent. */
   departureId: z.string().uuid().nullable().optional(),
@@ -785,7 +788,7 @@ export const terroirCheckoutInputSchema = z.object({
   insured: z.boolean().default(false),
   gift: terroirGiftSchema.nullable().optional(),
   paymentMethod: terroirPaymentMethodEnum.default('FEDAPAY'),
-  displayCurrency: displayCurrencyField,
+  displayCurrency: countryCurrencyField,
 }).meta({
   title: 'TerroirCheckoutInput',
   description: 'Valise : pays, lignes, départ, réception, assurance, cadeau, paiement',
@@ -803,7 +806,7 @@ const amountsDisplaySchema = z.object({
 }).nullable()
 
 export const terroirCheckoutPreviewSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   lines: z.array(z.object({
     productId: z.string().uuid().nullable(),
     variantId: z.string().uuid().nullable(),
@@ -899,7 +902,7 @@ const shipmentLineSchema = z.object({
 export const terroirShipmentSummarySchema = z.object({
   id: z.string().uuid(),
   status: exportShipmentStatusEnum,
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   departure: shipmentDepartureSchema,
   reception: exportReceptionEnum,
   itemCount: z.number(),
@@ -915,7 +918,7 @@ export const terroirShipmentSummarySchema = z.object({
 export const terroirShipmentDetailSchema = z.object({
   id: z.string().uuid(),
   status: exportShipmentStatusEnum,
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   departure: shipmentDepartureSchema.extend({ collectBefore: z.string().datetime() }),
   reception: exportReceptionEnum,
   pickupPoint: z.object({ city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
@@ -956,7 +959,7 @@ export type TerroirShipmentDetail = z.infer<typeof terroirShipmentDetailSchema>
 /** Public tracking of a gifted parcel (US10): never a price nor an amount. */
 export const terroirTrackingSchema = z.object({
   status: exportShipmentStatusEnum,
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   recipientName: z.string().nullable(),
   senderName: z.string(),
   giftMessage: z.string().nullable(),
@@ -976,7 +979,7 @@ export type TerroirTracking = z.infer<typeof terroirTrackingSchema>
 // ===== §1 CLIENT, DEPARTURE ALERTS =====
 
 export const terroirDepartureAlertInputSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
 }).meta({
   title: 'TerroirDepartureAlertInput',
   description: '« Me prévenir du prochain départ » vers un pays',
@@ -985,7 +988,7 @@ export const terroirDepartureAlertInputSchema = z.object({
 export type TerroirDepartureAlertInput = z.infer<typeof terroirDepartureAlertInputSchema>
 
 export const terroirDepartureAlertResponseSchema = z.object({
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   /** A pending alert exists after the call. */
   subscribed: z.boolean(),
 }).meta({
@@ -1092,7 +1095,7 @@ export type LostExportShipment = z.infer<typeof lostExportShipmentSchema>
 export const exportAdminShipmentSchema = z.object({
   id: z.string().uuid(),
   status: exportShipmentStatusEnum,
-  country: exportCountryEnum,
+  country: exportCountryCodeSchema,
   buyer: z.object({ id: z.string().uuid(), name: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
   gift: z.object({ name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), message: z.string().nullable() }).nullable(),
   departure: z.object({ id: z.string().uuid(), agency: z.string(), departsOn: z.string(), status: exportDepartureStatusEnum, depositDeadline: z.string().datetime() }),
@@ -1148,3 +1151,87 @@ export const exportAdminShipmentSchema = z.object({
 })
 
 export type ExportAdminShipment = z.infer<typeof exportAdminShipmentSchema>
+
+// ===== §5 BACK-OFFICE, DESTINATION COUNTRIES =====
+
+const countryPhrase = z.string().trim().min(3).max(120)
+
+export const exportCountryInputSchema = z.object({
+  code: exportCountryCodeSchema,
+  /** « France », « Pays-Bas ». */
+  name: z.string().trim().min(2).max(80),
+  /** « vers la France », « vers le Canada », « vers les Pays-Bas ». */
+  toPhrase: countryPhrase,
+  /** « en France », « au Canada », « aux Pays-Bas ». */
+  inPhrase: countryPhrase,
+  /** What a buyer there reads prices in when the app does not say. */
+  displayCurrency: foreignCurrencyEnum,
+  flagEmoji: z.string().trim().min(1).max(16).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(10_000).optional(),
+  isActive: z.boolean().optional(),
+}).meta({
+  title: 'ExportCountryInput',
+  description: 'Pays de destination : code ISO, nom, tournures « vers » et « en », devise d\'affichage',
+})
+
+export type ExportCountryInput = z.infer<typeof exportCountryInputSchema>
+
+export const updateExportCountrySchema = exportCountryInputSchema.omit({ code: true }).partial().meta({
+  title: 'UpdateExportCountry',
+  description: 'Champs d\'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises',
+})
+
+export type UpdateExportCountry = z.infer<typeof updateExportCountrySchema>
+
+export const exportCountryAdminSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  toPhrase: z.string(),
+  inPhrase: z.string(),
+  displayCurrency: foreignCurrencyEnum,
+  flagEmoji: z.string().nullable(),
+  sortOrder: z.number(),
+  isActive: z.boolean(),
+  counts: z.object({
+    pickupPoints: z.number(),
+    /** Open departures, order deadline not passed, with a rate towards the country. */
+    openDepartures: z.number(),
+    /** Paid parcels still travelling. */
+    activeShipments: z.number(),
+  }),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+}).meta({
+  title: 'ExportCountryAdmin',
+  description: 'Pays de destination côté back-office, avec ses points de retrait, départs ouverts et colis en cours',
+})
+
+export type ExportCountryAdmin = z.infer<typeof exportCountryAdminSchema>
+
+// ===== §1 CLIENT, DESTINATION COUNTRIES =====
+
+export const terroirCountriesQuerySchema = z.object({
+  /** 'true': every active country, a departure or not (« Me prévenir du prochain départ »). */
+  all: z.enum(['true', 'false']).default('false'),
+}).meta({
+  title: 'TerroirCountriesQuery',
+  description: 'Pays proposés : ceux qui ont un départ ouvert, ou tous les pays actifs',
+})
+
+export type TerroirCountriesQuery = z.infer<typeof terroirCountriesQuerySchema>
+
+export const terroirCountrySchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  toPhrase: z.string(),
+  inPhrase: z.string(),
+  displayCurrency: foreignCurrencyEnum,
+  flagEmoji: z.string().nullable(),
+  /** An open departure has a rate towards it: a parcel can be ordered now. */
+  hasOpenDeparture: z.boolean(),
+}).meta({
+  title: 'TerroirCountry',
+  description: 'Pays de destination proposé au client',
+})
+
+export type TerroirCountry = z.infer<typeof terroirCountrySchema>

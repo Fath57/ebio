@@ -9,10 +9,10 @@ import { PlatformSettingsService } from '../../settings/platform-settings.servic
 import { WalletTransactionType } from '../../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../../wallet/entities/wallet.entity'
 import { WalletService } from '../../wallet/wallet.service'
-import { EXPORT_CHECKLIST_KEYS, ExportCountry, ExportReception } from '../contracts/terroir.contract'
+import { EXPORT_CHECKLIST_KEYS, ExportReception } from '../contracts/terroir.contract'
 import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
-import { dayFromNow, instantFromNow, muteOutbound, seedShop } from './terroir.fixture'
+import { dayFromNow, instantFromNow, muteOutbound, seedExportCountries, seedShop } from './terroir.fixture'
 
 const FULL_CHECKLIST = Object.fromEntries(EXPORT_CHECKLIST_KEYS.map(key => [key, true]))
 
@@ -50,8 +50,8 @@ export async function seedDeparture(app: INestApplication, agentId: string, agen
     transitMaxDays: 11,
     capacityKg: overrides.capacityKg === undefined ? 100 : overrides.capacityKg,
     rates: [
-      { country: ExportCountry.FR, pricePerKg: 8500, minBilledKg: 5, maxWeightKg: 30, homeDeliveryFee: 3900 },
-      { country: ExportCountry.BE, pricePerKg: 9000, minBilledKg: 5, homeDeliveryFee: overrides.beHomeFee ?? null },
+      { country: 'FR', pricePerKg: 8500, minBilledKg: 5, maxWeightKg: 30, homeDeliveryFee: 3900 },
+      { country: 'BE', pricePerKg: 9000, minBilledKg: 5, homeDeliveryFee: overrides.beHomeFee ?? null },
     ],
   }, agentId)
   return view.departure.id
@@ -74,6 +74,7 @@ export async function seedTerroirWorld(app: INestApplication, em: EntityManager,
     "updated_at" timestamptz NOT NULL DEFAULT NOW(),
     CONSTRAINT "commission_rates_pkey" PRIMARY KEY ("id")
   );`)
+  await seedExportCountries(em)
   await app.get(PlatformSettingsService).setTerroirExportSettings({ enabled: true })
   const agent = await createUserData(em, { name: 'Agent eBio' })
   const buyer = await createUserData(em, { name: 'Awa Diallo' })
@@ -87,8 +88,8 @@ export async function seedTerroirWorld(app: INestApplication, em: EntityManager,
 
   const logistics = app.get(ExportLogisticsService)
   const agency = await logistics.createAgency({ name: 'Bénin Express' }, agent.id)
-  const paris = await logistics.createPickupPoint(agency.id, { country: ExportCountry.FR, city: 'Paris', address: '12 rue Myrha, 75018 Paris', openingHours: 'mar.–sam. 10 h–19 h' }, agent.id)
-  const bruxelles = await logistics.createPickupPoint(agency.id, { country: ExportCountry.BE, city: 'Bruxelles', address: '4 chaussée d\'Ixelles, 1050 Ixelles' }, agent.id)
+  const paris = await logistics.createPickupPoint(agency.id, { country: 'FR', city: 'Paris', address: '12 rue Myrha, 75018 Paris', openingHours: 'mar.–sam. 10 h–19 h' }, agent.id)
+  const bruxelles = await logistics.createPickupPoint(agency.id, { country: 'BE', city: 'Bruxelles', address: '4 chaussée d\'Ixelles, 1050 Ixelles' }, agent.id)
   const departureId = await seedDeparture(app, agent.id, agency.id, { capacityKg: options.capacityKg })
 
   if (options.balance) {
@@ -117,7 +118,7 @@ export async function topUp(app: INestApplication, userId: string, amount: numbe
 /** A checkout input with the defaults the contract would fill. */
 export function terroirCart(lines: TerroirCheckoutInput['lines'], overrides: Partial<TerroirCheckoutInput> = {}): TerroirCheckoutInput {
   return {
-    country: ExportCountry.FR,
+    country: 'FR',
     lines,
     reception: ExportReception.PICKUP,
     insured: false,

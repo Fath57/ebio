@@ -14,6 +14,7 @@ import { WalletTransactionType } from '../wallet/entities/wallet-transaction.ent
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { ExportDepartureStatus, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from './contracts/terroir.contract'
+import { ExportCountry } from './entities/export-country.entity'
 import { ExportDeparture } from './entities/export-departure.entity'
 import { ExportProfile } from './entities/export-profile.entity'
 import { ExportShipmentEvent } from './entities/export-shipment-event.entity'
@@ -221,6 +222,10 @@ export class ExportShipmentsService implements OnModuleInit {
           { populate: ['items', 'items.product', 'items.variant'], orderBy: { createdAt: 'ASC' } },
         )
 
+    const countryCodes = [...new Set(shipments.map(shipment => shipment.country))]
+    const countries = countryCodes.length === 0 ? [] : await this.em.find(ExportCountry, { code: { $in: countryCodes } })
+    const countryName = new Map(countries.map(country => [country.code, country.name]))
+
     let totalWeightG = 0
     let totalEur = 0
     const blocks = shipments.map((shipment, index) => {
@@ -240,7 +245,7 @@ export class ExportShipmentsService implements OnModuleInit {
       const rows = lines.map(item => `<tr><td>${escapeHtml(item.variant ? `${item.product.name}, ${item.variant.label}` : item.product.name)}</td><td class="num">${item.quantity}</td></tr>`).join('')
       return `<section>
         <h2>Colis ${index + 1} · ${escapeHtml(shipment.id.slice(0, 8).toUpperCase())}${shipment.insured ? ' · assuré' : ''}</h2>
-        <p><strong>${escapeHtml(recipient)}</strong>${phone ? ` · ${escapeHtml(phone)}` : ''}<br>${escapeHtml(shipment.country)} · ${escapeHtml(destination)}</p>
+        <p><strong>${escapeHtml(recipient)}</strong>${phone ? ` · ${escapeHtml(phone)}` : ''}<br>${escapeHtml(countryName.get(shipment.country) ?? shipment.country)} · ${escapeHtml(destination)}</p>
         <table><thead><tr><th>Contenu</th><th class="num">Qté</th></tr></thead><tbody>${rows}</tbody></table>
         <p>Valeur déclarée : <strong>${eur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</strong> · Poids : <strong>${(weightG / 1000).toLocaleString('fr-FR')} kg</strong>${shipment.actualWeightG == null ? ' (estimé)' : ''}</p>
       </section>`

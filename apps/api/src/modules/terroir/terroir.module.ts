@@ -11,6 +11,7 @@ import { SuppliersModule } from '../suppliers/suppliers.module'
 import { WalletModule } from '../wallet/wallet.module'
 import { AdminExportController } from './admin-export.controller'
 import { ExportCatalogService } from './export-catalog.service'
+import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { ExportSupplementService } from './export-supplement.service'
@@ -45,6 +46,7 @@ import { TerroirScheduler } from './terroir.scheduler'
   controllers: [AdminExportController, SupplierExportController, TerroirClientController],
   providers: [
     ExportCatalogService,
+    ExportCountriesService,
     ExportLogisticsService,
     ExportShipmentsService,
     ExportSupplementService,
@@ -54,6 +56,6 @@ import { TerroirScheduler } from './terroir.scheduler'
     TerroirEnabledGuard,
     TerroirScheduler,
   ],
-  exports: [ExportCatalogService, ExportLogisticsService, ExportShipmentsService, ExportSupplementService, TerroirScheduler, TerroirCheckoutService, TerroirSettlementService, TerroirNotifierService, TerroirEnabledGuard],
+  exports: [ExportCatalogService, ExportCountriesService, ExportLogisticsService, ExportShipmentsService, ExportSupplementService, TerroirScheduler, TerroirCheckoutService, TerroirSettlementService, TerroirNotifierService, TerroirEnabledGuard],
 })
 export class TerroirModule {}

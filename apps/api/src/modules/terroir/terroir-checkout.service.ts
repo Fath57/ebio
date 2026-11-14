@@ -1,5 +1,5 @@
 import type { DisplayCurrency } from '../currency/contracts/currency.contract'
-import type { ExportCountry, TerroirCheckoutInput } from './contracts/terroir.contract'
+import type { TerroirCheckoutInput } from './contracts/terroir.contract'
 import type { PackView } from './export-catalog.service'
 import type { OfferedDeparture } from './terroir-math'
 import { randomBytes } from 'node:crypto'
@@ -28,6 +28,7 @@ import { ExportProfile } from './entities/export-profile.entity'
 import { ExportShipmentEvent } from './entities/export-shipment-event.entity'
 import { ExportShipment } from './entities/export-shipment.entity'
 import { ExportCatalogService, lineWeight, packLinePrice } from './export-catalog.service'
+import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { billedKg, estimateWeight, insurancePrice, marginKg, orderDeadline, packSplit, shippingPrice } from './terroir-math'
 import { TerroirSettlementService } from './terroir-settlement.service'
@@ -74,7 +75,7 @@ interface CartAnalysis {
 
 /** What a terroir cart costs towards one country, on one departure. */
 export interface TerroirQuote {
-  country: ExportCountry
+  country: string
   lines: QuoteLine[]
   estimatedWeightG: number
   billedKg: number | null
@@ -139,6 +140,7 @@ export class TerroirCheckoutService {
     private readonly platformSettings: PlatformSettingsService,
     private readonly exchangeRates: ExchangeRatesService,
     private readonly orderEmails: OrderEmailsService,
+    private readonly countries: ExportCountriesService,
   ) {}
 
   /**
@@ -148,10 +150,13 @@ export class TerroirCheckoutService {
    * draft for the 48 h reminder (FR-033).
    */
   async preview(buyerId: string, input: TerroirCheckoutInput): Promise<TerroirQuote> {
+    const destination = await this.countries.requireActive(input.country)
+    const country = destination.code
+    const currency = input.displayCurrency ?? destination.displayCurrency
     const analysis = await this.analyse(input.lines)
     const settings = await this.platformSettings.getTerroirExportSettings()
     const weightG = estimateWeight([{ weightG: analysis.itemsWeightG, quantity: 1 }], settings.packagingWeightG)
-    const { offers, departures } = await this.logistics.offerableDepartures(input.country, weightG)
+    const { offers, departures } = await this.logistics.offerableDepartures(country, weightG)
     const selected = offers.find(offer => offer.departure.id === input.departureId) ?? offers[0] ?? null
     const itemsTotal = await this.priceItems(buyerId, analysis)
 
@@ -162,14 +167,14 @@ export class TerroirCheckoutService {
     const insurance = input.insured ? insuranceQuote : 0
     const margin = selected ? marginKg(weightG, selected.rate) : 0
 
-    const pickupPoints = await this.logistics.pickupPointsFor(offers, departures, input.country)
+    const pickupPoints = await this.logistics.pickupPointsFor(offers, departures, country)
 
     if (analysis.lines.length > 0) {
-      await this.saveDraft(buyerId, input.country, selected?.departure.id ?? null)
+      await this.saveDraft(buyerId, country, selected?.departure.id ?? null)
     }
 
     return {
-      country: input.country,
+      country,
       lines: analysis.lines,
       estimatedWeightG: weightG,
       billedKg: selected ? billedKg(weightG, selected.rate) : null,
@@ -188,8 +193,8 @@ export class TerroirCheckoutService {
       homeDeliveryQuote,
       insuranceQuote,
       unavailable: analysis.unavailable,
-      currency: input.displayCurrency,
-      rate: await this.exchangeRates.effectiveRate(input.displayCurrency),
+      currency,
+      rate: await this.exchangeRates.effectiveRate(currency),
     }
   }
 
@@ -210,6 +215,10 @@ export class TerroirCheckoutService {
       throw terroirError(HttpStatus.BAD_REQUEST, 'HOME_ADDRESS_REQUIRED', 'Indiquez l\'adresse de livraison.')
     }
 
+    const destination = await this.countries.requireActive(input.country)
+    const country = destination.code
+    const currency = input.displayCurrency ?? destination.displayCurrency
+
     const analysis = await this.analyse(input.lines)
     if (analysis.unavailable.length > 0 || analysis.lines.length === 0) {
       throw terroirError(HttpStatus.CONFLICT, 'TERROIR_LINE_UNAVAILABLE', 'Un article de votre panier ne peut plus partir. Actualisez votre panier.')
@@ -227,7 +236,7 @@ export class TerroirCheckoutService {
         throw departureUnavailable()
       }
       const departure = await em.findOneOrFail(ExportDeparture, { id: departureId }, { populate: ['agency', 'rates'], refresh: true })
-      const rateRow = departure.rates.getItems().find(rate => rate.country === input.country)
+      const rateRow = departure.rates.getItems().find(rate => rate.country === country)
       if (departure.status !== ExportDepartureStatus.OPEN || !rateRow
         || orderDeadline(departure.depositDeadline, settings.collectionDays).getTime() <= Date.now()) {
         throw departureUnavailable()
@@ -252,7 +261,7 @@ export class TerroirCheckoutService {
         home = Number(rateRow.homeDeliveryFee)
       }
       else {
-        pickupPoint = await this.resolvePickupPoint(em, departure, input.country, input.pickupPointId ?? null)
+        pickupPoint = await this.resolvePickupPoint(em, departure, country, input.pickupPointId ?? null)
       }
 
       const checkout = em.create(Checkout, {
@@ -287,11 +296,11 @@ export class TerroirCheckoutService {
       const shipping = shippingPrice(weightG, rate)
       const insurance = input.insured ? insurancePrice(itemsTotal, settings.insuranceRateBps, settings.insuranceMin) : 0
       const total = cents(itemsTotal + shipping + home + insurance)
-      const frozen = await this.exchangeRates.freeze(total, input.displayCurrency)
+      const frozen = await this.exchangeRates.freeze(total, currency)
 
       checkout.totalAmount = total
       checkout.itemsTotal = itemsTotal
-      checkout.displayCurrency = frozen ? input.displayCurrency : 'XOF'
+      checkout.displayCurrency = frozen ? currency : 'XOF'
       checkout.fxRate = frozen?.fxRate ?? null
       checkout.fxMarginBps = frozen?.fxMarginBps ?? null
       checkout.displayTotal = frozen?.displayTotal ?? null
@@ -300,7 +309,7 @@ export class TerroirCheckoutService {
         checkout,
         buyer,
         departure,
-        country: input.country,
+        country,
         reception: input.reception,
         pickupPoint,
         homeAddress: input.reception === ExportReception.HOME ? input.homeAddress ?? null : null,
@@ -377,7 +386,7 @@ export class TerroirCheckoutService {
     return Number(row?.held ?? 0)
   }
 
-  private async resolvePickupPoint(em: EntityManager, departure: ExportDeparture, country: ExportCountry, pickupPointId: string | null): Promise<ExportPickupPoint> {
+  private async resolvePickupPoint(em: EntityManager, departure: ExportDeparture, country: string, pickupPointId: string | null): Promise<ExportPickupPoint> {
     const point = pickupPointId
       ? await em.findOne(ExportPickupPoint, { id: pickupPointId, agency: departure.agency.id, country, active: true })
       : await em.findOne(ExportPickupPoint, { agency: departure.agency.id, country, active: true }, { orderBy: { city: 'ASC', createdAt: 'ASC' } })
@@ -421,7 +430,7 @@ export class TerroirCheckoutService {
     return cents(total)
   }
 
-  private async saveDraft(buyerId: string, country: ExportCountry, departureId: string | null): Promise<void> {
+  private async saveDraft(buyerId: string, country: string, departureId: string | null): Promise<void> {
     try {
       await this.em.getConnection().execute(
         `INSERT INTO export_checkout_drafts (user_id, departure_id, country, updated_at, reminded_at)

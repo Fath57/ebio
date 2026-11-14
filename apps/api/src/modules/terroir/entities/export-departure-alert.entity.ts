@@ -1,7 +1,6 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, Enum, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { Entity, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
-import { ExportCountry } from '../contracts/terroir.contract'
 
 /** « Me prévenir du prochain départ » (FR-032): sent once, then kept as sent. */
 @Entity({ tableName: 'export_departure_alerts' })
@@ -18,8 +17,9 @@ export class ExportDepartureAlert {
   @ManyToOne(() => User, { fieldName: 'user_id', deleteRule: 'cascade' })
   user!: Rel<User>
 
-  @Enum({ items: () => ExportCountry, columnType: 'varchar(2)' })
-  country!: ExportCountry
+  /** References `export_countries.code`. */
+  @Property({ type: 'string', length: 2, columnType: 'varchar(2)' })
+  country!: string
 
   @Property({ fieldName: 'created_at', type: 'Date' })
   createdAt: Date = new Date()
