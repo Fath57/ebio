@@ -32,6 +32,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useScrollToSelected } from '../../common/hooks/use-scroll-to-selected'
 import { useLocation } from '../../common/location-context'
 import { MapScreen } from '../../map/components/map-screen'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 import { useOfflineSearch } from '../hooks/use-offline-search'
 import { useAutocomplete, useCategories, useSearchProducts } from '../hooks/use-search'
 import { FilterSheet } from './filter-sheet'
@@ -139,7 +140,10 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
   // Neither GPS nor a chosen city: the results are around the fallback city,
   // and the buyer must be told so, or a shop next door looks absent.
-  const isApproximateLocation = locationSource === 'default'
+  // « Mode Valise »: the buyer is abroad and the shops in Benin, the whole
+  // catalogue is listed and the phone's position plays no part.
+  const { active: valise } = useValiseMode()
+  const isApproximateLocation = !valise && locationSource === 'default'
 
   useEffect(() => {
     loadCategories()
@@ -156,13 +160,18 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
       const category = overrides && 'category' in overrides ? overrides.category : selectedCategory
       const filters = overrides?.filters ?? appliedFilters
 
+      const where = valise
+        ? { scope: 'all' as const }
+        : {
+            latitude,
+            longitude,
+            // What the buyer set themselves wins over what the section proposed:
+            // they just opened the filter panel for exactly that.
+            radius: filters.radius !== undefined ? filters.radius * 1000 : initialRadius,
+          }
       search({
         q: q || undefined,
-        latitude,
-        longitude,
-        // What the buyer set themselves wins over what the section proposed:
-        // they just opened the filter panel for exactly that.
-        radius: filters.radius !== undefined ? filters.radius * 1000 : initialRadius,
+        ...where,
         category,
         maxPrice: filters.maxPrice ?? initialMaxPrice,
         inStockOnly: filters.inStockOnly,
@@ -175,12 +184,12 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         promoOnly: initialPromoOnly || undefined,
       })
     },
-    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy],
+    [query, selectedCategory, appliedFilters, search, latitude, longitude, valise, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy],
   )
 
   useEffect(() => {
     performSearch()
-  }, [latitude, longitude]) // Initial search + re-run when geolocation resolves
+  }, [latitude, longitude, valise]) // Initial search + re-run when geolocation resolves or the mode changes
 
   /**
    * The text comes from the submit event, not from state: typed fast, the
@@ -279,7 +288,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   function handleQueryChange(text: string) {
     setQuery(text)
-    autocomplete(text, latitude, longitude)
+    autocomplete(text, latitude, longitude, valise)
   }
 
   // Un filtre est « actif » dès qu'il s'écarte de la valeur neutre. `inStockOnly`
@@ -289,7 +298,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   // The category shows in its own chip row: only what is hidden counts here.
   const hasActiveFilters
-    = appliedFilters.radius !== undefined
+    = (!valise && appliedFilters.radius !== undefined)
       || appliedFilters.maxPrice !== undefined
       || !appliedFilters.inStockOnly
       || appliedFilters.sortBy !== undefined
@@ -356,9 +365,11 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         )}
         {!didYouMean && (
           <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-            {isApproximateLocation
-              ? `Votre position n'est pas détectée : choisissez votre ville pour voir les fournisseurs proches de vous.`
-              : 'Aucun fournisseur trouvé à proximité. Essayez d\'élargir votre rayon de recherche.'}
+            {valise
+              ? 'Aucun produit du catalogue ne correspond. Essayez un autre mot ou une autre catégorie.'
+              : isApproximateLocation
+                ? `Votre position n'est pas détectée : choisissez votre ville pour voir les fournisseurs proches de vous.`
+                : 'Aucun fournisseur trouvé à proximité. Essayez d\'élargir votre rayon de recherche.'}
           </Text>
         )}
         {!didYouMean && isApproximateLocation && onPickLocation && (
@@ -689,6 +700,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         categoryOptions={categories}
         isSingleCategory={viewMode === 'list'}
         showSort={viewMode === 'list'}
+        showDistance={!valise}
       />
     </View>
   )

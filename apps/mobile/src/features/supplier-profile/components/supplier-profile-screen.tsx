@@ -37,6 +37,7 @@ import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
 import { useLocation } from '../../common/location-context'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const COVER_HEIGHT = 260
@@ -323,6 +324,8 @@ export function SupplierProfileScreen({
   const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
 
   const { latitude: buyerLat, longitude: buyerLng } = useLocation()
+  // From abroad (Valise mode) the shop's distance to the phone means nothing.
+  const { active: valise } = useValiseMode()
   const [supplier, setSupplier] = useState<SupplierProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isHoursExpanded, setIsHoursExpanded] = useState(false)
@@ -637,7 +640,7 @@ export function SupplierProfileScreen({
             <MapPin size={14} color={semantic.textTertiary} strokeWidth={2} />
             <Text style={[styles.addressText, { color: semantic.textTertiary }]} numberOfLines={1}>
               {supplier.address}
-              {supplier.distance !== null && ` · ${formatDistance(supplier.distance)}`}
+              {!valise && supplier.distance !== null && ` · ${formatDistance(supplier.distance)}`}
             </Text>
           </View>
 

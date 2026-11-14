@@ -5,6 +5,13 @@ export const searchProductsQuerySchema = z.object({
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
   radius: z.coerce.number().optional(),
+  /**
+   * `nearby` (default) bounds the results around the position. `all` reads the
+   * whole catalogue, distance aside: the « mode Valise » buyer lives abroad and
+   * shops for a parcel eBio sends, so the shops' distance to the phone means
+   * nothing there. Exportable products come first, then relevance or the sort.
+   */
+  scope: z.enum(['nearby', 'all']).default('nearby'),
   category: z.string().optional(),
   maxPrice: z.coerce.number().optional(),
   inStockOnly: z.enum(['true', 'false']).default('true').meta({ description: 'Filter in-stock only' }),
@@ -92,8 +99,10 @@ export const searchResponseSchema = z.object({
 
 export const autocompleteQuerySchema = z.object({
   q: z.string().min(2),
-  latitude: z.coerce.number(),
-  longitude: z.coerce.number(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
+  /** Same meaning as for the product search: `all` ignores the position. */
+  scope: z.enum(['nearby', 'all']).default('nearby'),
 }).meta({ title: 'AutocompleteQuery' })
 
 export const autocompleteResponseSchema = z.object({

@@ -26,6 +26,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { isAbroad } from '../../common/utils/is-abroad'
 import { OtpInput, ResendTimer } from './otp-input'
 
 type Step = 'identifier' | 'otp' | 'new-password' | 'success'
@@ -40,9 +41,12 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
 
-  const [method, setMethod] = useState<Method>('phone')
+  // Abroad (diaspora), the account was most likely opened with an e-mail
+  // address: that form comes first, as on the login and sign-up screens.
+  const [abroad] = useState(isAbroad)
+  const [method, setMethod] = useState<Method>(abroad ? 'email' : 'phone')
   const [step, setStep] = useState<Step>('identifier')
-  const [identifier, setIdentifier] = useState('+229')
+  const [identifier, setIdentifier] = useState(abroad ? '' : '+229')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -173,7 +177,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
           {step === 'identifier' && (method === 'phone'
             ? 'Entrez votre numéro de téléphone pour recevoir un code'
-            : 'Entrez votre adresse email pour recevoir un code')}
+            : 'Entrez votre adresse e-mail pour recevoir un code')}
           {step === 'otp' && `Code envoyé ${method === 'phone' ? 'au' : 'à'} ${identifier}`}
           {step === 'new-password' && 'Choisissez un nouveau mot de passe sécurisé'}
           {step === 'success' && 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe'}
@@ -212,7 +216,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
                   }}
                 >
                   <Mail size={16} color={method === 'email' ? colors.neutral[0] : semantic.textSecondary} strokeWidth={1.8} />
-                  <Text style={[styles.methodTabText, method === 'email' && { color: colors.neutral[0] }]}>Email</Text>
+                  <Text style={[styles.methodTabText, method === 'email' && { color: colors.neutral[0] }]}>E-mail</Text>
                 </Pressable>
               </View>
 

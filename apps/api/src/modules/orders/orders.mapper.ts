@@ -1,9 +1,10 @@
 import type { DisplayCurrency } from '../currency/contracts/currency.contract'
-import type { DisputeResponse, OrderDeliverySummary, OrderDisplay, OrderGift, OrderProof, OrderResponse } from './contracts/order.contract'
+import type { DisputeResponse, OrderDeliverySummary, OrderDisplay, OrderGift, OrderProof, OrderResponse, OrderSupplierPayout } from './contracts/order.contract'
 import { wrap } from '@mikro-orm/core'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { supplierShare } from '../payments/supplier-share'
 import { Dispute } from './entities/dispute.entity'
-import { Order } from './entities/order.entity'
+import { Order, OrderStatus, PickupMode } from './entities/order.entity'
 
 /** What only the payer reads on their order: the relative, the frozen currency, the proof. */
 export interface OrderPayerView {
@@ -16,6 +17,8 @@ export interface OrderPayerView {
 export interface OrderExtras {
   /** EXPORT order: when the shop must hand it to eBio (011). */
   collectBefore?: Date | null
+  /** The reader is the shop (or the back-office): the order carries its payout. */
+  supplierView?: boolean
 }
 
 export class OrderMapper {
@@ -29,6 +32,33 @@ export class OrderMapper {
       currency: checkout.displayCurrency as DisplayCurrency,
       rate: Number(checkout.fxRate),
       total: Number(checkout.displayTotal),
+    }
+  }
+
+  /**
+   * What the shop nets on the order, the same computation as the escrow
+   * release and the « en attente » of the wallet: before delivery, a delivery
+   * order counts as carried by an eBio courier; once delivered, only if a
+   * courier actually did.
+   */
+  static supplierPayoutOf(order: Order, delivery: OrderDeliverySummary | null): OrderSupplierPayout {
+    const deliveredByCourier = order.status === OrderStatus.DELIVERED
+      ? delivery !== null && delivery.status === 'DELIVERED' && delivery.courierName !== null
+      : order.pickupMode === PickupMode.DELIVERY
+    const share = supplierShare({
+      paymentAmount: Number(order.totalAmount),
+      commissionAmount: Number(order.commissionAmount),
+      deliveryFee: Number(order.deliveryFee),
+      deliveredByCourier,
+      discountFundedBy: order.discountFundedBy,
+      discountAmount: Number(order.discountAmount ?? 0),
+      platformPromoCompensation: Number(order.platformPromoCompensation ?? 0),
+    })
+    return {
+      commission: Number(order.commissionAmount),
+      courierFee: deliveredByCourier ? Number(order.deliveryFee) : 0,
+      compensation: share.compensation,
+      total: share.total,
     }
   }
 
@@ -82,6 +112,7 @@ export class OrderMapper {
       display: payer.display ?? null,
       proof: payer.proof ?? null,
       collectBefore: extras.collectBefore?.toISOString() ?? null,
+      supplierPayout: extras.supplierView === true ? OrderMapper.supplierPayoutOf(order, delivery) : null,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     }

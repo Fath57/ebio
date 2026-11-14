@@ -190,6 +190,25 @@ export const orderProofSchema = z.object({
   description: 'Preuve de remise au proche : photo, heure, éloignement',
 })
 
+/**
+ * What the shop nets on the order, computed by `supplierShare`, the very
+ * function the escrow release credits with. Before delivery a delivery order
+ * counts as carried by an eBio courier (the usual and cautious case).
+ */
+export const orderSupplierPayoutSchema = z.object({
+  /** eBio's commission on the items. */
+  commission: z.number(),
+  /** The delivery fee the buyer paid, which goes to the courier, not the shop. */
+  courierFee: z.number(),
+  /** What eBio pays back for its own promotions and promo codes. */
+  compensation: z.number(),
+  /** The shop's share: buyer's total, less commission and courier fee, plus compensation. */
+  total: z.number(),
+}).meta({
+  title: 'OrderSupplierPayout',
+  description: 'Part de la boutique sur la commande',
+})
+
 export const orderResponseSchema = z.object({
   id: z.string().uuid(),
   orderNumber: z.string(),
@@ -230,6 +249,8 @@ export const orderResponseSchema = z.object({
   proof: orderProofSchema.nullable(),
   /** EXPORT order: last moment to hand the products to eBio (« à remettre à eBio avant le … »); null otherwise. */
   collectBefore: z.string().datetime().nullable(),
+  /** Shop and back-office only: what the shop nets; null for the buyer. */
+  supplierPayout: orderSupplierPayoutSchema.nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
@@ -304,4 +325,5 @@ export type OrderGift = z.infer<typeof orderGiftSchema>
 export type OrderDisplay = z.infer<typeof orderDisplaySchema>
 export type OrderProof = z.infer<typeof orderProofSchema>
 export type OrderDeliverySummary = z.infer<typeof orderDeliverySummarySchema>
+export type OrderSupplierPayout = z.infer<typeof orderSupplierPayoutSchema>
 export type DisputeResponse = z.infer<typeof disputeResponseSchema>

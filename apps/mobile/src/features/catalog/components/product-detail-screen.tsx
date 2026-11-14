@@ -46,6 +46,7 @@ import { readExportability } from '../../terroir/terroir-api'
 import { useTerroirCart } from '../../terroir/terroir-cart-context'
 import { useValiseMode } from '../../terroir/valise-mode-context'
 import { useProductUnits } from '../hooks/use-product-units'
+import { itemsInFormat, itemsInUnit, pricePerItem } from '../pack-units'
 import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
 import { FormatPicker } from './format-picker'
 import { ProductCompositionSections, ProductLabelChips } from './product-composition'
@@ -122,7 +123,7 @@ export function ProductDetailScreen({
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const formatMoney = useShoppingMoney()
-  const { shortLabel } = useProductUnits()
+  const { shortLabel, label: unitName } = useProductUnits()
   const insets = useSafeAreaInsets()
   const { getItemCount, groups, addItem, updateQuantity } = useCart()
   // Valise mode: the page fills the valise from a footer, never the local cart.
@@ -196,13 +197,16 @@ export function ProductDetailScreen({
 
   const unitHasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
   const unitPrice = unitHasPromo ? product.promotionalPrice! : product.pricePerUnit
+  // A product sold by the pack of six holds six items per unit of sale.
+  const itemsPerUnit = itemsInUnit(product.unit)
+  const baseFormatLabel = itemsPerUnit > 1 ? unitName(product.unit) : 'À l’unité'
   // The unit always comes first; a format is a choice, never a default.
   const formats = useMemo<ProductFormat[]>(() => variantFormats.length === 0
     ? []
     : [
-        { id: null, label: 'À l\'unité', price: unitPrice, packSize: null, stock: product.stock ?? (product.isInStock ? 1 : 0) },
+        { id: null, label: baseFormatLabel, price: unitPrice, packSize: null, stock: product.stock ?? (product.isInStock ? 1 : 0) },
         ...variantFormats,
-      ], [variantFormats, unitPrice, product.stock, product.isInStock])
+      ], [variantFormats, baseFormatLabel, unitPrice, product.stock, product.isInStock])
   const selectedFormat = formats.find(format => format.id === selectedFormatId && format.id !== null) ?? null
   // A promotional price is the unit's; a pack keeps the price its shop set.
   const hasPromo = unitHasPromo && !selectedFormat
@@ -213,6 +217,11 @@ export function ProductDetailScreen({
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
   const unitShort = shortLabel(product.unit)
   const unitLabel = selectedFormat ? selectedFormat.label.toLowerCase() : unitShort
+  // « soit X / unité » for whatever holds several items, the unit of sale
+  // included when it is itself a pack.
+  const itemLabel = itemsPerUnit > 1 ? 'unité' : unitShort
+  const shownItems = selectedFormat ? itemsInFormat(selectedFormat, itemsPerUnit) : itemsPerUnit
+  const shownPerItem = pricePerItem(displayPrice, shownItems)
   const promotionTypes = useMemo(
     () => (promotions ? promotions.map(p => p.type) : product.promotionTypes ?? []),
     [promotions, product.promotionTypes],
@@ -494,6 +503,11 @@ export function ProductDetailScreen({
                     {' '}
                     {unitLabel}
                   </Text>
+                  {shownPerItem !== null && (
+                    <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
+                      {`, soit ${formatMoney(shownPerItem).primary} / ${itemLabel}`}
+                    </Text>
+                  )}
                   {hasPromo && (
                     <>
                       <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
@@ -535,7 +549,8 @@ export function ProductDetailScreen({
                 formats={formats}
                 selectedId={selectedFormat?.id ?? null}
                 onSelect={format => setSelectedFormatId(format.id)}
-                unitLabel={unitShort}
+                itemLabel={itemLabel}
+                itemsPerUnit={itemsPerUnit}
               />
             )}
           </View>
@@ -643,7 +658,8 @@ export function ProductDetailScreen({
                   carries its own, and two ratings side by side leave nobody
                   knowing which one to read. The shop page still shows its. */}
               <View style={styles.supplierMeta}>
-                {supplier.distance !== undefined && (
+                {/* From abroad (Valise mode) the distance to the phone means nothing. */}
+                {!valise && supplier.distance !== undefined && (
                   <View style={styles.metaItem}>
                     <MapPin size={12} color={semantic.textTertiary} strokeWidth={2} />
                     <Text style={[styles.metaText, { color: semantic.textSecondary }]}>

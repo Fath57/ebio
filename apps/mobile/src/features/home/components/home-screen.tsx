@@ -101,7 +101,7 @@ export function HomeScreen({
   // the one thing that would fix it, choosing a position, is one tap away.
   const positionIsAssumed = locationSource === 'default'
   const { categories, loadCategories } = useCategories()
-  const { sections, loading } = useHomeSections(latitude, longitude)
+  const { sections, loading } = useHomeSections(latitude, longitude, valise)
   const { banners: editorialBanners } = useHomeBanners()
 
   useEffect(() => {
@@ -115,6 +115,12 @@ export function HomeScreen({
   // With no published banner, we draw from what the sections already
   // returned rather than firing another search for nothing.
   const fallbackSource = sections.flatMap(section => section.results)
+
+  // "Near you" is a lie about someone else's city, and means nothing to a
+  // buyer abroad shopping the whole catalogue (Valise mode).
+  function sectionTitle(title: string): string {
+    return title === 'Près de vous' && (positionIsAssumed || valise) ? 'À découvrir' : title
+  }
   const banners: HomeBanner[] = editorialBanners.length > 0
     ? editorialBanners
     : fallbackSource.slice(0, 5).map(item => ({
@@ -182,12 +188,12 @@ export function HomeScreen({
                 {sections.map(section => (
                   <HomeSection
                     key={section.id}
-                    title={section.title === 'Près de vous' && positionIsAssumed ? 'À découvrir' : section.title}
+                    title={sectionTitle(section.title)}
                     subtitle={section.subtitle}
                     Icon={SECTION_ICONS[section.icon ?? ''] ?? Sparkles}
                     iconColor={WARM_ICONS.has(section.icon ?? '') ? colors.coral[400] : colors.green[400]}
                     data={section.results}
-                    onSeeAll={() => onSeeAll(section.title, section.criteria ?? {}, section.productIds)}
+                    onSeeAll={() => onSeeAll(sectionTitle(section.title), section.criteria ?? {}, section.productIds)}
                     onNavigateToProduct={onNavigateToProduct}
                     textColor={semantic.textSecondary}
                   />

@@ -3368,6 +3368,7 @@ export type SearchProductsQuery = {
   latitude?: number;
   longitude?: number;
   radius?: number;
+  scope: "nearby" | "all";
   category?: string;
   maxPrice?: number;
   /**
@@ -3398,8 +3399,9 @@ export type SearchProductsQuery = {
  */
 export type AutocompleteQuery = {
   q: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
+  scope: "nearby" | "all";
 };
 
 /**
@@ -5484,6 +5486,7 @@ export type SearchControllerSearchProductsData = {
     latitude?: number;
     longitude?: number;
     radius?: number;
+    scope: "nearby" | "all";
     category?: string;
     maxPrice?: number;
     /**
@@ -5526,8 +5529,9 @@ export type SearchControllerAutocompleteData = {
   path?: never;
   query: {
     q: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    scope: "nearby" | "all";
   };
   url: "/api/search/autocomplete";
 };
@@ -10927,6 +10931,7 @@ export type HomeControllerListData = {
   query: {
     latitude: string;
     longitude: string;
+    scope: string;
   };
   url: "/api/home/sections";
 };

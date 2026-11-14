@@ -17,6 +17,7 @@ import { promotionChipLabels } from '../../catalog/promotions'
 import { ExportChip } from '../../terroir/components/valise-ui'
 import { useProductExportability } from '../../terroir/exportability'
 import { useShoppingMoney } from '../../terroir/hooks/use-shopping-money'
+import { useValiseMode } from '../../terroir/valise-mode-context'
 
 interface SearchResultCardProps {
   item: SearchResult
@@ -49,6 +50,8 @@ export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResu
   const { supplier, product } = item
   // Valise mode: whether this product travels; null while the mode is off.
   const exportability = useProductExportability(product.id)
+  // Shopping from abroad, the shop's distance to the phone means nothing.
+  const { active: valise } = useValiseMode()
   const isGrid = variant === 'grid'
   const hasPromo = product.promotionalPrice !== null
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
@@ -133,9 +136,11 @@ export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResu
         )}
 
         <View style={styles.metaRow}>
-          <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
-            {formatDistance(supplier.distance)}
-          </Text>
+          {!valise && (
+            <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
+              {formatDistance(supplier.distance)}
+            </Text>
+          )}
           {rating !== null && (
             <View style={styles.ratingRow} accessibilityLabel={`Noté ${rating.toFixed(1)} sur 5`}>
               <Star size={12} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />

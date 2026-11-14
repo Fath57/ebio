@@ -3537,6 +3537,7 @@ export const zSearchProductsQuery = z.object({
   latitude: z.optional(z.number().gte(-90).lte(90)),
   longitude: z.optional(z.number().gte(-180).lte(180)),
   radius: z.optional(z.number()),
+  scope: z.enum(["nearby", "all"]),
   category: z.optional(z.string()),
   maxPrice: z.optional(z.number()),
   inStockOnly: z.enum(["true", "false"]),
@@ -3584,8 +3585,9 @@ export const zSearchProductsQuery = z.object({
  */
 export const zAutocompleteQuery = z.object({
   q: z.string().min(2),
-  latitude: z.number(),
-  longitude: z.number(),
+  latitude: z.optional(z.number()),
+  longitude: z.optional(z.number()),
+  scope: z.enum(["nearby", "all"]),
 });
 
 /**
@@ -5556,6 +5558,7 @@ export const zSearchControllerSearchProductsData = z.object({
     latitude: z.optional(z.number().gte(-90).lte(90)),
     longitude: z.optional(z.number().gte(-180).lte(180)),
     radius: z.optional(z.number()),
+    scope: z.enum(["nearby", "all"]),
     category: z.optional(z.string()),
     maxPrice: z.optional(z.number()),
     inStockOnly: z.enum(["true", "false"]),
@@ -5609,8 +5612,9 @@ export const zSearchControllerAutocompleteData = z.object({
   path: z.optional(z.never()),
   query: z.object({
     q: z.string().min(2),
-    latitude: z.number(),
-    longitude: z.number(),
+    latitude: z.optional(z.number()),
+    longitude: z.optional(z.number()),
+    scope: z.enum(["nearby", "all"]),
   }),
 });
 
@@ -9368,6 +9372,7 @@ export const zHomeControllerListData = z.object({
   query: z.object({
     latitude: z.string(),
     longitude: z.string(),
+    scope: z.string(),
   }),
 });
 

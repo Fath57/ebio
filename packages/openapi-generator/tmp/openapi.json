@@ -2895,6 +2895,19 @@
             }
           },
           {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "nearby",
+              "type": "string",
+              "enum": [
+                "nearby",
+                "all"
+              ]
+            }
+          },
+          {
             "name": "category",
             "required": false,
             "in": "query",
@@ -3089,7 +3102,7 @@
           },
           {
             "name": "latitude",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number"
@@ -3097,10 +3110,23 @@
           },
           {
             "name": "longitude",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number"
+            }
+          },
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "nearby",
+              "type": "string",
+              "enum": [
+                "nearby",
+                "all"
+              ]
             }
           }
         ],
@@ -15577,6 +15603,14 @@
           },
           {
             "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
             "required": true,
             "in": "query",
             "schema": {
@@ -33164,6 +33198,14 @@
           "radius": {
             "type": "number"
           },
+          "scope": {
+            "default": "nearby",
+            "type": "string",
+            "enum": [
+              "nearby",
+              "all"
+            ]
+          },
           "category": {
             "type": "string"
           },
@@ -33258,6 +33300,7 @@
           }
         },
         "required": [
+          "scope",
           "inStockOnly",
           "validatedOnly",
           "promoOnly",
@@ -33281,12 +33324,19 @@
           },
           "longitude": {
             "type": "number"
+          },
+          "scope": {
+            "default": "nearby",
+            "type": "string",
+            "enum": [
+              "nearby",
+              "all"
+            ]
           }
         },
         "required": [
           "q",
-          "latitude",
-          "longitude"
+          "scope"
         ],
         "additionalProperties": false,
         "title": "AutocompleteQuery"

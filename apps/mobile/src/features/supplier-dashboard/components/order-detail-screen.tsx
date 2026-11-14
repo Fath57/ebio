@@ -29,6 +29,16 @@ interface OrderItem {
   totalPrice: number
 }
 
+/** What the shop nets on the order, as the API computes it for the wallet. */
+interface SupplierPayout {
+  commission: number
+  /** The delivery fee, kept by the eBio courier. */
+  courierFee: number
+  /** eBio's promotions, paid back to the shop. */
+  compensation: number
+  total: number
+}
+
 interface OrderDetail {
   orderNumber: string
   buyerName: string
@@ -49,6 +59,36 @@ interface OrderDetail {
   estimatedReadyAt: string | null
   /** Export orders only: when eBio collects the parcel from the shop. */
   collectBefore: string | null
+  payout: SupplierPayout
+}
+
+function readNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+/**
+ * The shop's share. The API sends it (same computation as the wallet
+ * credit); an older API does not, and the usual case is rebuilt: the
+ * commission off, and a delivery order's fee left to the courier.
+ */
+function readPayout(o: Record<string, unknown>): SupplierPayout {
+  const raw = o.supplierPayout as Record<string, unknown> | null | undefined
+  if (raw && typeof raw === 'object') {
+    return {
+      commission: readNumber(raw.commission),
+      courierFee: readNumber(raw.courierFee),
+      compensation: readNumber(raw.compensation),
+      total: readNumber(raw.total),
+    }
+  }
+  const commission = readNumber(o.commissionAmount)
+  const courierFee = o.pickupMode === 'DELIVERY' ? readNumber(o.deliveryFee) : 0
+  return {
+    commission,
+    courierFee,
+    compensation: 0,
+    total: Math.max(0, readNumber(o.totalAmount) - commission - courierFee),
+  }
 }
 
 interface OrderDetailScreenProps {
@@ -82,7 +122,8 @@ const PAYMENT_LABELS: Record<string, string> = {
 }
 
 function formatPrice(n: number): string {
-  return n.toLocaleString('fr-FR').replace(/,/g, ' ')
+  // Whole francs: a commission of 4 % can carry cents the shop never sees.
+  return Math.round(n).toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
 function formatDate(iso: string): string {
@@ -158,6 +199,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           deliveredAt: (o.deliveredAt as string) ?? null,
           estimatedReadyAt: (o.estimatedReadyAt as string) ?? null,
           collectBefore: (o.collectBefore as string) ?? null,
+          payout: readPayout(o),
         })
       }
     }
@@ -369,20 +411,49 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
               </Text>
             </View>
           )}
-          {order.commissionAmount > 0 && (
+          {/* What the buyer pays, then what the shop keeps of it: one line
+              per deduction, so the bottom figure can be checked by hand. */}
+          <View style={[styles.totalRow, styles.totalRowSeparated, { borderTopColor: semantic.borderLight }]}>
+            <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Payé par l’acheteur</Text>
+            <Text style={[styles.totalValue, { color: semantic.textPrimary }]}>
+              {formatPrice(order.totalAmount)}
+              {' F'}
+            </Text>
+          </View>
+          {order.payout.commission > 0 && (
             <View style={styles.totalRow}>
-              <Text style={[styles.totalLabel, { color: semantic.textSecondary }]}>Commission</Text>
+              <Text style={[styles.totalLabel, { color: semantic.textSecondary }]}>Commission eBio</Text>
               <Text style={[styles.totalValue, { color: colors.coral[600] }]}>
                 {'- '}
-                {formatPrice(order.commissionAmount)}
+                {formatPrice(order.payout.commission)}
+                {' F'}
+              </Text>
+            </View>
+          )}
+          {order.payout.courierFee > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { color: semantic.textSecondary }]}>Livraison, part du livreur</Text>
+              <Text style={[styles.totalValue, { color: colors.coral[600] }]}>
+                {'- '}
+                {formatPrice(order.payout.courierFee)}
+                {' F'}
+              </Text>
+            </View>
+          )}
+          {order.payout.compensation > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { color: semantic.textSecondary }]}>Promotion prise en charge par eBio</Text>
+              <Text style={[styles.totalValue, { color: colors.green[600] }]}>
+                {'+ '}
+                {formatPrice(order.payout.compensation)}
                 {' F'}
               </Text>
             </View>
           )}
           <View style={[styles.totalRow, styles.totalRowFinal, { borderTopColor: semantic.borderLight }]}>
-            <Text style={[styles.totalLabelFinal, { color: semantic.textPrimary }]}>Total</Text>
+            <Text style={[styles.totalLabelFinal, { color: semantic.textPrimary }]}>Vous recevez</Text>
             <Text style={[styles.totalValueFinal, { color: colors.green[600] }]}>
-              {formatPrice(order.totalAmount)}
+              {formatPrice(order.payout.total)}
               {' FCFA'}
             </Text>
           </View>
@@ -587,6 +658,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: { ...typography.bodyS },
   totalValue: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  totalRowSeparated: { borderTopWidth: 1, marginTop: spacing[1], paddingTop: spacing[3] },
   totalRowFinal: { borderTopWidth: 1, marginTop: spacing[1], paddingTop: spacing[3] },
   totalLabelFinal: { ...typography.h3 },
   totalValueFinal: { ...typography.price },

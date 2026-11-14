@@ -35,6 +35,8 @@ interface FilterSheetProps {
   isSingleCategory?: boolean
   /** The map draws shops, not a ranked list: no sort there. */
   showSort?: boolean
+  /** « Mode Valise » lists the whole catalogue: no distance to choose. */
+  showDistance?: boolean
 }
 
 const SORT_OPTIONS: Array<{ value: SortOption | undefined, label: string }> = [
@@ -178,6 +180,7 @@ export function FilterSheet({
   categoryOptions = FALLBACK_CATEGORIES,
   isSingleCategory = false,
   showSort = false,
+  showDistance = true,
 }: FilterSheetProps) {
   const { semantic } = useTheme()
   const { formatMoney } = useMoney()
@@ -386,67 +389,69 @@ export function FilterSheet({
             )}
 
             {/* Distance */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
-                Distance
-                {filters.radius !== undefined ? ` : ${filters.radius} km` : ''}
-              </Text>
-              {filters.radius !== undefined
-                ? (
-                    <DistanceSlider
-                      value={filters.radius}
-                      min={1}
-                      max={50}
-                      onChange={val => setFilters(p => ({ ...p, radius: val }))}
-                      semantic={semantic}
-                    />
-                  )
-                : (
-                    <Text style={[styles.distanceHint, { color: semantic.textTertiary }]}>
-                      Aucune limite. Appuyez sur une distance pour filtrer.
-                    </Text>
-                  )}
-              <View style={styles.distanceButtons}>
-                {filters.radius !== undefined && (
-                  <TouchableOpacity
-                    style={[
-                      styles.distanceChip,
-                      { borderColor: colors.coral[200], backgroundColor: colors.coral[50] },
-                    ]}
-                    onPress={() => setFilters(p => ({ ...p, radius: undefined }))}
-                    accessibilityLabel="Désactiver le filtre distance"
-                  >
-                    <Text style={[styles.distanceChipText, { color: colors.coral[600] }]}>
-                      Tout
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                {[5, 10, 20, 50].map(km => (
-                  <TouchableOpacity
-                    key={km}
-                    style={[
-                      styles.distanceChip,
-                      { borderColor: semantic.borderNormal },
-                      filters.radius === km && styles.distanceChipActive,
-                    ]}
-                    onPress={() => setFilters(p => ({ ...p, radius: km }))}
-                    accessibilityLabel={`${km} kilomètres`}
-                  >
-                    <Text
+            {showDistance && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
+                  Distance
+                  {filters.radius !== undefined ? ` : ${filters.radius} km` : ''}
+                </Text>
+                {filters.radius !== undefined
+                  ? (
+                      <DistanceSlider
+                        value={filters.radius}
+                        min={1}
+                        max={50}
+                        onChange={val => setFilters(p => ({ ...p, radius: val }))}
+                        semantic={semantic}
+                      />
+                    )
+                  : (
+                      <Text style={[styles.distanceHint, { color: semantic.textTertiary }]}>
+                        Aucune limite. Appuyez sur une distance pour filtrer.
+                      </Text>
+                    )}
+                <View style={styles.distanceButtons}>
+                  {filters.radius !== undefined && (
+                    <TouchableOpacity
                       style={[
-                        styles.distanceChipText,
-                        { color: semantic.textSecondary },
-                        filters.radius === km && styles.distanceChipTextActive,
+                        styles.distanceChip,
+                        { borderColor: colors.coral[200], backgroundColor: colors.coral[50] },
                       ]}
+                      onPress={() => setFilters(p => ({ ...p, radius: undefined }))}
+                      accessibilityLabel="Désactiver le filtre distance"
                     >
-                      {km}
-                      {' '}
-                      km
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text style={[styles.distanceChipText, { color: colors.coral[600] }]}>
+                        Tout
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {[5, 10, 20, 50].map(km => (
+                    <TouchableOpacity
+                      key={km}
+                      style={[
+                        styles.distanceChip,
+                        { borderColor: semantic.borderNormal },
+                        filters.radius === km && styles.distanceChipActive,
+                      ]}
+                      onPress={() => setFilters(p => ({ ...p, radius: km }))}
+                      accessibilityLabel={`${km} kilomètres`}
+                    >
+                      <Text
+                        style={[
+                          styles.distanceChipText,
+                          { color: semantic.textSecondary },
+                          filters.radius === km && styles.distanceChipTextActive,
+                        ]}
+                      >
+                        {km}
+                        {' '}
+                        km
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Categories */}
             <View style={styles.section}>

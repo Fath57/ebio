@@ -81,7 +81,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { user: null, error: data.message ?? 'Email ou mot de passe incorrect' }
+      return { user: null, error: data.message ?? 'E-mail ou mot de passe incorrect' }
     }
 
     const data = await res.json()

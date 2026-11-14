@@ -23,11 +23,14 @@ export class HomeController {
   async list(
     @Query('latitude') latitude?: string,
     @Query('longitude') longitude?: string,
+    @Query('scope') scope?: string,
   ) {
     return {
       sections: await this.sections.listForBuyer({
         latitude: latitude === undefined ? undefined : Number(latitude),
         longitude: longitude === undefined ? undefined : Number(longitude),
+        // « mode Valise »: the whole catalogue, the position aside.
+        wholeCatalogue: scope === 'all',
       }),
     }
   }

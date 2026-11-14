@@ -57,6 +57,8 @@ export interface PickedProduct {
 export interface BuyerPosition {
   latitude?: number
   longitude?: number
+  /** The whole catalogue, distance aside (« mode Valise »). */
+  wholeCatalogue?: boolean
 }
 
 @Injectable()
@@ -199,6 +201,7 @@ export class HomeSectionsService {
       // The search radius is in metres, the setting in kilometres: nobody
       // thinks of a catchment area in metres.
       radius: criteria.maxDistanceKm !== undefined ? criteria.maxDistanceKm * 1000 : undefined,
+      scope: position.wholeCatalogue === true ? 'all' : 'nearby',
       category: criteria.categorySlug,
       supplierId: criteria.supplierId,
       maxPrice: criteria.maxPrice,

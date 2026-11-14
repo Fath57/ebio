@@ -29,6 +29,11 @@ interface RawSearchRow {
   distance: number
 }
 
+/** Products with a live export profile first (« mode Valise »). */
+const EXPORTABLE_FIRST = `EXISTS (
+    SELECT 1 FROM export_profiles ep WHERE ep.product_id = p.id AND ep.status = 'EXPORTABLE'
+  ) DESC`
+
 /** Rayon appliqué quand la requête est géolocalisée sans rayon explicite. */
 const DEFAULT_RADIUS_METERS = 50_000
 
@@ -249,6 +254,7 @@ export class SearchService {
       latitude,
       longitude,
       radius,
+      scope,
       category,
       maxPrice,
       inStockOnly,
@@ -266,7 +272,10 @@ export class SearchService {
     } = query
 
     const offset = (page - 1) * limit
-    const hasLocation = latitude !== undefined && longitude !== undefined
+    // The whole catalogue (« mode Valise »): the position is neither a bound
+    // nor an order, and no distance is computed for a shop in another country.
+    const wholeCatalogue = scope === 'all'
+    const hasLocation = !wholeCatalogue && latitude !== undefined && longitude !== undefined
     // Sans rayon explicite on borne quand même : sinon une recherche depuis
     // Nantes remonte les fournisseurs de Cotonou à 4 500 km.
     const radiusMeters = radius !== undefined && radius > 0 ? radius : DEFAULT_RADIUS_METERS
@@ -373,9 +382,13 @@ export class SearchService {
     // A typed query under the default order is ranked by relevance first; a
     // sort the buyer or a section chose (price, rating, newest) is left alone.
     const rankByRelevance = terms.length > 0 && sortBy === 'distance'
-    const orderClause = rankByRelevance
+    const baseOrder = rankByRelevance
       ? `ORDER BY relevance DESC, ${hasLocation ? 'distance ASC' : 'p.rating_avg DESC NULLS LAST'}, p.id`
       : hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)
+    // What can go in the suitcase leads the whole-catalogue listing.
+    const orderClause = wholeCatalogue
+      ? baseOrder.replace('ORDER BY ', `ORDER BY ${EXPORTABLE_FIRST}, `)
+      : baseOrder
     const relevance = buildRelevanceSelect(q ?? '', rankByRelevance ? terms : [])
 
     const countSql = `
@@ -492,11 +505,19 @@ export class SearchService {
     return check.total > 0 ? hint : null
   }
 
-  async autocomplete(query: { q: string, latitude: number, longitude: number }): Promise<{
+  async autocomplete(query: { q: string, latitude?: number, longitude?: number, scope?: 'nearby' | 'all' }): Promise<{
     suggestions: Array<{ text: string, type: 'product' | 'category' | 'supplier', id?: string }>
   }> {
-    const { q, latitude, longitude } = query
+    const { q, latitude, longitude, scope } = query
     const pattern = `%${q}%`
+    // Same rule as the search: the whole catalogue, or what lies around the
+    // position when there is one.
+    const nearby = scope !== 'all' && latitude !== undefined && longitude !== undefined
+    const near = nearby
+      ? `AND s.location IS NOT NULL
+          AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)`
+      : ''
+    const position = nearby ? [longitude, latitude] : []
 
     const sql = `
       (
@@ -505,8 +526,7 @@ export class SearchService {
         JOIN suppliers s ON p.supplier_id = s.id
         WHERE p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
           AND s.validation_status <> 'SUSPENDED'
-          AND s.location IS NOT NULL
-          AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
+          ${near}
           AND unaccent(p.name) ILIKE unaccent(?)
         LIMIT 5
       )
@@ -521,9 +541,8 @@ export class SearchService {
       (
         SELECT s.shop_name as text, 'supplier' as type, s.id::text as id
         FROM suppliers s
-        WHERE s.location IS NOT NULL
-          AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
-          AND unaccent(s.shop_name) ILIKE unaccent(?)
+        WHERE unaccent(s.shop_name) ILIKE unaccent(?)
+          ${near}
           AND s.validation_status = 'VALIDATED'
         LIMIT 3
       )
@@ -531,7 +550,7 @@ export class SearchService {
 
     const connection = this.em.getConnection()
     // One binding per ? in order of appearance, knex has no numbered params.
-    const rows = await connection.execute(sql, [longitude, latitude, pattern, pattern, longitude, latitude, pattern]) as RawAutocompleteRow[]
+    const rows = await connection.execute(sql, [...position, pattern, pattern, pattern, ...position]) as RawAutocompleteRow[]
 
     return {
       suggestions: rows.map(row => ({

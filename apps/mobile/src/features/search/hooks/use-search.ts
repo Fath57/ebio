@@ -7,9 +7,15 @@ import { OfflineCache } from '../../../utils/offline-storage'
 
 interface SearchFilters {
   q?: string
-  latitude: number
-  longitude: number
+  /** Absent for the whole catalogue (`scope: 'all'`). */
+  latitude?: number
+  longitude?: number
   radius?: number
+  /**
+   * `all` in « mode Valise »: the shops are in Benin and the buyer abroad, so
+   * the catalogue is read whole, distance aside.
+   */
+  scope?: 'nearby' | 'all'
   category?: string
   maxPrice?: number
   inStockOnly?: boolean
@@ -198,7 +204,7 @@ export function useAutocomplete() {
   const requestIdRef = useRef(0)
 
   const autocomplete = useCallback(
-    (q: string, latitude: number, longitude: number) => {
+    (q: string, latitude: number, longitude: number, wholeCatalogue = false) => {
       if (timerRef.current) {
         clearTimeout(timerRef.current)
       }
@@ -210,9 +216,9 @@ export function useAutocomplete() {
       }
       timerRef.current = setTimeout(async () => {
         try {
-          const res = await apiFetch(
-            `/api/search/autocomplete?q=${encodeURIComponent(q)}&latitude=${latitude}&longitude=${longitude}`,
-          )
+          // The whole catalogue sends no position at all (« mode Valise »).
+          const where = wholeCatalogue ? 'scope=all' : `latitude=${latitude}&longitude=${longitude}`
+          const res = await apiFetch(`/api/search/autocomplete?q=${encodeURIComponent(q)}&${where}`)
           if (res.ok && requestId === requestIdRef.current) {
             const data = await res.json() as { suggestions: Suggestion[] }
             setSuggestions(data.suggestions)

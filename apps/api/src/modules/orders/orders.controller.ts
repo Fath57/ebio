@@ -17,6 +17,7 @@ import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
+import { UserRole } from '../auth/auth.entity'
 import { AuthGuard } from '../auth/auth.guard'
 import { CartService } from '../cart/cart.service'
 import { CheckoutAttemptsService } from '../cart/checkout-attempts.service'
@@ -227,7 +228,7 @@ export class OrdersController {
       const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
       const collectBefore = await this.ordersService.exportCollectBefore(result.orders.map(o => o.id))
       return {
-        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, {}, { collectBefore: collectBefore.get(order.id) ?? null })),
+        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, {}, { collectBefore: collectBefore.get(order.id) ?? null, supplierView: true })),
         total: result.total,
       }
     }
@@ -278,7 +279,9 @@ export class OrdersController {
     const deliveries = await this.ordersService.deliverySummaries([id], { forBuyer: order.buyer.id === session.user.id })
     const payer = await this.giftView.payerView(order, session.user.id)
     const collectBefore = await this.ordersService.exportCollectBefore([id])
-    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer, { collectBefore: collectBefore.get(id) ?? null }), hasReview, hasUnratedProducts }
+    // The shop and the back-office read what the shop nets; the buyer never does.
+    const supplierView = order.supplier.user.id === session.user.id || session.user.role === UserRole.ADMIN
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer, { collectBefore: collectBefore.get(id) ?? null, supplierView }), hasReview, hasUnratedProducts }
   }
 
   /** Rendered invoice of a delivered order, for the buyer or the shop. */

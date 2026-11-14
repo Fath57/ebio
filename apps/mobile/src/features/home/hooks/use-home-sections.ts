@@ -38,7 +38,7 @@ export interface HomeSection {
  * The server already drops empty sections: a title followed by an empty rail
  * reads as a broken app.
  */
-export function useHomeSections(latitude: number, longitude: number): { sections: HomeSection[], loading: boolean } {
+export function useHomeSections(latitude: number, longitude: number, wholeCatalogue = false): { sections: HomeSection[], loading: boolean } {
   const [sections, setSections] = useState<HomeSection[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -47,10 +47,10 @@ export function useHomeSections(latitude: number, longitude: number): { sections
 
     async function load(): Promise<void> {
       try {
-        const query = new URLSearchParams({
-          latitude: String(latitude),
-          longitude: String(longitude),
-        }).toString()
+        // « Mode Valise »: the whole catalogue, the phone's position aside.
+        const query = new URLSearchParams(wholeCatalogue
+          ? { scope: 'all' }
+          : { latitude: String(latitude), longitude: String(longitude) }).toString()
         const res = await apiFetch(`/api/home/sections?${query}`)
         if (res.ok && !cancelled) {
           const data = await res.json() as { sections?: HomeSection[] }
@@ -71,7 +71,7 @@ export function useHomeSections(latitude: number, longitude: number): { sections
     return () => {
       cancelled = true
     }
-  }, [latitude, longitude])
+  }, [latitude, longitude, wholeCatalogue])
 
   return { sections, loading }
 }

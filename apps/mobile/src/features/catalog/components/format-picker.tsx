@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { useMoney } from '../../common/hooks/use-money'
+import { itemsInFormat, packSaving, pricePerItem } from '../pack-units'
 
 /** A way to buy the product: the plain unit, a pack, a size. */
 export interface ProductFormat {
@@ -19,18 +20,22 @@ interface FormatPickerProps {
   formats: ProductFormat[]
   selectedId: string | null
   onSelect: (format: ProductFormat) => void
-  /** Short unit label (« bouteille », « kg »), for the unit price of a pack. */
-  unitLabel: string
+  /** What one item is called in « soit X / … » (« unité », « kg »). */
+  itemLabel: string
+  /** Items in one unit of sale: 6 for a product sold by the pack of six. */
+  itemsPerUnit: number
 }
 
 /**
  * The formats of a product side by side, each with its price, and, for a
  * pack, what one unit comes to, since that is what the buyer compares.
  */
-export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: FormatPickerProps) {
+export function FormatPicker({ formats, selectedId, onSelect, itemLabel, itemsPerUnit }: FormatPickerProps) {
   const { semantic } = useTheme()
   const { formatMoney } = useMoney()
   const unitPrice = formats.find(format => format.id === null)?.price ?? null
+  // Every format is compared item for item, the unit of sale included.
+  const unitPerItem = unitPrice === null ? 0 : unitPrice / itemsPerUnit
 
   return (
     <View style={styles.container} accessibilityRole="radiogroup" accessibilityLabel="Format">
@@ -39,10 +44,11 @@ export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: Forma
         {formats.map((format) => {
           const selected = format.id === selectedId
           const soldOut = format.stock <= 0
-          const perUnit = format.packSize ? format.price / format.packSize : null
+          const items = format.id === null ? itemsPerUnit : itemsInFormat(format, itemsPerUnit)
+          const perItem = pricePerItem(format.price, items)
           const money = formatMoney(format.price)
           // The saving only says something when the pack beats the unit.
-          const saving = perUnit !== null && unitPrice ? Math.round((1 - perUnit / unitPrice) * 100) : 0
+          const saving = format.id === null ? 0 : packSaving(perItem ?? format.price, unitPerItem)
           return (
             <Pressable
               key={format.id ?? 'unit'}
@@ -58,10 +64,10 @@ export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: Forma
             >
               <View style={styles.optionText}>
                 <Text style={[styles.label, { color: semantic.textPrimary }]}>{format.label}</Text>
-                {perUnit !== null
+                {perItem !== null
                   ? (
                       <Text style={[styles.meta, { color: semantic.textSecondary }]}>
-                        {`soit ${formatMoney(perUnit).primary} / ${unitLabel}`}
+                        {`soit ${formatMoney(perItem).primary} / ${itemLabel}`}
                       </Text>
                     )
                   : null}
