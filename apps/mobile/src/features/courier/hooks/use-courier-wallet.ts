@@ -29,6 +29,10 @@ export interface CourierWalletTransaction {
   description: string
   orderId: string | null
   deliveryId: string | null
+  /** The course behind the movement: a buyer delivery or an eBio collection. */
+  deliveryPurpose?: 'STANDARD' | 'EXPORT_COLLECTION' | null
+  /** The shop the course started from. */
+  shopName?: string | null
   createdAt: string
 }
 

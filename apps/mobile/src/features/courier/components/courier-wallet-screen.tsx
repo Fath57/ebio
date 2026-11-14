@@ -34,7 +34,6 @@ import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { announceTopupOutcome, awaitSettlement } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
-import { isCollectionEarning, useCollectionShops } from '../hooks/use-collection-shops'
 import { useCourierWallet } from '../hooks/use-courier-wallet'
 import { collectionLabel } from '../types'
 import { AddNumberSheet, MIN_WITHDRAWAL, TopupSheet, WithdrawSheet } from './courier-wallet-sheets'
@@ -143,7 +142,8 @@ interface MovementRowProps {
  */
 function MovementRow({ movement, collectionShop = null, isFirst, isLast }: MovementRowProps) {
   const { semantic } = useTheme()
-  const collection = isCollectionEarning(movement)
+  // The API says which course the movement belongs to: no guessing from the wording.
+  const collection = movement.type === 'DELIVERY_EARNING' && movement.deliveryPurpose === 'EXPORT_COLLECTION'
   const style = collection ? COLLECTION_MOVEMENT : MOVEMENT_STYLES[movement.type] ?? FALLBACK_MOVEMENT
   const MovementIcon = style.Icon
   return (
@@ -222,7 +222,6 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     startTopup,
     checkTopup,
   } = useCourierWallet()
-  const collectionShops = useCollectionShops(movements)
 
   const [isAddingNumber, setIsAddingNumber] = useState(false)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
@@ -447,11 +446,10 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
       <FlatList
         data={movements}
         keyExtractor={movement => movement.id}
-        extraData={collectionShops}
         renderItem={({ item, index }) => (
           <MovementRow
             movement={item}
-            collectionShop={item.deliveryId ? collectionShops[item.deliveryId] ?? null : null}
+            collectionShop={item.shopName ?? null}
             isFirst={index === 0}
             isLast={index === movements.length - 1}
           />
