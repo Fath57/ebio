@@ -16,10 +16,12 @@ import { ExportDepartureAlert } from '../entities/export-departure-alert.entity'
 import { ExportDeparture } from '../entities/export-departure.entity'
 import { ExportShipmentEvent } from '../entities/export-shipment-event.entity'
 import { ExportShipment } from '../entities/export-shipment.entity'
+import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
 import { ExportShipmentsService } from '../export-shipments.service'
 import { ExportSupplementService } from '../export-supplement.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
+import { TerroirMapper } from '../terroir.mapper'
 import { TerroirModule } from '../terroir.module'
 import { TerroirScheduler } from '../terroir.scheduler'
 import { balanceOfShop, balanceOfUser, exportMovements, fakeCardGateway, seedDeparture, seedTerroirWorld, terroirCart } from './terroir-checkout.fixture'
@@ -141,6 +143,43 @@ describe('terroir, colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60
     const collected = await ctx.em.findOneOrFail(Order, { id: order.id })
     expect(await balanceOfShop(ctx.em, world.shopA.supplierId)).toBe(15_000 - Number(collected.commissionAmount))
     expect((await shipmentOf(ctx, shipmentId)).status).toBe(ExportShipmentStatus.PACKED)
+  })
+
+  it('refaire cette valise : le pack reste un pack, la ligne retirée est reproposée, disponibilité du jour', async (context) => {
+    const ctx = context as unknown as Context
+    const world = await seedTerroirWorld(ctx.app, ctx.em, { balance: 200_000 })
+    const catalog = ctx.app.get(ExportCatalogService)
+    const { pack } = await catalog.createPack(null, { name: 'Pack découverte', photos: [], price: 5000, items: [{ productId: world.shopA.productIds[0], quantity: 2 }] }, world.agentId)
+    fresh(ctx)
+    const { shipmentId, orders } = await buy(ctx, world, [
+      { packId: pack.id, quantity: 1 },
+      { productId: world.shopA.productIds[2], quantity: 3 },
+      { productId: world.shopB.productIds[1], quantity: 2 },
+    ])
+    const orderA = orderOf(orders, world.shopA.supplierId)
+    await ctx.app.get(OrdersService).accept(orderA.id, orderA.supplier.id)
+    const missingLine = orderA.items.getItems().find(item => item.product.id === world.shopA.productIds[2])!
+    await ctx.app.get(ExportShipmentsService).missing(shipmentId, missingLine.id, world.agentId)
+    fresh(ctx)
+
+    const detail = TerroirMapper.toShipmentDetail(await ctx.app.get(ExportShipmentsService).detailForBuyer(world.buyerId, shipmentId))
+    expect(detail.lines.map(line => line.name)).not.toContain(expect.stringContaining('Gari fin'))
+    expect(detail.reorderLines).toEqual([
+      { productId: null, variantId: null, packId: pack.id, quantity: 1, name: 'Pack découverte', imageUrl: null, shopName: null, available: true },
+      expect.objectContaining({ productId: world.shopA.productIds[2], packId: null, quantity: 3, shopName: 'Karité Fatou', available: true }),
+      expect.objectContaining({ productId: world.shopB.productIds[1], quantity: 2, shopName: 'Moringa Bio', available: true }),
+    ])
+
+    // eBio refuses a product since: offered still, but no longer available; the pack's product too.
+    await catalog.review(world.shopB.productIds[1], { decision: 'REJECT', checklist: {}, reason: 'Étiquette illisible' }, world.agentId)
+    await catalog.review(world.shopA.productIds[0], { decision: 'REJECT', checklist: {}, reason: 'Étiquette illisible' }, world.agentId)
+    fresh(ctx)
+    const after = TerroirMapper.toShipmentDetail(await ctx.app.get(ExportShipmentsService).detailForBuyer(world.buyerId, shipmentId))
+    expect(after.reorderLines.map(line => [line.packId ?? line.productId, line.available])).toEqual([
+      [pack.id, false],
+      [world.shopA.productIds[2], true],
+      [world.shopB.productIds[1], false],
+    ])
   })
 
   it('commande refusée par une boutique : transport allégé remboursé ; plus aucune commande → colis annulé, tout remboursé', async (context) => {

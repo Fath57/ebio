@@ -12,6 +12,8 @@ import type {
   TerroirDeparturesQuery,
   TerroirDeparturesResponse,
   TerroirDisplayQuery,
+  TerroirExportabilityQuery,
+  TerroirExportabilityResponse,
   TerroirPackDetail,
   TerroirProductDetail,
   TerroirShipmentDetail,
@@ -37,6 +39,7 @@ import {
   terroirDepartureAlertInputSchema,
   terroirDeparturesQuerySchema,
   terroirDisplayQuerySchema,
+  terroirExportabilityQuerySchema,
   terroirSupplementInputSchema,
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
@@ -44,6 +47,7 @@ import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { ExportSupplementService } from './export-supplement.service'
+import { ExportabilityService } from './exportability.service'
 import { TerroirCheckoutService } from './terroir-checkout.service'
 import { TerroirEnabledGuard } from './terroir-enabled.guard'
 import { terroirError } from './terroir-texts'
@@ -68,6 +72,7 @@ export class TerroirClientController {
     private readonly exchangeRates: ExchangeRatesService,
     private readonly supplements: ExportSupplementService,
     private readonly countries: ExportCountriesService,
+    private readonly exportability: ExportabilityService,
   ) {}
 
   // ===== CATALOGUE AND DEPARTURES =====
@@ -92,6 +97,19 @@ export class TerroirClientController {
     const catalog = await this.catalog.clientCatalog({ category: query.category, search: query.search, page: query.page })
     const rate = await this.exchangeRates.effectiveRate(currency)
     return TerroirMapper.toCatalog(catalog, country.code, query.page, currency, rate)
+  }
+
+  /**
+   * « Mode Valise »: whether products of the whole catalogue can go in the
+   * suitcase towards `country`, one item per known id (unknown ids left out).
+   */
+  @Public()
+  @UseGuards(TerroirEnabledGuard, RateLimitGuard)
+  @RateLimit(600, MINUTE_MS)
+  @Get('exportability')
+  async getExportability(@TypedQueryObject(terroirExportabilityQuerySchema) query: TerroirExportabilityQuery): Promise<TerroirExportabilityResponse> {
+    const { country, items } = await this.exportability.forProducts(query.country, query.productIds.split(','))
+    return TerroirMapper.toExportabilityResponse(country.code, items)
   }
 
   @Public()

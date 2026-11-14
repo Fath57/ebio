@@ -11,7 +11,6 @@ import { SuppliersModule } from '../suppliers/suppliers.module'
 import { WalletModule } from '../wallet/wallet.module'
 import { AdminExportController } from './admin-export.controller'
 import { ExportCatalogService } from './export-catalog.service'
-import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { ExportSupplementService } from './export-supplement.service'
@@ -19,6 +18,7 @@ import { SupplierExportController } from './supplier-export.controller'
 import { TerroirCheckoutService } from './terroir-checkout.service'
 import { TerroirClientController } from './terroir-client.controller'
 import { TerroirEnabledGuard } from './terroir-enabled.guard'
+import { TerroirExportabilityModule } from './terroir-exportability.module'
 import { TerroirNotifierService } from './terroir-notifier.service'
 import { TerroirSettlementService } from './terroir-settlement.service'
 import { TerroirScheduler } from './terroir.scheduler'
@@ -41,12 +41,12 @@ import { TerroirScheduler } from './terroir.scheduler'
     PlatformSettingsModule,
     SmsModule,
     SuppliersModule,
+    TerroirExportabilityModule,
     WalletModule,
   ],
   controllers: [AdminExportController, SupplierExportController, TerroirClientController],
   providers: [
     ExportCatalogService,
-    ExportCountriesService,
     ExportLogisticsService,
     ExportShipmentsService,
     ExportSupplementService,
@@ -56,6 +56,6 @@ import { TerroirScheduler } from './terroir.scheduler'
     TerroirEnabledGuard,
     TerroirScheduler,
   ],
-  exports: [ExportCatalogService, ExportCountriesService, ExportLogisticsService, ExportShipmentsService, ExportSupplementService, TerroirScheduler, TerroirCheckoutService, TerroirSettlementService, TerroirNotifierService, TerroirEnabledGuard],
+  exports: [TerroirExportabilityModule, ExportCatalogService, ExportLogisticsService, ExportShipmentsService, ExportSupplementService, TerroirScheduler, TerroirCheckoutService, TerroirSettlementService, TerroirNotifierService, TerroirEnabledGuard],
 })
 export class TerroirModule {}

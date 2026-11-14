@@ -6,6 +6,14 @@ import { ExportReception, ExportShipmentStatus, ExportSupplementStatus } from '.
 import { ExportDeparture } from './export-departure.entity'
 import { ExportPickupPoint } from './export-pickup-point.entity'
 
+/** A cart line as the buyer placed it: a product (and its variant) or a whole pack. */
+export interface ShipmentCartLine {
+  productId: string | null
+  variantId: string | null
+  packId: string | null
+  quantity: number
+}
+
 /**
  * A terroir parcel (011): one per terroir checkout, grouping the EXPORT
  * orders of several shops for one buyer, one departure, one destination.
@@ -19,7 +27,7 @@ import { ExportPickupPoint } from './export-pickup-point.entity'
 @Index({ name: 'export_shipments_departure_idx', properties: ['departure', 'status'] })
 @Index({ name: 'export_shipments_buyer_idx', properties: ['buyer', 'createdAt'] })
 export class ExportShipment {
-  [OptionalProps]?: 'id' | 'reception' | 'homeDeliveryFee' | 'insured' | 'insurancePrice' | 'status' | 'supplementStatus' | 'removedItemIds' | 'removedOrderIds' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'reception' | 'homeDeliveryFee' | 'insured' | 'insurancePrice' | 'status' | 'supplementStatus' | 'removedItemIds' | 'removedOrderIds' | 'cartLines' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -116,6 +124,13 @@ export class ExportShipment {
   /** Cancelled orders already deducted from the parcel: a replay deducts nothing. */
   @Property({ fieldName: 'removed_order_ids', type: 'json', columnType: 'jsonb', default: '[]' })
   removedOrderIds: string[] = []
+
+  /**
+   * The cart as the buyer filled it, packs kept whole: checkout unfolds packs
+   * into the shops' orders, « Refaire cette valise » offers them back as one line.
+   */
+  @Property({ fieldName: 'cart_lines', type: 'json', columnType: 'jsonb', default: '[]' })
+  cartLines: ShipmentCartLine[] = []
 
   /** The « still waiting at the pickup point » reminder went out (FR-027). */
   @Property({ fieldName: 'pickup_reminded_at', type: 'Date', nullable: true })

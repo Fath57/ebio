@@ -9,18 +9,22 @@ import { OrderItem } from '../orders/entities/order-item.entity'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { OrdersService } from '../orders/orders.service'
 import { Payment, PaymentStatus } from '../payments/payment.entity'
+import { ProductVariant } from '../products/entities/product-variant.entity'
+import { Product } from '../products/entities/product.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
-import { ExportDepartureStatus, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from './contracts/terroir.contract'
+import { ExportabilityStatus, ExportDepartureStatus, ExportReception, ExportShipmentStatus, ExportSupplementStatus } from './contracts/terroir.contract'
 import { ExportCountry } from './entities/export-country.entity'
 import { ExportDeparture } from './entities/export-departure.entity'
 import { ExportProfile } from './entities/export-profile.entity'
 import { ExportShipmentEvent } from './entities/export-shipment-event.entity'
 import { ExportShipment } from './entities/export-shipment.entity'
-import { lineWeight } from './export-catalog.service'
+import { ExportCatalogService, lineWeight } from './export-catalog.service'
+import { ExportCountriesService } from './export-countries.service'
 import { ExportLogisticsService } from './export-logistics.service'
+import { ExportabilityService } from './exportability.service'
 import { insurancePrice, shippingPrice, supplementFor } from './terroir-math'
 import { TerroirNotifierService } from './terroir-notifier.service'
 import { spokenDay, terroirError } from './terroir-texts'
@@ -33,6 +37,21 @@ export interface ShipmentView {
   /** Oldest first. */
   events: ExportShipmentEvent[]
   collectionDays: number
+  /** « Refaire cette valise », buyer's detail only. */
+  reorderLines?: ReorderLine[]
+}
+
+/** A line of the parcel's cart offered again, checked today. */
+export interface ReorderLine {
+  productId: string | null
+  variantId: string | null
+  packId: string | null
+  quantity: number
+  name: string
+  imageUrl: string | null
+  shopName: string | null
+  /** A product exportable today, a pack approved and orderable, towards the parcel's country. */
+  available: boolean
 }
 
 /** A parcel as the back office handles it: every order, cancelled ones too. */
@@ -132,6 +151,9 @@ export class ExportShipmentsService implements OnModuleInit {
     private readonly logistics: ExportLogisticsService,
     private readonly notifier: TerroirNotifierService,
     private readonly audit: AuditService,
+    private readonly catalog: ExportCatalogService,
+    private readonly exportability: ExportabilityService,
+    private readonly countries: ExportCountriesService,
   ) {}
 
   /** A shop refusing (or an admin cancelling) an EXPORT order shrinks its parcel. */
@@ -162,7 +184,7 @@ export class ExportShipmentsService implements OnModuleInit {
       throw shipmentNotFound()
     }
     const [view] = await this.views([shipment], true)
-    return view
+    return { ...view, reorderLines: await this.reorderLines(view) }
   }
 
   /** The public tracking of a parcel by its token (US10); 404 before payment. */
@@ -844,6 +866,80 @@ ${blocks.join('\n')}
       throw shipmentNotFound()
     }
     return shipment
+  }
+
+  /**
+   * « Refaire cette valise »: the cart as the buyer filled it, packs whole,
+   * lines removed since (missing, supplement) offered again. Parcels placed
+   * before the cart was kept fall back on their orders' lines, packs unfolded.
+   * Lines whose product or pack no longer exists are left out.
+   */
+  private async reorderLines(view: ShipmentView): Promise<ReorderLine[]> {
+    const cart = view.shipment.cartLines?.length
+      ? view.shipment.cartLines
+      : this.cartFromOrders(view.orders)
+    const productIds = [...new Set(cart.map(line => line.productId).filter((id): id is string => Boolean(id)))]
+    const variantIds = [...new Set(cart.map(line => line.variantId).filter((id): id is string => Boolean(id)))]
+    const packIds = [...new Set(cart.map(line => line.packId).filter((id): id is string => Boolean(id)))]
+
+    const products = productIds.length === 0 ? [] : await this.em.find(Product, { id: { $in: productIds } }, { populate: ['supplier'] })
+    const productById = new Map(products.map(product => [product.id, product]))
+    const variants = variantIds.length === 0 ? [] : await this.em.find(ProductVariant, { id: { $in: variantIds } })
+    const variantById = new Map(variants.map(variant => [variant.id, variant]))
+    const packById = new Map((await this.catalog.packsForCheckout(packIds)).map(packView => [packView.pack.id, packView]))
+    const exportable = new Set((await this.exportability.ofProducts(productIds))
+      .filter(item => item.status === ExportabilityStatus.EXPORTABLE)
+      .map(item => item.productId))
+    const countryOpen = (await this.countries.find(view.shipment.country))?.isActive === true
+
+    return cart.flatMap((line): ReorderLine[] => {
+      if (line.packId) {
+        const packView = packById.get(line.packId)
+        if (!packView) {
+          return []
+        }
+        const { pack } = packView
+        return [{
+          productId: null,
+          variantId: null,
+          packId: pack.id,
+          quantity: line.quantity,
+          name: pack.name,
+          imageUrl: pack.photos?.[0] ?? pack.items.getItems()[0]?.product.photos?.[0] ?? null,
+          shopName: pack.supplier?.shopName ?? null,
+          available: countryOpen && packView.orderable,
+        }]
+      }
+      const product = line.productId ? productById.get(line.productId) : undefined
+      if (!product) {
+        return []
+      }
+      const variant = line.variantId ? variantById.get(line.variantId) : undefined
+      const variantGone = Boolean(line.variantId) && variant?.product.id !== product.id
+      return [{
+        productId: product.id,
+        variantId: variantGone ? null : variant?.id ?? null,
+        packId: null,
+        quantity: line.quantity,
+        name: variant && !variantGone ? `${product.name}, ${variant.label}` : product.name,
+        imageUrl: product.photos?.[0] ?? null,
+        shopName: product.supplier.shopName,
+        available: countryOpen && !variantGone && exportable.has(product.id),
+      }]
+    })
+  }
+
+  /** The cart of an older parcel, rebuilt from its orders' lines (removed ones included). */
+  private cartFromOrders(orders: Order[]): ExportShipment['cartLines'] {
+    const merged = new Map<string, ExportShipment['cartLines'][number]>()
+    for (const item of orders.flatMap(order => order.items.getItems())) {
+      const variantId = item.variant?.id ?? null
+      const key = `${item.product.id}:${variantId ?? ''}`
+      const line = merged.get(key) ?? { productId: item.product.id, variantId, packId: null, quantity: 0 }
+      line.quantity += item.quantity
+      merged.set(key, line)
+    }
+    return [...merged.values()]
   }
 
   private async views(shipments: ExportShipment[], withEvents: boolean): Promise<ShipmentView[]> {

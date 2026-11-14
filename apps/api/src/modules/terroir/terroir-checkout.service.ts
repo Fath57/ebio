@@ -327,6 +327,12 @@ export class TerroirCheckoutService {
         giftMessage: input.gift?.message ?? null,
         status: ExportShipmentStatus.PENDING_PAYMENT,
         trackingToken: randomBytes(16).toString('hex'),
+        cartLines: input.lines.map(line => ({
+          productId: line.productId ?? null,
+          variantId: line.productId ? line.variantId ?? null : null,
+          packId: line.packId ?? null,
+          quantity: line.quantity,
+        })),
       })
 
       if (paymentMethod === PaymentMethod.WALLET) {

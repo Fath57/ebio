@@ -5,9 +5,10 @@
 -- désynchronisé, donc `migration:up` sans `--only` échoue sur les anciennes.
 -- Une fois ce fichier joué, enregistrer le nom avec
 -- `migration:up --only Migration20261117090000` (les ordres sont idempotents).
--- Contient aussi Migration20261118090000 et Migration20261119090000 (table
--- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères),
--- à enregistrer de la même façon.
+-- Contient aussi Migration20261118090000, Migration20261119090000 (table
+-- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères) et
+-- Migration20261120090000 (panier d'origine du colis), à enregistrer de la
+-- même façon.
 --
 -- Purement additif : onze tables (catalogue d'export, agences, départs,
 -- colis), une colonne `orders.export_pack_id`, un troisième mode de retrait
@@ -306,5 +307,9 @@ ALTER TABLE "export_checkout_drafts" ADD CONSTRAINT "export_checkout_drafts_coun
 ALTER TABLE "export_shipments" DROP CONSTRAINT IF EXISTS "export_shipments_country_check";
 ALTER TABLE "export_shipments" DROP CONSTRAINT IF EXISTS "export_shipments_country_foreign";
 ALTER TABLE "export_shipments" ADD CONSTRAINT "export_shipments_country_foreign" FOREIGN KEY ("country") REFERENCES "export_countries" ("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+-- Migration20261120090000 : panier d'origine du colis (packs entiers), pour « Refaire cette valise ».
+ALTER TABLE "export_shipments" ADD COLUMN IF NOT EXISTS "cart_lines" jsonb NOT NULL DEFAULT '[]';
 
 COMMIT;

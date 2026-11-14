@@ -1,6 +1,6 @@
 import type { Order } from '../orders/entities/order.entity'
 import type { ProductVariant } from '../products/entities/product-variant.entity'
-import type { ExportAdminShipment, ExportAgencyResponse, ExportCountryAdmin, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirCountry, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
+import type { ExportAdminShipment, ExportAgencyResponse, ExportCountryAdmin, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirCountry, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirExportability, TerroirExportabilityResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
 import type { ExportAgency } from './entities/export-agency.entity'
 import type { ExportDeparture } from './entities/export-departure.entity'
 import type { ExportPickupPoint } from './entities/export-pickup-point.entity'
@@ -11,6 +11,7 @@ import type { AdminCountryView, ClientCountryView } from './export-countries.ser
 import type { DepartureDetailView, DepartureView } from './export-logistics.service'
 import type { AdminShipmentView, ShipmentView } from './export-shipments.service'
 import type { SupplementOutcome } from './export-supplement.service'
+import type { ProductExportability } from './exportability.service'
 import type { TerroirCheckoutCreated, TerroirQuote } from './terroir-checkout.service'
 import type { OfferedDeparture } from './terroir-math'
 import { toDisplayAmount } from '../currency/fx-math'
@@ -404,6 +405,17 @@ export const TerroirMapper = {
     }
   },
 
+  toExportability(item: ProductExportability): TerroirExportability {
+    return { status: item.status, label: item.label, reason: item.reason, packedWeightG: item.packedWeightG }
+  },
+
+  toExportabilityResponse(country: string, items: ProductExportability[]): TerroirExportabilityResponse {
+    return {
+      country,
+      items: items.map(item => ({ productId: item.productId, ...TerroirMapper.toExportability(item) })),
+    }
+  },
+
   toPreview(quote: TerroirQuote): TerroirCheckoutPreview {
     const { rate } = quote
     return {
@@ -489,6 +501,7 @@ export const TerroirMapper = {
       pickupPoint: pickupPointOf(view),
       homeAddress: shipment.homeAddress ?? null,
       lines: shipmentLines(view.orders, shipment.removedItemIds),
+      reorderLines: (view.reorderLines ?? []).map(line => ({ ...line })),
       events: eventsOf(view),
       supplement: shipment.supplementAmount == null
         ? null

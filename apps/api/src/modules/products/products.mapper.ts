@@ -1,5 +1,6 @@
-import type { ExportProfileStatus } from '../terroir/contracts/terroir.contract'
+import type { ExportProfileStatus, TerroirExportability } from '../terroir/contracts/terroir.contract'
 import type { ExportProfile } from '../terroir/entities/export-profile.entity'
+import type { ProductExportability } from '../terroir/exportability.service'
 import type { ProductExportProfile, ProductResponse } from './contracts/product.contract'
 import type { ProductPromotion } from './entities/product-promotion.entity'
 import type { ProductVariant } from './entities/product-variant.entity'
@@ -95,6 +96,11 @@ export class ProductMapper {
       },
       labelPhoto: profile.labelPhoto ?? null,
     }
+  }
+
+  /** « Mode Valise »: whether the product can go in the suitcase. */
+  static toExportability(item: ProductExportability): TerroirExportability {
+    return { status: item.status, label: item.label, reason: item.reason, packedWeightG: item.packedWeightG }
   }
 
   /** `exportStatuses` given (owner's list): each summary carries its export status. */

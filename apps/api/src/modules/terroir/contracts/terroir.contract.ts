@@ -59,6 +59,20 @@ export enum ExportSupplementStatus {
   ITEM_REMOVED = 'ITEM_REMOVED',
 }
 
+/**
+ * Whether a product of the whole catalogue can go in the suitcase (« mode
+ * Valise »). BANNED_CATEGORY wins over the profile; UNAVAILABLE is approved
+ * but not on sale right now.
+ */
+export enum ExportabilityStatus {
+  EXPORTABLE = 'EXPORTABLE',
+  NOT_REQUESTED = 'NOT_REQUESTED',
+  PENDING = 'PENDING',
+  REJECTED = 'REJECTED',
+  BANNED_CATEGORY = 'BANNED_CATEGORY',
+  UNAVAILABLE = 'UNAVAILABLE',
+}
+
 /** The export checklist (data-model §7): every key must be ticked to approve. */
 export const EXPORT_CHECKLIST_KEYS = [
   'label_french',
@@ -105,6 +119,11 @@ export const exportShipmentStatusEnum = z.enum(ExportShipmentStatus).meta({
 export const exportSupplementStatusEnum = z.enum(ExportSupplementStatus).meta({
   title: 'ExportSupplementStatus',
   description: 'Complément de poids : aucun, demandé, payé, pris en charge par eBio, produit retiré',
+})
+
+export const exportabilityStatusEnum = z.enum(ExportabilityStatus).meta({
+  title: 'ExportabilityStatus',
+  description: 'Un produit peut-il partir dans la valise',
 })
 
 export const exportReviewDecisionEnum = z.enum(['APPROVE', 'REJECT']).meta({
@@ -749,6 +768,51 @@ export const terroirDeparturesResponseSchema = z.object({
 export type TerroirDeparturesResponse = z.infer<typeof terroirDeparturesResponseSchema>
 export type TerroirDepartureOffer = z.infer<typeof terroirDepartureOfferSchema>
 
+const UUID_PATTERN = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+/** At most this many products per exportability request. */
+export const EXPORTABILITY_MAX_IDS = 100
+
+export const terroirExportabilityQuerySchema = z.object({
+  country: exportCountryCodeSchema,
+  /** Comma-separated product ids, 1 to 100. */
+  productIds: z.string().trim().regex(
+    new RegExp(`^${UUID_PATTERN}(?:,${UUID_PATTERN}){0,${EXPORTABILITY_MAX_IDS - 1}}$`, 'i'),
+    `De 1 à ${EXPORTABILITY_MAX_IDS} identifiants de produits, séparés par des virgules`,
+  ),
+}).meta({
+  title: 'TerroirExportabilityQuery',
+  description: 'Pays de destination et produits dont on veut savoir s\'ils peuvent partir',
+})
+
+export type TerroirExportabilityQuery = z.infer<typeof terroirExportabilityQuerySchema>
+
+export const terroirExportabilitySchema = z.object({
+  status: exportabilityStatusEnum,
+  /** « Exportable », « Bientôt exportable », « Non exportable », « Indisponible ». */
+  label: z.string(),
+  /** Why it cannot leave; null when EXPORTABLE. */
+  reason: z.string().nullable(),
+  /** Weight of one unit as shipped; EXPORTABLE only. */
+  packedWeightG: z.number().nullable(),
+}).meta({
+  title: 'TerroirExportability',
+  description: 'Ce que le mode Valise affiche d\'un produit : peut-il partir, et pourquoi pas',
+})
+
+export type TerroirExportability = z.infer<typeof terroirExportabilitySchema>
+
+export const terroirExportabilityResponseSchema = z.object({
+  country: exportCountryCodeSchema,
+  /** One per requested product that exists; unknown ids are left out. */
+  items: z.array(terroirExportabilitySchema.extend({ productId: z.string().uuid() })),
+}).meta({
+  title: 'TerroirExportabilityResponse',
+  description: 'Exportabilité de produits du catalogue vers un pays',
+})
+
+export type TerroirExportabilityResponse = z.infer<typeof terroirExportabilityResponseSchema>
+
 // ===== §2 CLIENT, CHECKOUT =====
 
 export const terroirCartLineSchema = z.object({
@@ -924,6 +988,20 @@ export const terroirShipmentDetailSchema = z.object({
   pickupPoint: z.object({ city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
   homeAddress: z.string().nullable(),
   lines: z.array(shipmentLineSchema),
+  /**
+   * « Refaire cette valise »: the cart as the buyer filled it, packs whole,
+   * removed lines included; `available` is checked today towards `country`.
+   */
+  reorderLines: z.array(z.object({
+    productId: z.string().uuid().nullable(),
+    variantId: z.string().uuid().nullable(),
+    packId: z.string().uuid().nullable(),
+    quantity: z.number(),
+    name: z.string(),
+    imageUrl: z.string().nullable(),
+    shopName: z.string().nullable(),
+    available: z.boolean(),
+  })),
   events: z.array(shipmentEventSchema),
   /** A weight supplement asked of the buyer; null when the parcel weighed what was paid for. */
   supplement: z.object({

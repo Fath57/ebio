@@ -16,6 +16,7 @@ import { ExportShipment } from '../entities/export-shipment.entity'
 import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
+import { TerroirMapper } from '../terroir.mapper'
 import { TerroirModule } from '../terroir.module'
 import { balanceOfShop, balanceOfUser, exportMovements, fakeCardGateway, seedTerroirWorld, terroirCart, topUp } from './terroir-checkout.fixture'
 import { refusalOf } from './terroir.fixture'
@@ -63,6 +64,10 @@ describe('terroir, passage en caisse (e2e)', { timeout: 30_000 }, () => {
     expect(quote.unavailable).toEqual([{ productId: unknown, packId: null, reason: 'NOT_FOUND' }])
     expect(quote.suggestions.length).toBeGreaterThan(0)
     expect(quote.suggestions.every(profile => profile.packedWeightG <= 4020)).toBe(true)
+    // Every product line and suggestion names its shop (a suggestion added to the cart keeps it).
+    const response = TerroirMapper.toPreview(quote)
+    expect(response.lines.map(line => line.shopName)).toEqual(['Karité Fatou', 'Moringa Bio'])
+    expect(response.suggestions.every(suggestion => ['Karité Fatou', 'Moringa Bio'].includes(suggestion.shopName))).toBe(true)
     const draft = await em.findOne(ExportCheckoutDraft, { user: world.buyerId })
     expect(draft?.departure?.id).toBe(world.departureId)
   })

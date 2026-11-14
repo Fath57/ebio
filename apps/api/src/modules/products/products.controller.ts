@@ -25,6 +25,8 @@ import { AuthGuard } from '../auth/auth.guard'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
+import { exportCountryCodeSchema } from '../terroir/contracts/terroir.contract'
+import { ExportabilityService } from '../terroir/exportability.service'
 import {
   createProductSchema,
   productPaginationSchema,
@@ -49,6 +51,7 @@ export class ProductsController {
     private readonly promotionsService: PromotionsService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly audit: AuditService,
+    private readonly exportability: ExportabilityService,
   ) {}
 
   @Get('suppliers/:supplierId/products')
@@ -118,6 +121,7 @@ export class ProductsController {
   async findById(
     @Session() session: BetterAuthSession,
     @Param('id') id: string,
+    @Query('exportCountry') exportCountry?: string,
   ) {
     const product = await this.productsService.findById(id)
 
@@ -141,9 +145,13 @@ export class ProductsController {
     ])
     // Its export request only for the owning shop (011): buyers never see it.
     const exportProfile = isOwner ? ProductMapper.toExportProfile(await this.productsService.exportProfileOf(product.id)) : undefined
+    // « Mode Valise » (011): can it go in the suitcase towards `exportCountry`; null without it.
+    const country = exportCountry ? exportCountryCodeSchema.safeParse(exportCountry) : null
+    const exportability = country?.success ? await this.exportability.forProduct(country.data, product.id) : null
     return {
       ...ProductMapper.toResponse(product, variants, promotions),
       ...(isOwner ? { exportProfile } : {}),
+      exportability: exportability ? ProductMapper.toExportability(exportability) : null,
       stats,
     }
   }

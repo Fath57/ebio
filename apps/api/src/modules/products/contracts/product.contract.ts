@@ -4,7 +4,7 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
-import { exportProfileStatusEnum } from '../../terroir/contracts/terroir.contract'
+import { exportProfileStatusEnum, terroirExportabilitySchema } from '../../terroir/contracts/terroir.contract'
 import { ALLERGEN_CODES } from '../composition.constants'
 import { certificationCodeSchema } from './certification.contract'
 
@@ -243,6 +243,8 @@ export const productResponseSchema = z.object({
   variants: z.array(variantResponseSchema),
   /** Owner only: the export request, null when never asked. */
   exportProfile: productExportProfileSchema.nullable().optional(),
+  /** « Mode Valise »: with `?exportCountry=FR`, whether it can go in the suitcase; null otherwise. */
+  exportability: terroirExportabilitySchema.nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
