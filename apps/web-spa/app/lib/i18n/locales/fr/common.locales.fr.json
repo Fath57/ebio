@@ -54,7 +54,14 @@
       "password": "Nouveau mot de passe",
       "confirmPassword": "Confirmer le mot de passe",
       "reset": "Réinitialiser",
-      "backToLogin": "Retour à la connexion"
+      "backToLogin": "Retour à la connexion",
+      "success": "Mot de passe enregistré. Vous pouvez maintenant vous connecter.",
+      "failed": "Impossible d'enregistrer le mot de passe. Réessayez.",
+      "errors": {
+        "INVALID_TOKEN": "Ce lien n'est plus valable (déjà utilisé ou expiré). Demandez une nouvelle invitation ou un nouveau lien.",
+        "PASSWORD_TOO_SHORT": "Le mot de passe doit contenir au moins 8 caractères.",
+        "PASSWORD_TOO_LONG": "Le mot de passe est trop long."
+      }
     },
     "verifyEmail": {
       "title": "Vérification de l'email",

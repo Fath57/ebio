@@ -15,7 +15,8 @@ import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 
 const baseResetPasswordSchema = z.object({
-  password: z.string().min(6),
+  // Better Auth refuses anything shorter than 8 characters.
+  password: z.string().min(8),
   confirmPassword: z.string(),
 })
 

@@ -54,7 +54,14 @@
       "password": "New password",
       "confirmPassword": "Confirm password",
       "reset": "Reset",
-      "backToLogin": "Back to sign in"
+      "backToLogin": "Back to sign in",
+      "success": "Password saved. You can now sign in.",
+      "failed": "Could not save the password. Please try again.",
+      "errors": {
+        "INVALID_TOKEN": "This link is no longer valid (already used or expired). Ask for a new invitation or a new link.",
+        "PASSWORD_TOO_SHORT": "The password must be at least 8 characters long.",
+        "PASSWORD_TOO_LONG": "The password is too long."
+      }
     },
     "verifyEmail": {
       "title": "Email verification",
