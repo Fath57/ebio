@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
 import { advancedFilterChips, AdvancedFilters } from '@/features/admin/common/components/advanced-filters'
 import { EntityPicker } from '@/features/admin/common/components/entity-picker'
-import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
+import { ExportButton } from '@/features/admin/common/components/export-button'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { searchSuppliers } from '@/features/admin/common/utils/target-search'
@@ -216,7 +216,7 @@ export default function AdminOrdersPage() {
     <AdminListShell
       title={t('admin.orders.title')}
       description={t('admin.orders.description')}
-      actions={<ExportCsvButton path={adminOrdersExportPath(filters)} filename="commandes" />}
+      actions={<ExportButton path={adminOrdersExportPath(filters)} filename="commandes" />}
       searchValue={list.q}
       onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.orders.searchPlaceholder')}

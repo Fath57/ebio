@@ -63,7 +63,7 @@ import {
   validationActionSchema,
 } from './contracts/admin.contract'
 import { readOrderFilters } from './order-filters'
-import { readDay, readMinimum } from './supplier-filters'
+import { readDay, readMinimum, readSupplierFilters } from './supplier-filters'
 
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -376,24 +376,29 @@ export class AdminController {
     @Query('limit') limit: string = '20',
   ) {
     return this.adminService.getSuppliers({
+      ...readSupplierFilters({ q, type, mode, minOrders, minBalance, minProducts, minRating, inactiveDays, located, negotiatedRate, createdFrom, createdTo }),
       status,
-      q,
-      type: type || undefined,
-      mode: mode || undefined,
-      minOrders: readMinimum(minOrders),
-      minBalance: readMinimum(minBalance),
-      minProducts: readMinimum(minProducts),
-      minRating: readMinimum(minRating),
-      inactiveDays: readMinimum(inactiveDays),
-      located: located === 'yes' || located === 'no' ? located : undefined,
-      negotiatedRate: negotiatedRate === 'yes' || negotiatedRate === 'no' ? negotiatedRate : undefined,
-      createdFrom: readDay(createdFrom),
-      createdTo: readDay(createdTo, true),
       sortBy,
       sortDir,
       page: Number(page),
       limit: Number(limit),
     })
+  }
+
+  /** The list as an Excel file. Declared before `suppliers/:id`, which would read « export » as an id. */
+  @CanRead('Supplier')
+  @Get('suppliers/export')
+  async exportSuppliers(@Query() query: Record<string, string>, @Res() res: Response) {
+    const content = await this.adminService.exportSuppliersWorkbook({
+      ...readSupplierFilters(query),
+      status: query.status || undefined,
+      sortBy: query.sortBy,
+      sortDir: query.sortDir,
+    })
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="fournisseurs.xlsx"')
+    res.setHeader('Cache-Control', 'no-store')
+    res.send(content)
   }
 
   @CanRead('Supplier')

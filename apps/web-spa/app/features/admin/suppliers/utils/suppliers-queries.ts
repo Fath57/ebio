@@ -111,6 +111,18 @@ export function fetchAdminSuppliersQueryOptions(filters: AdminSuppliersFilters =
   }
 }
 
+/** The Excel export of the list: same filters and sort, every page. */
+export function adminSuppliersExportPath(filters: AdminSuppliersFilters = {}): string {
+  const params = new URLSearchParams()
+  const entries = { status: filters.status, q: filters.q, ...filters.advanced, sortBy: filters.sortBy, sortDir: filters.sortDir }
+  for (const [key, value] of Object.entries(entries)) {
+    if (value)
+      params.set(key, value)
+  }
+  const query = params.toString()
+  return `/api/admin/suppliers/export${query ? `?${query}` : ''}`
+}
+
 export function fetchAdminSupplierQueryOptions(supplierId: string) {
   return {
     queryKey: ['admin', 'suppliers', supplierId],

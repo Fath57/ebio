@@ -11,7 +11,7 @@ import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
+import { ExportButton } from '@/features/admin/common/components/export-button'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import {
   exportCommissionsCsvUrl,
@@ -220,7 +220,7 @@ export default function AdminCommissionsPage() {
           <h2 className="text-2xl font-bold">{t('admin.commissions.title')}</h2>
           <p className="text-muted-foreground">{t('admin.commissions.description')}</p>
         </div>
-        <ExportCsvButton path={exportCommissionsCsvUrl(filters)} filename="commissions" label={t('admin.commissions.exportCsv')} />
+        <ExportButton path={exportCommissionsCsvUrl(filters)} filename="commissions" label={t('admin.commissions.exportCsv')} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

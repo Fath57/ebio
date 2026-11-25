@@ -1,3 +1,4 @@
+import type { Buffer } from 'node:buffer'
 import type { StatusCounts } from '../../common/status-counts'
 import type { TemplateName } from '../email/email-template.service'
 import type { CourierPickupPolicy } from '../settings/platform-settings.service'
@@ -39,6 +40,7 @@ import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
 import { buildOrderConditions } from './order-filters'
 import { buildProductConditions, PRODUCT_SALES_JOIN } from './product-filters'
+import { renderSupplierWorkbook } from './supplier-export-workbook'
 import { buildSupplierConditions, SUPPLIER_LIST_FROM } from './supplier-filters'
 
 /** Colonnes triables, liste fermée, aucune valeur de requête n'atteint le SQL. */
@@ -64,6 +66,7 @@ const PROOF_PHOTO_TTL_SECONDS = 3600
 
 /** A spreadsheet export, not a dump of the table: past this, narrow the filters. */
 const ORDER_EXPORT_MAX = 20000
+const SUPPLIER_EXPORT_MAX = 20000
 
 /** French labels for the CSV, matching the back office. */
 const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -1134,6 +1137,65 @@ export class AdminService {
       limit: params.limit,
       statusCounts,
     }
+  }
+
+  /** Every shop matching the list's filters, status and sort included, without the pagination. */
+  async exportSuppliersWorkbook(params: SupplierFilters & {
+    status?: string
+    sortBy?: string
+    sortDir?: string
+  }): Promise<Buffer> {
+    const { conditions, values } = buildSupplierConditions(params)
+    if (params.status) {
+      conditions.push(`s.validation_status = ?`)
+      values.push(params.status)
+    }
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT s.shop_name, s.type, s.mode, s.validation_status, s.address, s.neighborhood,
+              s.global_rating, s.total_reviews, s.commission_rate, s.mobile_money_number,
+              s."createdAt" AS created_at, s.validated_at,
+              ST_Y(s.location::geometry) AS latitude,
+              ST_X(s.location::geometry) AS longitude,
+              u.name AS owner_name, u.email AS owner_email, u.phone AS owner_phone,
+              COALESCE(ps.product_count, 0) AS product_count,
+              COALESCE(os.order_count, 0) AS order_count,
+              os.last_order_at,
+              COALESCE(w.balance, 0) AS wallet_balance,
+              (SELECT COALESCE(SUM(o.total_amount), 0) FROM orders o WHERE o.supplier_id = s.id AND o.status = 'DELIVERED') AS revenue
+       ${SUPPLIER_LIST_FROM}
+       WHERE ${conditions.join(' AND ')}
+       ${this.buildOrderBy(SUPPLIER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
+       LIMIT ${SUPPLIER_EXPORT_MAX}`,
+      values,
+    ) as Array<Record<string, unknown>>
+
+    const toNumber = (value: unknown) => (value === null || value === undefined ? null : Number(value))
+    const toDate = (value: unknown) => (value ? new Date(value as string | Date) : null)
+    return renderSupplierWorkbook(rows.map(r => ({
+      shopName: r.shop_name as string,
+      validationStatus: r.validation_status as string,
+      type: r.type as string,
+      mode: r.mode as string,
+      ownerName: (r.owner_name as string) ?? null,
+      ownerPhone: (r.owner_phone as string) ?? null,
+      ownerEmail: (r.owner_email as string) ?? null,
+      neighborhood: (r.neighborhood as string) ?? null,
+      address: (r.address as string) ?? null,
+      latitude: toNumber(r.latitude),
+      longitude: toNumber(r.longitude),
+      productCount: Number(r.product_count ?? 0),
+      orderCount: Number(r.order_count ?? 0),
+      lastOrderAt: toDate(r.last_order_at),
+      deliveredRevenue: Number(r.revenue ?? 0),
+      walletBalance: Number(r.wallet_balance ?? 0),
+      mobileMoneyNumber: (r.mobile_money_number as string) ?? null,
+      commissionRate: toNumber(r.commission_rate),
+      rating: toNumber(r.global_rating),
+      reviewCount: Number(r.total_reviews ?? 0),
+      createdAt: toDate(r.created_at),
+      validatedAt: toDate(r.validated_at),
+    })))
   }
 
   /**

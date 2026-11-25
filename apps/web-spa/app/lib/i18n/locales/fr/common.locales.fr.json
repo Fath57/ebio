@@ -3461,6 +3461,7 @@
     "statusTabs": "Filtrer par statut",
     "moreFilters": "Plus de filtres",
     "exportCsv": "Exporter (CSV)",
+    "exportExcel": "Exporter (Excel)",
     "exportFailed": "L'export a échoué. Réessayez dans un instant."
   },
   "media": {

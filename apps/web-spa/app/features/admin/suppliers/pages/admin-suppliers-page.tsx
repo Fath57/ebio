@@ -8,9 +8,10 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
 import { advancedFilterChips, AdvancedFilters } from '@/features/admin/common/components/advanced-filters'
+import { ExportButton } from '@/features/admin/common/components/export-button'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
-import { fetchAdminSuppliersQueryOptions, SUPPLIER_ADVANCED_FILTER_KEYS } from '../utils/suppliers-queries'
+import { adminSuppliersExportPath, fetchAdminSuppliersQueryOptions, SUPPLIER_ADVANCED_FILTER_KEYS } from '../utils/suppliers-queries'
 
 const PAGE_SIZE = 20
 
@@ -37,15 +38,15 @@ export default function AdminSuppliersPage() {
   const status = list.values.statut
   const advanced = Object.fromEntries(SUPPLIER_ADVANCED_FILTER_KEYS.map(key => [key, list.values[key]])) as Record<SupplierAdvancedFilterKey, string>
 
+  const filters = {
+    q: list.q || undefined,
+    status: status || undefined,
+    advanced,
+    sortBy: list.sortBy,
+    sortDir: list.sortDir,
+  }
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    ...fetchAdminSuppliersQueryOptions({
-      q: list.q || undefined,
-      status: status || undefined,
-      advanced,
-      sortBy: list.sortBy,
-      sortDir: list.sortDir,
-      page: list.page,
-    }),
+    ...fetchAdminSuppliersQueryOptions({ ...filters, page: list.page }),
     placeholderData: keepPreviousData,
   })
 
@@ -146,6 +147,7 @@ export default function AdminSuppliersPage() {
     <AdminListShell
       title={t('admin.suppliers.title')}
       description={t('admin.suppliers.description')}
+      actions={<ExportButton path={adminSuppliersExportPath(filters)} filename="fournisseurs" format="xlsx" />}
       searchValue={list.q}
       onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.suppliers.searchPlaceholder')}

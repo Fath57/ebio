@@ -10,7 +10,7 @@ import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
+import { ExportButton } from '@/features/admin/common/components/export-button'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import { PAYMENT_STATUS_TONES } from '../utils/payment-status'
@@ -145,7 +145,7 @@ export default function TransactionsPage() {
           <h2 className="text-2xl font-bold">{t('admin.transactions.title')}</h2>
           <p className="text-muted-foreground">{t('admin.transactions.description')}</p>
         </div>
-        <ExportCsvButton path={exportPaymentsCsvUrl(filters)} filename="paiements" label={t('admin.transactions.exportCsv')} />
+        <ExportButton path={exportPaymentsCsvUrl(filters)} filename="paiements" label={t('admin.transactions.exportCsv')} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

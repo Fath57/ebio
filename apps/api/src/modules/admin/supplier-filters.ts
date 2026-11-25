@@ -95,6 +95,28 @@ export function buildSupplierConditions(filters: SupplierFilters): { conditions:
   return { conditions, values }
 }
 
+/**
+ * The filters out of the raw query string. The list and its export share it, so
+ * the file never holds other shops than the screen does.
+ */
+export function readSupplierFilters(query: Record<string, string | undefined>): SupplierFilters {
+  const { located, negotiatedRate } = query
+  return {
+    q: query.q || undefined,
+    type: query.type || undefined,
+    mode: query.mode || undefined,
+    minOrders: readMinimum(query.minOrders),
+    minBalance: readMinimum(query.minBalance),
+    minProducts: readMinimum(query.minProducts),
+    minRating: readMinimum(query.minRating),
+    inactiveDays: readMinimum(query.inactiveDays),
+    located: located === 'yes' || located === 'no' ? located : undefined,
+    negotiatedRate: negotiatedRate === 'yes' || negotiatedRate === 'no' ? negotiatedRate : undefined,
+    createdFrom: readDay(query.createdFrom),
+    createdTo: readDay(query.createdTo, true),
+  }
+}
+
 /** A non-negative number from the query string, undefined when absent or unreadable. */
 export function readMinimum(value?: string): number | undefined {
   if (value === undefined || value.trim() === '')
