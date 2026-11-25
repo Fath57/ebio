@@ -7,6 +7,19 @@ import { DragSheet } from '../../common/components/drag-sheet'
 import { askForPush } from '../hooks/use-notifications'
 import { recordAsk, shouldAskForPush } from '../push-consent'
 
+export interface PushConsentCopy {
+  title: string
+  body: string
+  accept: string
+}
+
+/** Each app asks for its own reason: a buyer follows an order, a courier earns a run. */
+const BUYER_COPY: PushConsentCopy = {
+  title: 'Rester au courant ?',
+  body: 'On vous prévient quand votre commande avance, quand le livreur arrive, et quand une boutique près de chez vous fait une promotion. Rien d\'autre.',
+  accept: 'Me prévenir',
+}
+
 interface PushConsentSheetProps {
   /**
    * The moment worth spending the ask on.
@@ -16,6 +29,7 @@ interface PushConsentSheetProps {
    * cannot be asked again.
    */
   when: boolean
+  copy?: PushConsentCopy
 }
 
 /**
@@ -31,7 +45,7 @@ interface PushConsentSheetProps {
  * gesture people already make on every sheet they meet should not be the one
  * that does nothing.
  */
-export function PushConsentSheet({ when }: PushConsentSheetProps) {
+export function PushConsentSheet({ when, copy = BUYER_COPY }: PushConsentSheetProps) {
   const { semantic } = useTheme()
   const [isVisible, setIsVisible] = useState(false)
 
@@ -70,16 +84,14 @@ export function PushConsentSheet({ when }: PushConsentSheetProps) {
           <Bell size={30} color={colors.green[400]} />
         </View>
         <Text style={[styles.title, { color: semantic.textPrimary }]}>
-          Rester au courant ?
+          {copy.title}
         </Text>
         <Text style={[styles.body, { color: semantic.textTertiary }]}>
-          On vous prévient quand votre commande avance, quand le livreur
-          arrive, et quand une boutique près de chez vous fait une promotion.
-          Rien d'autre.
+          {copy.body}
         </Text>
 
         <TouchableOpacity style={styles.accept} onPress={() => void accept()} accessibilityRole="button">
-          <Text style={styles.acceptText}>Me prévenir</Text>
+          <Text style={styles.acceptText}>{copy.accept}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.decline} onPress={() => void decline()} accessibilityRole="button">
           <Text style={[styles.declineText, { color: semantic.textTertiary }]}>Plus tard</Text>

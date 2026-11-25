@@ -1,4 +1,5 @@
 import type { Delivery } from '../features/courier/types'
+import type { PushConsentCopy } from '../features/notifications/components/push-consent-sheet'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -39,6 +40,7 @@ import { useOfflineQueue } from '../features/courier/hooks/use-offline-queue'
 import { useOutOfZone } from '../features/courier/hooks/use-out-of-zone'
 import { isExportCollection } from '../features/courier/types'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
+import { PushConsentSheet } from '../features/notifications/components/push-consent-sheet'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { useNotificationsUnreadCount } from '../features/notifications/hooks/use-notifications-unread-count'
 import { signOut, useSession } from '../lib/auth-client'
@@ -123,6 +125,12 @@ function CourierAuthFlow() {
 
 const GateStack = createNativeStackNavigator()
 
+const PUSH_CONSENT_COPY: PushConsentCopy = {
+  title: 'Recevoir les courses ?',
+  body: 'Votre téléphone sonne dès qu\'une course est proposée près de vous. Sans notification, elle part à un autre livreur avant que vous l\'ayez vue.',
+  accept: 'M\'alerter',
+}
+
 function CourierGate() {
   const { state, profile, refresh } = useCourierProfile()
   const { data: session } = useSession()
@@ -148,7 +156,14 @@ function CourierGate() {
   }
 
   if (state === 'validated' && profile) {
-    return <CourierTabs />
+    return (
+      <>
+        <CourierTabs />
+        {/* A run goes to whoever answers first: a validated courier is asked
+          * at once, there is no better moment to wait for. */}
+        <PushConsentSheet when copy={PUSH_CONSENT_COPY} />
+      </>
+    )
   }
 
   return (

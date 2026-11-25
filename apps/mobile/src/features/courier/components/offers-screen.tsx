@@ -17,6 +17,7 @@ import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
+import { PushDisabledBanner } from '../../notifications/components/push-disabled-banner'
 import { useValisePalette } from '../../terroir/components/valise/valise-palette'
 import { isExportCollection } from '../types'
 import { CollectionTag } from './collection-tag'
@@ -604,16 +605,19 @@ export function OffersScreen({ offers, refreshing, unavailable, notAllowed, debt
       renderItem={renderOffer}
       extraData={pendingId}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green[400]} />}
-      ListHeaderComponent={outOfZoneKm !== null
-        ? (
+      ListHeaderComponent={(
+        <>
+          <PushDisabledBanner message="Notifications désactivées : votre téléphone ne sonnera pas quand une course arrive." />
+          {outOfZoneKm !== null && (
             <View style={styles.zoneBanner} accessibilityRole="alert">
               <MapPinOff size={18} color={colors.earth[800]} strokeWidth={2} />
               <Text style={styles.zoneBannerText}>
                 {`Vous êtes à ${formatKm(outOfZoneKm)} de votre zone de livraison. Les courses ne vous sont proposées que lorsque vous y êtes.`}
               </Text>
             </View>
-          )
-        : null}
+          )}
+        </>
+      )}
       ListEmptyComponent={(
         <View style={styles.empty}>
           <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>

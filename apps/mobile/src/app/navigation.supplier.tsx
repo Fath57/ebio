@@ -29,6 +29,7 @@ import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
 import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
+import { PushConsentSheet } from '../features/notifications/components/push-consent-sheet'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
@@ -58,6 +59,12 @@ import { colors, fonts, radius, spacing, typography } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
 import { apiFetch } from '../utils/api-client'
 import { navigationRef } from './navigation-ref'
+
+const PUSH_CONSENT_COPY = {
+  title: 'Recevoir les commandes ?',
+  body: 'Votre téléphone sonne dès qu\'un client commande, et quand un livreur arrive. Sans notification, la commande attend que vous ouvriez l\'application.',
+  accept: 'M\'alerter',
+}
 
 function SafeScreen({ children }: { children: React.ReactNode }) {
   const { semantic } = useTheme()
@@ -202,7 +209,14 @@ function SupplierGate() {
   }
 
   if (status?.isSupplier && status.validationStatus === 'VALIDATED') {
-    return <SupplierTabs />
+    return (
+      <>
+        <SupplierTabs />
+        {/* An order waits for the shop's answer: a validated shop is asked at
+          * once, there is no better moment to wait for. */}
+        <PushConsentSheet when copy={PUSH_CONSENT_COPY} />
+      </>
+    )
   }
 
   return (
